@@ -1,0 +1,84 @@
+/* === HERO SECTION WITH FULL ORIGINAL IMAGE === */
+.heroSection {
+    width: 100%;
+    height: 70vh;                /* Show most of the image */
+    background-size: contain;    /* DO NOT CROP — show full image */
+    background-repeat: no-repeat;
+    background-position: center top;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;       /* Push content to bottom */
+    padding-bottom: 3rem;
+}
+
+/* This holds the logo + text */
+.heroContent {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2rem;
+    z-index: 2;
+}
+
+.heroLogo {
+    width: 180px;
+    height: auto;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.7));
+}
+
+.heroText {
+    text-align: left;
+    color: #fff;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.8);
+}
+
+.heroText h1 {
+    font-size: 2.6rem;
+    font-weight: 700;
+}
+
+.heroText p {
+    margin-top: 0.3rem;
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+/* === SLIDER SECTION === */
+.sliderSection {
+    padding: 3rem 0 2rem 0;
+    background: #050505;
+}
+
+/* === FEATURES SECTION === */
+.featuresSection {
+    background: #050505;
+}
+
+/* === BOTTOM BACKGROUND IMAGE === */
+.backgroundImageSection {
+    width: 100%;
+    margin-top: 2rem;
+}
+
+.fullBackgroundImage {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 900px) {
+    .heroContent {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .heroText {
+        text-align: center;
+    }
+
+    .heroText h1 {
+        font-size: 2.2rem;
+    }
+}

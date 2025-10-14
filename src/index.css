@@ -1,0 +1,41 @@
+/*
+Αυτό το αρχείο CSS περιέχει τους παγκόσμιους στυλ της εφαρμογής, συμπεριλαμβανομένων των εισαγωγών Tailwind και γραμματοσειρών, καθώς και τις μεταβλητές θέματος για το σκούρο θέμα.
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0a0a0a;
+  --color-foreground: #fafafa;
+  --color-card: #1c1c1c;
+  --color-card-foreground: #fafafa;
+  --color-popover: #1c1c1c;
+  --color-popover-foreground: #fafafa;
+  --color-primary: #fafafa;
+  --color-primary-foreground: #171717;
+  --color-secondary: #2e2e2e;
+  --color-secondary-foreground: #fafafa;
+  --color-muted: #2e2e2e;
+  --color-muted-foreground: #a3a3a3;
+  --color-accent: #2e2e2e;
+  --color-accent-foreground: #fafafa;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #fafafa;
+  --color-border: #2e2e2e;
+  --color-input: #2e2e2e;
+  --color-ring: #d4d4d4;
+  --radius: 0.5rem;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-feature-settings: "rlig" 1, "calt" 1;
+  min-height: 100vh;
+  font-family: 'Cascadia Code', monospace;
+}
