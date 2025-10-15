@@ -1,3 +1,7 @@
+/*
+Αυτή η σελίδα εμφανίζει τις διαθέσιμες προβολές ταινιών με τις λεπτομέρειες τους.
+*/
+
 import { useEffect, useState } from "react"
 import { getScreenings } from "../api/screenings"
 import { Card, CardContent } from "@/components/ui/card"
@@ -11,17 +15,21 @@ export default function Screenings() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        setLoading(true)
-        getScreenings()
-            .then(data => {
+        const fetchData = async () => {
+            setLoading(true)
+            try {
+                const data = await getScreenings()
                 console.log("Screenings data:", data)
                 if (data.results) {
                     setData(data.results)
                 } else {
                     setData(data || [])
                 }
-            })
-            .finally(() => setLoading(false))
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchData()
     }, [])
 
     return (

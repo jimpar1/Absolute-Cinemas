@@ -1,3 +1,7 @@
+/*
+Αυτό το στοιχείο UI είναι ένα αναπτυσσόμενο μενού επιλογής για την επιλογή από μια λίστα επιλογών.
+*/
+
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown, ChevronUp } from "lucide-react"

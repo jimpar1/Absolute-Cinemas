@@ -1,3 +1,7 @@
+/*
+Αυτή η σελίδα επιτρέπει την κράτηση θέσεων για μια προβολή ταινίας.
+*/
+
 import { useParams, useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { createBooking } from "../api/bookings"
@@ -5,7 +9,6 @@ import { getScreening } from "../api/screenings"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
 import { Calendar, Clock, Ticket, User, Mail, Phone, CreditCard } from "lucide-react"

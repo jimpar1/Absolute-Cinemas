@@ -1,3 +1,7 @@
+/*
+Αυτή η σελίδα εμφανίζει τις επερχόμενες ταινίες που θα προβληθούν σύντομα.
+*/
+
 import { useEffect, useState } from "react"
 import { getMovies } from "../api/movies"
 import MovieCard from "../components/MovieCard"
@@ -24,19 +28,22 @@ export default function Upcoming() {
     const [selectedGenre, setSelectedGenre] = useState("all")
 
     useEffect(() => {
-        setLoading(true)
-        getMovies()
-            .then(data => {
+        const fetchData = async () => {
+            setLoading(true)
+            try {
+                const data = await getMovies()
                 const filteredMovies = (data.results || []).filter(movie =>
                     movie.status === 'upcoming'
                 )
                 setMovies(filteredMovies)
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error("Failed to fetch movies:", err)
                 setMovies([])
-            })
-            .finally(() => setLoading(false))
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchData()
     }, [])
 
     // Get unique genres from movies

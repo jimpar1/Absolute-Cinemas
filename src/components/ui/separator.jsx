@@ -1,3 +1,7 @@
+/*
+Αυτό το στοιχείο UI είναι ένα διαχωριστικό για τη διαίρεση περιεχομένου σε οριζόντια ή κάθετη κατεύθυνση.
+*/
+
 import * as React from "react"
 import * as SeparatorPrimitive from "@radix-ui/react-separator"
 import { cn } from "@/lib/utils"

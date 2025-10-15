@@ -1,3 +1,7 @@
+/*
+Αυτή η σελίδα εμφανίζει τις διαθέσιμες κατηγορίες ταινιών.
+*/
+
 import { useEffect, useState } from "react"
 import { getMovies } from "../api/movies"
 import MovieCard from "../components/MovieCard"
@@ -18,32 +22,25 @@ const GENRE_INFO = {
     Documentary: { icon: "📹", color: "from-teal-500 to-cyan-500" },
 }
 
-function MovieCardSkeleton() {
-    return (
-        <div className="space-y-3">
-            <Skeleton className="aspect-[2/3] w-full rounded-xl" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/2" />
-        </div>
-    )
-}
-
 export default function Genres() {
     const [movies, setMovies] = useState([])
     const [loading, setLoading] = useState(true)
     const [selectedGenre, setSelectedGenre] = useState(null)
 
     useEffect(() => {
-        setLoading(true)
-        getMovies()
-            .then(data => {
+        const fetchData = async () => {
+            setLoading(true)
+            try {
+                const data = await getMovies()
                 setMovies(data.results || [])
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error("Failed to fetch movies:", err)
                 setMovies([])
-            })
-            .finally(() => setLoading(false))
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchData()
     }, [])
 
     // Group movies by genre

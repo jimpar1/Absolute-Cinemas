@@ -1,3 +1,7 @@
+/*
+Αυτό το στοιχείο UI είναι ένα φύλλο (sheet) που εμφανίζεται από τις πλευρές της οθόνης για πρόσθετο περιεχόμενο ή μενού.
+*/
+
 import * as React from "react"
 import * as SheetPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"

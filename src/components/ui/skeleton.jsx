@@ -1,3 +1,7 @@
+/*
+Αυτό το στοιχείο UI είναι ένα placeholder σκελετού που εμφανίζεται κατά τη φόρτωση περιεχομένου.
+*/
+
 import { cn } from "@/lib/utils"
 
 function Skeleton({ className, ...props }) {

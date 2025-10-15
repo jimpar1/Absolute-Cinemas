@@ -1,3 +1,7 @@
+/*
+Αυτό το αρχείο περιέχει τη διαμόρφωση του Vite για το project, συμπεριλαμβανομένων των plugins και των alias.
+*/
+
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'

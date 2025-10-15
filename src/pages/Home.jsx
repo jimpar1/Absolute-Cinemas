@@ -1,3 +1,7 @@
+/*
+Αυτή η σελίδα είναι η αρχική σελίδα της εφαρμογής με hero section και λίστα ταινιών.
+*/
+
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Film, Calendar, Play, ArrowRight } from 'lucide-react'

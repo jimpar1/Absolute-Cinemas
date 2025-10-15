@@ -1,3 +1,7 @@
+/*
+Αυτή η σελίδα εμφανίζει τις αίθουσες κινηματογράφου με τις πληροφορίες τους.
+*/
+
 import { useEffect, useState } from "react";
 import { getMovieHalls } from "../api/moviehalls";
 

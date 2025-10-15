@@ -1,3 +1,7 @@
+/*
+Αυτή η σελίδα εμφανίζει τις ταινίες που προβάλλονται τώρα στους κινηματογράφους.
+*/
+
 import { useEffect, useState } from "react"
 import { getMovies } from "../api/movies"
 import MovieCard from "../components/MovieCard"
@@ -20,19 +24,22 @@ export default function NowPlaying() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        setLoading(true)
-        getMovies()
-            .then(data => {
+        const fetchData = async () => {
+            setLoading(true)
+            try {
+                const data = await getMovies()
                 const filteredMovies = (data.results || []).filter(movie =>
                     movie.status === 'now_playing' || !movie.status
                 )
                 setMovies(filteredMovies)
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error("Failed to fetch movies:", err)
                 setMovies([])
-            })
-            .finally(() => setLoading(false))
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchData()
     }, [])
 
     return (

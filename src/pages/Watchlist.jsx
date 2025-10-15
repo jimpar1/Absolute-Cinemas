@@ -1,3 +1,7 @@
+/*
+Αυτή η σελίδα εμφανίζει τη λίστα παρακολούθησης και τα αγαπημένα του χρήστη.
+*/
+
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import MovieCard from "../components/MovieCard"

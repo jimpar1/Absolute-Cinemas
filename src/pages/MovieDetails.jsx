@@ -1,3 +1,7 @@
+/*
+Αυτή η σελίδα εμφανίζει τις λεπτομέρειες μιας ταινίας, συμπεριλαμβανομένων πληροφοριών και προβολών.
+*/
+
 import { useParams, Link } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { getMovie, getMovieScreenings } from "../api/movies"
@@ -17,11 +21,20 @@ export default function MovieDetails() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        setLoading(true)
-        Promise.all([
-            getMovie(id).then(setMovie),
-            getMovieScreenings(id).then(setScreenings)
-        ]).finally(() => setLoading(false))
+        const fetchData = async () => {
+            setLoading(true)
+            try {
+                const [movieData, screeningsData] = await Promise.all([
+                    getMovie(id),
+                    getMovieScreenings(id)
+                ])
+                setMovie(movieData)
+                setScreenings(screeningsData)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchData()
     }, [id])
 
     const handleAddToWatchlist = () => {

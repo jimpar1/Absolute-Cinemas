@@ -1,3 +1,7 @@
+/*
+Αυτό το στοιχείο UI είναι ένα παράθυρο διαλόγου (modal) με επικαλυπτικό φόντο και περιεχόμενο για εμφάνιση πληροφοριών ή φορμών.
+*/
+
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"

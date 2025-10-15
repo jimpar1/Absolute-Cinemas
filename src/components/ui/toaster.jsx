@@ -1,3 +1,7 @@
+/*
+Αυτό το στοιχείο είναι ο container που αποδίδει τις ειδοποιήσεις toast στην εφαρμογή.
+*/
+
 import { useToast } from "@/hooks/use-toast"
 import {
   Toast,

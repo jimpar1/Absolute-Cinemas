@@ -1,3 +1,7 @@
+/*
+Αυτό το στοιχείο UI είναι ένα σύστημα καρτελών για την οργάνωση περιεχομένου σε διαφορετικές ενότητες.
+*/
+
 import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 import { cn } from "@/lib/utils"

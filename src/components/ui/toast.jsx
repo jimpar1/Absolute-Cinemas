@@ -1,3 +1,7 @@
+/*
+Αυτό το στοιχείο UI είναι μια ειδοποίηση toast που εμφανίζεται για σύντομες μηνύματα προς τον χρήστη.
+*/
+
 import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { X } from "lucide-react"
