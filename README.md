@@ -31,7 +31,7 @@ A modern, responsive cinema booking application built with React, Vite, and shad
 - **Desktop**: Top navigation bar with all main sections
 - **Mobile**: Drawer/sheet navigation with hamburger menu
 - **Active States**: Visual indication of current page
-- **Accessibility**: ARIA labels and keyboard navigation support
+- **Accessibility**: labels and keyboard navigation support
 
 ## Tech Stack
 
@@ -48,7 +48,7 @@ A modern, responsive cinema booking application built with React, Vite, and shad
 ### Prerequisites
 
 - Node.js 18+ 
-- npm or yarn
+- npm
 
 ### Installation
 
@@ -58,7 +58,7 @@ git clone https://github.com/jimpar1/absolute-cinema.git
 cd absolute-cinema
 
 # Checkout the redesigned branch
-git checkout copilot/redesign-absolute-cinema-frontend
+git checkout main
 
 # Install dependencies
 npm install
