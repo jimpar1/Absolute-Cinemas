@@ -3,7 +3,7 @@
 */
 
 import { Link } from "react-router-dom"
-import { Star, Clock } from "lucide-react"
+import { Star, Clock, Play, Users, Image } from "lucide-react"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,21 @@ export default function MovieCard({ movie }) {
                     ) : (
                         <div className="flex items-center justify-center h-full text-muted-foreground">
                             <Star className="h-12 w-12" />
+                        </div>
+                    )}
+                    {movie.trailer_url && (
+                        <div className="absolute top-2 right-2 bg-black/50 rounded-full p-1">
+                            <Play className="h-4 w-4 text-white" />
+                        </div>
+                    )}
+                    {movie.actors && movie.actors.length > 0 && (
+                        <div className="absolute bottom-2 left-2 bg-black/50 rounded-full p-1">
+                            <Users className="h-4 w-4 text-white" />
+                        </div>
+                    )}
+                    {movie.shots && movie.shots.length > 0 && (
+                        <div className="absolute bottom-2 right-2 bg-black/50 rounded-full p-1">
+                            <Image className="h-4 w-4 text-white" />
                         </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
