@@ -54,6 +54,45 @@
     background: #050505;
 }
 
+/* Fix Swiper slide sizing for coverflow effect */
+.sliderSection :global(.swiper) {
+    padding-bottom: 3rem; /* Space for pagination */
+}
+
+.sliderSection :global(.swiper-slide) {
+    width: 200px !important;
+    height: 300px !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@media (min-width: 768px) {
+    .sliderSection :global(.swiper-slide) {
+        width: 220px !important;
+        height: 330px !important;
+    }
+}
+
+.sliderSection :global(.swiper-pagination-bullet) {
+    background: #fff;
+    opacity: 0.5;
+}
+
+.sliderSection :global(.swiper-pagination-bullet-active) {
+    opacity: 1;
+}
+
+.sliderSection :global(.swiper-button-next),
+.sliderSection :global(.swiper-button-prev) {
+    color: #fff;
+}
+
+.sliderSection :global(.swiper-button-next::after),
+.sliderSection :global(.swiper-button-prev::after) {
+    font-size: 1.5rem;
+}
+
 /* === FEATURES SECTION === */
 .featuresSection {
     background: #050505;
