@@ -64,7 +64,7 @@ export default function Home() {
                                 effect="coverflow"
                                 grabCursor={true}
                                 centeredSlides={true}
-                                loop={true}
+                                loop={movies.length > 3}
                                 slidesPerView="auto"
                                 coverflowEffect={{
                                     rotate: 35,
@@ -78,16 +78,14 @@ export default function Home() {
                                 autoplay={{
                                     delay: 5000,
                                     disableOnInteraction: false,
+                                    pauseOnMouseEnter: true,
                                 }}
+                                speed={600}
                                 modules={[EffectCoverflow, Pagination, Navigation, Autoplay]}
-                                className="h-[22rem]"
                             >
                                 {movies.map((movie) => (
-                                    <SwiperSlide
-                                        key={movie.id}
-                                        className="flex justify-center items-center !w-40 !h-64 md:!w-52 md:!h-80"
-                                    >
-                                        <Link to={`/movies/${movie.id}`}>
+                                    <SwiperSlide key={movie.id}>
+                                        <Link to={`/movies/${movie.id}`} className="block w-full h-full">
                                             <div className="relative w-full h-full rounded-xl overflow-hidden shadow-xl transition-transform duration-300 hover:scale-105">
                                                 <img
                                                     src={movie.poster_url}
