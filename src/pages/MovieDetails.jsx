@@ -3,7 +3,7 @@
 */
 
 import { useParams, Link } from "react-router-dom"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { getMovie, getMovieScreenings } from "../api/movies"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,6 +29,8 @@ export default function MovieDetails() {
         return new Date(today.setDate(diff))
     })
     const [currentMonth, setCurrentMonth] = useState(new Date())
+    const castSliderRef = useRef(null)
+    const [canScrollCast, setCanScrollCast] = useState(false)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -172,6 +174,20 @@ export default function MovieDetails() {
 
         return () => clearInterval(interval);
     }, [backdropImages.length])
+
+    // Check if cast slider needs scroll arrows
+    useEffect(() => {
+        const checkScroll = () => {
+            if (castSliderRef.current) {
+                const { scrollWidth, clientWidth } = castSliderRef.current;
+                setCanScrollCast(scrollWidth > clientWidth);
+            }
+        };
+
+        checkScroll();
+        window.addEventListener('resize', checkScroll);
+        return () => window.removeEventListener('resize', checkScroll);
+    }, [movie?.actors])
 
     if (loading) {
         return (
@@ -551,21 +567,36 @@ export default function MovieDetails() {
                         </Card>
 
                         {/* Cast Section with Horizontal Slider */}
-                        <Card>
+                        <Card className="overflow-visible">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Users className="h-5 w-5" />
                                     Cast
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="overflow-visible">
                                 {movie.actors && movie.actors.length > 0 ? (
-                                    <div className="relative">
-                                        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin snap-x snap-mandatory">
+                                    <div className="flex items-center gap-3 overflow-visible">
+                                        {/* Left Arrow - only show if scrollable */}
+                                        {canScrollCast && (
+                                            <button
+                                                onClick={() => {
+                                                    if (castSliderRef.current) castSliderRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+                                                }}
+                                                className="flex-shrink-0 bg-black/60 hover:bg-black/80 text-white p-1.5 rounded-full transition-all hover:scale-110 z-10"
+                                                aria-label="Scroll left"
+                                            >
+                                                <ChevronLeft className="h-4 w-4" />
+                                            </button>
+                                        )}
+
+                                        {/* Cast Slider */}
+                                        <div ref={castSliderRef} className="flex gap-4 overflow-x-auto overflow-y-visible py-2 scrollbar-hide scroll-smooth flex-1 -mx-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                                            <div className="w-2 flex-shrink-0"></div>
                                             {movie.actors.map((actor, index) => (
-                                                <div key={index} className="flex-shrink-0 w-20 snap-start">
+                                                <div key={index} className="flex-shrink-0 w-20 group py-2">
                                                     <div className="text-center">
-                                                        <div className="aspect-square rounded-full overflow-hidden bg-muted mb-2">
+                                                        <div className="aspect-square rounded-full overflow-hidden bg-muted mb-2 transition-transform duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary/20 relative">
                                                             {actor.profile_path ? (
                                                                 <img
                                                                     src={actor.profile_path}
@@ -577,15 +608,32 @@ export default function MovieDetails() {
                                                                     <Users className="h-6 w-6 text-muted-foreground" />
                                                                 </div>
                                                             )}
+                                                            {/* Name overlay on hover */}
+                                                            <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-1">
+                                                                <p className="font-medium text-[10px] text-white text-center line-clamp-2">{actor.name}</p>
+                                                                {actor.character && (
+                                                                    <p className="text-[9px] text-white/70 text-center line-clamp-1 mt-0.5">{actor.character}</p>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <p className="font-medium text-xs line-clamp-1">{actor.name}</p>
-                                                        <p className="text-xs text-muted-foreground line-clamp-1">{actor.character}</p>
                                                     </div>
                                                 </div>
                                             ))}
+                                            <div className="w-2 flex-shrink-0"></div>
                                         </div>
-                                        {/* Scroll hint gradient */}
-                                        <div className="absolute right-0 top-0 bottom-2 w-6 bg-gradient-to-l from-card to-transparent pointer-events-none" />
+
+                                        {/* Right Arrow - only show if scrollable */}
+                                        {canScrollCast && (
+                                            <button
+                                                onClick={() => {
+                                                    if (castSliderRef.current) castSliderRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+                                                }}
+                                                className="flex-shrink-0 bg-black/60 hover:bg-black/80 text-white p-1.5 rounded-full transition-all hover:scale-110 z-10"
+                                                aria-label="Scroll right"
+                                            >
+                                                <ChevronRight className="h-4 w-4" />
+                                            </button>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="text-center text-muted-foreground py-4">
