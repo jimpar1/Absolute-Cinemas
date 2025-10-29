@@ -58,112 +58,112 @@ export default function Home() {
             {/* === SLIDER SECTION === */}
             <section className={styles.sliderSection}>
                 {movies.length > 0 && (
-                    <div className="w-full flex justify-center px-4">
-                        <div className="w-full max-w-5xl">
-                            <Swiper
-                                effect="coverflow"
-                                grabCursor={true}
-                                centeredSlides={true}
-                                loop={movies.length > 3}
-                                slidesPerView="auto"
-                                coverflowEffect={{
-                                    rotate: 35,
-                                    stretch: 0,
-                                    depth: 180,
-                                    modifier: 1,
-                                    slideShadows: true,
-                                }}
-                                pagination={{ clickable: true }}
-                                navigation={true}
-                                autoplay={{
-                                    delay: 5000,
-                                    disableOnInteraction: false,
-                                    pauseOnMouseEnter: true,
-                                }}
-                                speed={600}
-                                modules={[EffectCoverflow, Pagination, Navigation, Autoplay]}
-                            >
-                                {movies.map((movie) => (
-                                    <SwiperSlide key={movie.id}>
-                                        <Link to={`/movies/${movie.id}`} className="block w-full h-full">
-                                            <div className="relative w-full h-full rounded-xl overflow-hidden shadow-xl transition-transform duration-300 hover:scale-105">
-                                                <img
-                                                    src={movie.poster_url}
-                                                    alt={movie.title}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent flex items-end px-3 pb-2">
-                                                    <p className="text-xs md:text-sm text-white truncate">
-                                                        {movie.title}
-                                                    </p>
-                                                </div>
+                    <div className="w-full max-w-6xl mx-auto px-4">
+                        <Swiper
+                            effect="coverflow"
+                            grabCursor={true}
+                            centeredSlides={true}
+                            loop={movies.length > 3}
+                            slidesPerView="auto"
+                            coverflowEffect={{
+                                rotate: 35,
+                                stretch: 0,
+                                depth: 180,
+                                modifier: 1,
+                                slideShadows: true,
+                            }}
+                            pagination={{ clickable: true }}
+                            navigation={true}
+                            autoplay={{
+                                delay: 5000,
+                                disableOnInteraction: false,
+                                pauseOnMouseEnter: true,
+                            }}
+                            speed={600}
+                            modules={[EffectCoverflow, Pagination, Navigation, Autoplay]}
+                        >
+                            {movies.map((movie) => (
+                                <SwiperSlide key={movie.id}>
+                                    <Link to={`/movies/${movie.id}`} className="block w-full h-full">
+                                        <div className="relative w-full h-full rounded-xl overflow-hidden shadow-xl transition-transform duration-300 hover:scale-105">
+                                            <img
+                                                src={movie.poster_url}
+                                                alt={movie.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent flex items-end px-3 pb-2">
+                                                <p className="text-xs md:text-sm text-white truncate">
+                                                    {movie.title}
+                                                </p>
                                             </div>
-                                        </Link>
-                                    </SwiperSlide>
-                                ))}
-                            </Swiper>
-                        </div>
+                                        </div>
+                                    </Link>
+                                </SwiperSlide>
+                            ))}
+                        </Swiper>
                     </div>
                 )}
             </section>
 
             {/* === FEATURES SECTION === */}
             <section className={styles.featuresSection}>
-                <div className="container py-16">
+                <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
                     <Tabs defaultValue="now-playing" className="w-full">
-                        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
-                            <TabsTrigger value="now-playing" className="gap-2">
-                                <Play className="h-4 w-4" />
-                                Now Playing
-                            </TabsTrigger>
-                            <TabsTrigger value="upcoming" className="gap-2">
-                                <Calendar className="h-4 w-4" />
-                                Upcoming
-                            </TabsTrigger>
-                        </TabsList>
+                        <div className="flex justify-center mb-6 md:mb-8">
+                            <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2">
+                                <TabsTrigger value="now-playing" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                                    <Play className="h-3 w-3 sm:h-4 sm:w-4" />
+                                    Now Playing
+                                </TabsTrigger>
+                                <TabsTrigger value="upcoming" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                                    Upcoming
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
 
                         <TabsContent value="now-playing">
-                            <div className="mb-6 text-center">
-                                <h2 className="text-2xl font-bold mb-2">Now Playing</h2>
-                                <p className="text-muted-foreground">Check out what's currently showing in theaters</p>
+                            <div className="mb-4 md:mb-6 text-center">
+                                <h2 className="text-xl md:text-2xl font-bold mb-2">Now Playing</h2>
+                                <p className="text-sm md:text-base text-muted-foreground">Check out what's currently showing in theaters</p>
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6 justify-items-center">
                                 {movies.filter(movie => movie.status === 'now_playing' || !movie.status).map(movie => (
                                     <MovieCard key={movie.id} movie={movie} />
                                 ))}
                             </div>
-                            <div className="text-center mt-8">
+                            <div className="text-center mt-6 md:mt-8">
                                 <Link to="/now-playing">
-                                    <Button variant="outline">View All Now Playing</Button>
+                                    <Button variant="outline" size="sm" className="sm:text-base sm:px-4 sm:py-2">View All Now Playing</Button>
                                 </Link>
                             </div>
                         </TabsContent>
 
                         <TabsContent value="upcoming">
-                            <div className="mb-6 text-center">
-                                <h2 className="text-2xl font-bold mb-2">Upcoming Releases</h2>
-                                <p className="text-muted-foreground">See what movies are coming soon</p>
+                            <div className="mb-4 md:mb-6 text-center">
+                                <h2 className="text-xl md:text-2xl font-bold mb-2">Upcoming Releases</h2>
+                                <p className="text-sm md:text-base text-muted-foreground">See what movies are coming soon</p>
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6 justify-items-center">
                                 {movies.filter(movie => movie.status === 'upcoming').map(movie => (
                                     <MovieCard key={movie.id} movie={movie} />
                                 ))}
                             </div>
-                            <div className="text-center mt-8">
+                            <div className="text-center mt-6 md:mt-8">
                                 <Link to="/upcoming">
-                                    <Button variant="outline">View All Upcoming</Button>
+                                    <Button variant="outline" size="sm" className="sm:text-base sm:px-4 sm:py-2">View All Upcoming</Button>
                                 </Link>
                             </div>
                         </TabsContent>
                     </Tabs>
 
-                    <div className="mt-16 flex justify-center">
-                        <Link to="/screenings">
-                            <Card className="transition-all hover:shadow-lg hover:scale-105 duration-300 flex flex-col h-48 w-full max-w-sm">
-                                <CardHeader className="flex-grow">
-                                    <Film className="h-10 w-10 mb-2 text-primary" />
-                                    <CardTitle>Book Screening</CardTitle>
-                                    <CardDescription>Reserve your seats for upcoming shows</CardDescription>
+                    <div className="mt-10 md:mt-16 flex justify-center px-4">
+                        <Link to="/screenings" className="w-full max-w-sm">
+                            <Card className="transition-all hover:shadow-lg hover:scale-105 duration-300 flex flex-col h-40 md:h-48 w-full">
+                                <CardHeader className="flex-grow flex flex-col items-center text-center">
+                                    <Film className="h-8 w-8 md:h-10 md:w-10 mb-2 text-primary" />
+                                    <CardTitle className="text-base md:text-lg">Book Screening</CardTitle>
+                                    <CardDescription className="text-xs md:text-sm">Reserve your seats for upcoming shows</CardDescription>
                                 </CardHeader>
                             </Card>
                         </Link>
