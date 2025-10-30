@@ -5,73 +5,79 @@
 /* === HERO SECTION WITH FULL ORIGINAL IMAGE === */
 .heroSection {
     width: 100%;
-    height: 70vh;                /* Show most of the image */
-    background-size: contain;    /* DO NOT CROP — show full image */
+    min-height: 50vh;
+    height: auto;
+    background-size: cover;
     background-repeat: no-repeat;
-    background-position: center top;
+    background-position: center center;
     position: relative;
     display: flex;
     justify-content: center;
-    align-items: flex-end;       /* Push content to bottom */
-    padding-bottom: 3rem;
+    align-items: flex-end;
+    padding: 2rem 1rem 3rem 1rem;
 }
 
 /* This holds the logo + text */
 .heroContent {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
-    gap: 2rem;
+    justify-content: center;
+    gap: 1.5rem;
     z-index: 2;
+    text-align: center;
+    width: 100%;
+    max-width: 800px;
+    padding: 0 1rem;
 }
 
 .heroLogo {
-    width: 180px;
+    width: 120px;
     height: auto;
     filter: drop-shadow(0 8px 24px rgba(0,0,0,0.7));
 }
 
 .heroText {
-    text-align: left;
+    text-align: center;
     color: #fff;
     text-shadow: 0 4px 12px rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .heroText h1 {
-    font-size: 2.6rem;
+    font-size: 1.5rem;
     font-weight: 700;
+    line-height: 1.2;
 }
 
 .heroText p {
-    margin-top: 0.3rem;
-    font-size: 1.2rem;
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
     opacity: 0.9;
 }
 
 /* === SLIDER SECTION === */
 .sliderSection {
-    padding: 3rem 0 2rem 0;
+    padding: 2rem 0;
     background: #050505;
+    width: 100%;
+    overflow: hidden;
 }
 
 /* Fix Swiper slide sizing for coverflow effect */
 .sliderSection :global(.swiper) {
     padding-bottom: 3rem; /* Space for pagination */
+    width: 100%;
 }
 
 .sliderSection :global(.swiper-slide) {
-    width: 200px !important;
-    height: 300px !important;
+    width: 150px !important;
+    height: 225px !important;
     display: flex;
     justify-content: center;
     align-items: center;
-}
-
-@media (min-width: 768px) {
-    .sliderSection :global(.swiper-slide) {
-        width: 220px !important;
-        height: 330px !important;
-    }
 }
 
 .sliderSection :global(.swiper-pagination-bullet) {
@@ -86,16 +92,18 @@
 .sliderSection :global(.swiper-button-next),
 .sliderSection :global(.swiper-button-prev) {
     color: #fff;
+    display: none;
 }
 
 .sliderSection :global(.swiper-button-next::after),
 .sliderSection :global(.swiper-button-prev::after) {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
 }
 
 /* === FEATURES SECTION === */
 .featuresSection {
     background: #050505;
+    width: 100%;
 }
 
 /* === BOTTOM BACKGROUND IMAGE === */
@@ -110,18 +118,96 @@
     display: block;
 }
 
-/* === RESPONSIVE === */
-@media (max-width: 900px) {
+/* === RESPONSIVE - Small screens (480px+) === */
+@media (min-width: 480px) {
+    .heroSection {
+        min-height: 55vh;
+    }
+
+    .heroLogo {
+        width: 140px;
+    }
+
+    .heroText h1 {
+        font-size: 1.8rem;
+    }
+
+    .heroText p {
+        font-size: 1rem;
+    }
+
+    .sliderSection :global(.swiper-slide) {
+        width: 170px !important;
+        height: 255px !important;
+    }
+}
+
+/* === RESPONSIVE - Medium screens (768px+) === */
+@media (min-width: 768px) {
+    .heroSection {
+        min-height: 60vh;
+        padding: 2rem 2rem 4rem 2rem;
+    }
+
     .heroContent {
-        flex-direction: column;
-        text-align: center;
+        flex-direction: row;
+        text-align: left;
+        gap: 2rem;
+    }
+
+    .heroLogo {
+        width: 160px;
     }
 
     .heroText {
-        text-align: center;
+        text-align: left;
+        align-items: flex-start;
     }
 
     .heroText h1 {
         font-size: 2.2rem;
+    }
+
+    .heroText p {
+        font-size: 1.1rem;
+    }
+
+    .sliderSection :global(.swiper-slide) {
+        width: 200px !important;
+        height: 300px !important;
+    }
+
+    .sliderSection :global(.swiper-button-next),
+    .sliderSection :global(.swiper-button-prev) {
+        display: flex;
+    }
+}
+
+/* === RESPONSIVE - Large screens (1024px+) === */
+@media (min-width: 1024px) {
+    .heroSection {
+        min-height: 65vh;
+    }
+
+    .heroLogo {
+        width: 180px;
+    }
+
+    .heroText h1 {
+        font-size: 2.6rem;
+    }
+
+    .heroText p {
+        font-size: 1.2rem;
+    }
+
+    .sliderSection :global(.swiper-slide) {
+        width: 220px !important;
+        height: 330px !important;
+    }
+
+    .sliderSection :global(.swiper-button-next::after),
+    .sliderSection :global(.swiper-button-prev::after) {
+        font-size: 1.5rem;
     }
 }
