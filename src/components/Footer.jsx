@@ -35,8 +35,8 @@ export default function Footer() {
                     <h3>Quick Links</h3>
                     <ul>
                         <li><a href="/">Home</a></li>
-                        <li><a href="/screenings">Screenings</a></li>
-                        <li><a href="/halls">Halls</a></li>
+                        <li><a href="/movies">Movies</a></li>
+                        <li><a href="/about">About Us</a></li>
                     </ul>
                 </div>
 

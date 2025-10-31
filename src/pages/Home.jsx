@@ -6,7 +6,6 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Film, Calendar, Play, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getMovies } from '../api/movies'
 import MovieCard from '../components/MovieCard'
@@ -44,7 +43,7 @@ export default function Home() {
                         <h1>Welcome to Absolute Cinemas</h1>
                         <p>Book FAKE tickets at the best FAKE cinemas.</p>
 
-                        <Link to="/now-playing">
+                        <Link to="/movies">
                             <Button size="lg" className="gap-2 mt-4">
                                 <Film className="h-5 w-5" />
                                 Browse Movies
@@ -128,13 +127,13 @@ export default function Home() {
                                 <p className="text-sm md:text-base text-muted-foreground">Check out what's currently showing in theaters</p>
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6 justify-items-center">
-                                {movies.filter(movie => movie.status === 'now_playing' || !movie.status).map(movie => (
+                                {movies.filter(movie => movie.status === 'now_playing' || !movie.status).slice(0, 6).map(movie => (
                                     <MovieCard key={movie.id} movie={movie} />
                                 ))}
                             </div>
                             <div className="text-center mt-6 md:mt-8">
-                                <Link to="/now-playing">
-                                    <Button variant="outline" size="sm" className="sm:text-base sm:px-4 sm:py-2">View All Now Playing</Button>
+                                <Link to="/movies">
+                                    <Button variant="outline" size="sm" className="sm:text-base sm:px-4 sm:py-2">View All Movies</Button>
                                 </Link>
                             </div>
                         </TabsContent>
@@ -145,29 +144,17 @@ export default function Home() {
                                 <p className="text-sm md:text-base text-muted-foreground">See what movies are coming soon</p>
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6 justify-items-center">
-                                {movies.filter(movie => movie.status === 'upcoming').map(movie => (
+                                {movies.filter(movie => movie.status === 'upcoming').slice(0, 6).map(movie => (
                                     <MovieCard key={movie.id} movie={movie} />
                                 ))}
                             </div>
                             <div className="text-center mt-6 md:mt-8">
-                                <Link to="/upcoming">
-                                    <Button variant="outline" size="sm" className="sm:text-base sm:px-4 sm:py-2">View All Upcoming</Button>
+                                <Link to="/movies">
+                                    <Button variant="outline" size="sm" className="sm:text-base sm:px-4 sm:py-2">View All Movies</Button>
                                 </Link>
                             </div>
                         </TabsContent>
                     </Tabs>
-
-                    <div className="mt-10 md:mt-16 flex justify-center px-4">
-                        <Link to="/screenings" className="w-full max-w-sm">
-                            <Card className="transition-all hover:shadow-lg hover:scale-105 duration-300 flex flex-col h-40 md:h-48 w-full">
-                                <CardHeader className="flex-grow flex flex-col items-center text-center">
-                                    <Film className="h-8 w-8 md:h-10 md:w-10 mb-2 text-primary" />
-                                    <CardTitle className="text-base md:text-lg">Book Screening</CardTitle>
-                                    <CardDescription className="text-xs md:text-sm">Reserve your seats for upcoming shows</CardDescription>
-                                </CardHeader>
-                            </Card>
-                        </Link>
-                    </div>
                 </div>
             </section>
 
