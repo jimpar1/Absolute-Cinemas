@@ -71,7 +71,7 @@ export default function Navigation() {
 	}
 
     return (
-        <nav className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
+        <nav className="sticky top-0 z-40 w-full bg-background/70 backdrop-blur">
             {/* LAYOUT FIX:
                - Mobile: 'flex' with 'justify-between' puts Logo left and Menu right.
                - Desktop: 'lg:grid' with 'grid-cols-3' creates 3 equal slots.

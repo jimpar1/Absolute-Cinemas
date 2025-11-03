@@ -15,7 +15,6 @@ import {
     Film,
     Play,
     Calendar,
-    Heart,
     Bookmark,
     Search,
     X,
@@ -58,15 +57,11 @@ export default function Movies() {
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedGenres, setSelectedGenres] = useState([])
     const [showFilters, setShowFilters] = useState(false)
-    const [activeTab, setActiveTab] = useState("all")
+    const [activeTab, setActiveTab] = useState("now-playing")
 
     // Watchlist and Favorites (would normally come from global state/API)
     const [watchlist] = useState(() => {
         const saved = localStorage.getItem('watchlist')
-        return saved ? JSON.parse(saved) : []
-    })
-    const [favorites] = useState(() => {
-        const saved = localStorage.getItem('favorites')
         return saved ? JSON.parse(saved) : []
     })
 
@@ -90,10 +85,6 @@ export default function Movies() {
     useEffect(() => {
         localStorage.setItem('watchlist', JSON.stringify(watchlist))
     }, [watchlist])
-
-    useEffect(() => {
-        localStorage.setItem('favorites', JSON.stringify(favorites))
-    }, [favorites])
 
     // Toggle genre selection
     const toggleGenre = (genre) => {
@@ -131,11 +122,9 @@ export default function Movies() {
     // Get movies by status
     const nowPlayingMovies = filterMovies(movies.filter(m => m.status === 'now_playing' || !m.status))
     const upcomingMovies = filterMovies(movies.filter(m => m.status === 'upcoming'))
-    const allMovies = filterMovies(movies)
 
-    // Get watchlist/favorites movies
+    // Get watchlist movies
     const watchlistMovies = filterMovies(movies.filter(m => watchlist.includes(m.id)))
-    const favoritesMovies = filterMovies(movies.filter(m => favorites.includes(m.id)))
 
     const hasActiveFilters = searchQuery !== "" || selectedGenres.length > 0
 
@@ -295,11 +284,7 @@ export default function Movies() {
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <div className="flex justify-center mb-6">
-                    <TabsList className="grid w-full max-w-2xl grid-cols-5 h-auto">
-                        <TabsTrigger value="all" className="gap-1 text-xs sm:text-sm py-2">
-                            <Film className="h-3 w-3 sm:h-4 sm:w-4 hidden sm:block" />
-                            All
-                        </TabsTrigger>
+                    <TabsList className="grid w-full max-w-2xl grid-cols-3 h-auto">
                         <TabsTrigger value="now-playing" className="gap-1 text-xs sm:text-sm py-2">
                             <Play className="h-3 w-3 sm:h-4 sm:w-4 hidden sm:block" />
                             Now Playing
@@ -312,27 +297,8 @@ export default function Movies() {
                             <Bookmark className="h-3 w-3 sm:h-4 sm:w-4 hidden sm:block" />
                             Watchlist
                         </TabsTrigger>
-                        <TabsTrigger value="favorites" className="gap-1 text-xs sm:text-sm py-2">
-                            <Heart className="h-3 w-3 sm:h-4 sm:w-4 hidden sm:block" />
-                            Favorites
-                        </TabsTrigger>
                     </TabsList>
                 </div>
-
-                {/* All Movies Tab */}
-                <TabsContent value="all">
-                    <div className="mb-4 text-center">
-                        <p className="text-muted-foreground">
-                            Showing {allMovies.length} of {movies.length} movies
-                        </p>
-                    </div>
-                    {renderMovieGrid(
-                        allMovies,
-                        <Film className="h-16 w-16 mx-auto text-muted-foreground mb-4" />,
-                        "No movies found",
-                        "Try adjusting your search or filters"
-                    )}
-                </TabsContent>
 
                 {/* Now Playing Tab */}
                 <TabsContent value="now-playing">
@@ -378,23 +344,7 @@ export default function Movies() {
                         "Add movies to your watchlist to see them here"
                     )}
                 </TabsContent>
-
-                {/* Favorites Tab */}
-                <TabsContent value="favorites">
-                    <div className="mb-4 text-center">
-                        <p className="text-muted-foreground">
-                            {favoritesMovies.length} favorite movies
-                        </p>
-                    </div>
-                    {renderMovieGrid(
-                        favoritesMovies,
-                        <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />,
-                        "No favorites yet",
-                        "Mark movies as favorites to see them here"
-                    )}
-                </TabsContent>
             </Tabs>
         </div>
     )
 }
-
