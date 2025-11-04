@@ -107,12 +107,13 @@ export default function Movies() {
             // Search filter
             const matchesSearch = searchQuery === "" ||
                 movie.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                movie.description?.toLowerCase().includes(searchQuery.toLowerCase())
+                movie.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                movie.overview?.toLowerCase().includes(searchQuery.toLowerCase())
 
-            // Genre filter
+            // Genre filter - movie.genre is a string like "Action, Adventure"
             const matchesGenre = selectedGenres.length === 0 ||
                 selectedGenres.some(genre =>
-                    movie.genres?.some(g => g.toLowerCase() === genre.toLowerCase())
+                    movie.genre?.toLowerCase().includes(genre.toLowerCase())
                 )
 
             return matchesSearch && matchesGenre
@@ -120,8 +121,8 @@ export default function Movies() {
     }
 
     // Get movies by status
-    const nowPlayingMovies = filterMovies(movies.filter(m => m.status === 'now_playing' || !m.status))
-    const upcomingMovies = filterMovies(movies.filter(m => m.status === 'upcoming'))
+    const nowPlayingMovies = filterMovies(movies.filter(m => m.type === 'now_playing' || !m.type))
+    const upcomingMovies = filterMovies(movies.filter(m => m.type === 'upcoming'))
 
     // Get watchlist movies
     const watchlistMovies = filterMovies(movies.filter(m => watchlist.includes(m.id)))
