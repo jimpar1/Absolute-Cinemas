@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useReservation } from "@/context/ReservationContext"
 import {
     Film,
     Play,
@@ -59,11 +60,8 @@ export default function Movies() {
     const [showFilters, setShowFilters] = useState(false)
     const [activeTab, setActiveTab] = useState("now-playing")
 
-    // Watchlist and Favorites (would normally come from global state/API)
-    const [watchlist] = useState(() => {
-        const saved = localStorage.getItem('watchlist')
-        return saved ? JSON.parse(saved) : []
-    })
+    // Get watchlist from global context
+    const { savedMovies } = useReservation()
 
     useEffect(() => {
         const fetchData = async () => {
@@ -81,10 +79,6 @@ export default function Movies() {
         fetchData()
     }, [])
 
-    // Save watchlist/favorites to localStorage
-    useEffect(() => {
-        localStorage.setItem('watchlist', JSON.stringify(watchlist))
-    }, [watchlist])
 
     // Toggle genre selection
     const toggleGenre = (genre) => {
@@ -124,8 +118,8 @@ export default function Movies() {
     const nowPlayingMovies = filterMovies(movies.filter(m => m.type === 'now_playing' || !m.type))
     const upcomingMovies = filterMovies(movies.filter(m => m.type === 'upcoming'))
 
-    // Get watchlist movies
-    const watchlistMovies = filterMovies(movies.filter(m => watchlist.includes(m.id)))
+    // Get watchlist movies - use savedMovies from context
+    const watchlistMovies = filterMovies(savedMovies)
 
     const hasActiveFilters = searchQuery !== "" || selectedGenres.length > 0
 
