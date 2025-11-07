@@ -211,9 +211,9 @@ export default function Navigation() {
                                                         key={movie.id}
                                                         className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group relative"
                                                     >
-                                                        {movie.poster_path ? (
+                                                        {movie.poster_url ? (
                                                             <img
-                                                                src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
+                                                                src={movie.poster_url}
                                                                 alt={movie.title}
                                                                 className="w-10 h-14 object-cover rounded"
                                                             />
