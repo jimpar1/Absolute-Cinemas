@@ -11,11 +11,13 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { Star, Clock, Calendar, Heart, Plus, Play, Users, Image, ChevronLeft, ChevronRight, CalendarDays, CalendarRange } from "lucide-react"
+import { Star, Clock, Calendar, Play, Users, Image, ChevronLeft, ChevronRight, CalendarDays, CalendarRange, Bookmark, ExternalLink } from "lucide-react"
+import { useReservation } from "@/context/ReservationContext"
 
 export default function MovieDetails() {
     const { id } = useParams()
     const { toast } = useToast()
+    const { savedMovies, addSavedMovie, removeSavedMovie } = useReservation()
     const [movie, setMovie] = useState(null)
     const [screenings, setScreenings] = useState([])
     const [loading, setLoading] = useState(true)
@@ -31,6 +33,8 @@ export default function MovieDetails() {
     const [currentMonth, setCurrentMonth] = useState(new Date())
     const castSliderRef = useRef(null)
     const [canScrollCast, setCanScrollCast] = useState(false)
+
+    const isInWatchlist = movie ? savedMovies.some(m => m.id === movie.id) : false
 
     useEffect(() => {
         const fetchData = async () => {
@@ -53,18 +57,29 @@ export default function MovieDetails() {
         fetchData()
     }, [id])
 
-    const handleAddToWatchlist = () => {
-        toast({
-            title: "Added to Watchlist",
-            description: `${movie.title} has been added to your watchlist.`,
-        })
+    const handleToggleWatchlist = () => {
+        if (isInWatchlist) {
+            removeSavedMovie(movie.id)
+            toast({
+                title: "Removed from Watchlist",
+                description: `${movie.title} has been removed from your watchlist.`,
+            })
+        } else {
+            addSavedMovie(movie)
+            toast({
+                title: "Added to Watchlist",
+                description: `${movie.title} has been added to your watchlist.`,
+            })
+        }
     }
 
-    const handleAddToFavorites = () => {
-        toast({
-            title: "Added to Favorites",
-            description: `${movie.title} has been added to your favorites.`,
-        })
+    const handleOpenTmdb = () => {
+        if (movie.tmdb_id) {
+            window.open(`https://www.themoviedb.org/movie/${movie.tmdb_id}`, '_blank')
+        } else {
+            // Fallback to search if no tmdb_id
+            window.open(`https://www.themoviedb.org/search?query=${encodeURIComponent(movie.title)}`, '_blank')
+        }
     }
 
     const getYouTubeVideoId = (url) => {
@@ -520,19 +535,19 @@ export default function MovieDetails() {
                             <CardContent className="space-y-2">
                                 <Button 
                                     className="w-full gap-2" 
-                                    variant="outline"
-                                    onClick={handleAddToWatchlist}
+                                    variant={isInWatchlist ? "default" : "outline"}
+                                    onClick={handleToggleWatchlist}
                                 >
-                                    <Heart className="h-4 w-4" />
-                                    Add to Watchlist
+                                    <Bookmark className={`h-4 w-4 ${isInWatchlist ? 'fill-current' : ''}`} />
+                                    {isInWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
                                 </Button>
-                                <Button 
-                                    className="w-full gap-2" 
+                                <Button
+                                    className="w-full gap-2"
                                     variant="outline"
-                                    onClick={handleAddToFavorites}
+                                    onClick={handleOpenTmdb}
                                 >
-                                    <Plus className="h-4 w-4" />
-                                    Add to Favorites
+                                    <ExternalLink className="h-4 w-4" />
+                                    View on TMDB
                                 </Button>
                             </CardContent>
                         </Card>

@@ -3,12 +3,34 @@
 */
 
 import { Link } from "react-router-dom"
-import { Star, Clock, Play, Users, Image } from "lucide-react"
+import { Star, Clock, Play, Users, Image, Bookmark, ExternalLink } from "lucide-react"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { useReservation } from "@/context/ReservationContext"
 
 export default function MovieCard({ movie }) {
+    const { savedMovies, addSavedMovie, removeSavedMovie } = useReservation()
+    const isInWatchlist = savedMovies.some(m => m.id === movie.id)
+
+    const handleWatchlistClick = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (isInWatchlist) {
+            removeSavedMovie(movie.id)
+        } else {
+            addSavedMovie(movie)
+        }
+    }
+
+    const handleTmdbClick = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (movie.tmdb_id) {
+            window.open(`https://www.themoviedb.org/movie/${movie.tmdb_id}`, '_blank')
+        }
+    }
+
     return (
         <Link to={`/movies/${movie.id}`}>
             <Card className="group overflow-hidden transition-all hover:shadow-lg hover:shadow-primary/20 hover:scale-[1.02] duration-300 flex flex-col h-full">
@@ -72,10 +94,27 @@ export default function MovieCard({ movie }) {
                         )}
                     </div>
                 </CardContent>
-                <CardFooter className="p-4 pt-0">
-                    <Button variant="secondary" size="sm" className="w-full">
-                        View Details
+                <CardFooter className="p-4 pt-0 gap-2">
+                    <Button
+                        variant={isInWatchlist ? "default" : "outline"}
+                        size="sm"
+                        className="flex-1"
+                        onClick={handleWatchlistClick}
+                    >
+                        <Bookmark className={`h-4 w-4 mr-1 ${isInWatchlist ? 'fill-current' : ''}`} />
+                        {isInWatchlist ? 'Saved' : 'Watchlist'}
                     </Button>
+                    {movie.tmdb_id && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            className="flex-1"
+                            onClick={handleTmdbClick}
+                        >
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            TMDB
+                        </Button>
+                    )}
                 </CardFooter>
             </Card>
         </Link>
