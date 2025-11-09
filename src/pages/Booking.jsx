@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft, Ticket, CreditCard, User, Check } from "lucide-react"
 import { useReservation } from "@/context/ReservationContext"
+import { getScreening } from "@/api/movies"
 
 // ============================================
 // LOCAL VARIABLES - Replace with backend API later
@@ -43,35 +44,22 @@ const MOCK_HALL_LAYOUT = {
     // Occupied/booked seats (would come from backend)
     occupiedSeats: ['A1', 'A2', 'B5', 'B6', 'C7', 'D10', 'E5', 'E6', 'F12', 'G4', 'H1', 'H11'],
 
-    // Price per seat
-    pricePerSeat: 14
+    // Price per seat - will be fetched from API
+    pricePerSeat: 0
 }
 
+const DEFAULT_PRICE = 14
+
 export default function Booking() {
-    const { id } = useParams()
+    const { id } = useParams() // this id is a screening id
     const { toast } = useToast()
     const { addReservation, clearMovieReservations, reservations } = useReservation()
 
-    // Mock screening data based on ID
-    const screening = {
-        id,
-        movieTitle: "Sample Movie",
-        date: "Dec 20, 2025",
-        time: "19:30",
-        hall: "Hall 1",
-        price: 14
-    }
-
-    // Initialize selectedSeats from existing reservation if any
-    const getInitialSeats = () => {
-        const existingReservation = reservations.find(
-            r => r.movieId === id && r.screeningDate === screening.date && r.screeningTime === screening.time
-        )
-        return existingReservation?.seats || []
-    }
-
+    const [screening, setScreening] = useState(null)
+    const [screeningLoading, setScreeningLoading] = useState(true)
+    const [moviePrice, setMoviePrice] = useState(null)
     const [step, setStep] = useState(1) // 1: Seats, 2: Details, 3: Payment, 4: Confirmation
-    const [selectedSeats, setSelectedSeats] = useState(getInitialSeats)
+    const [selectedSeats, setSelectedSeats] = useState([])
     const [loading, setLoading] = useState(true)
     const [hallLayout, setHallLayout] = useState(null)
     const [formData, setFormData] = useState({
@@ -82,28 +70,83 @@ export default function Booking() {
         cvv: ""
     })
 
+    // Fetch screening to get correct movie, hall, time and price
+    useEffect(() => {
+        const fetchScreening = async () => {
+            setScreeningLoading(true)
+            try {
+                const data = await getScreening(id)
+
+                const screeningDate = data?.start_time ? new Date(data.start_time) : null
+                const formattedDate = screeningDate
+                    ? screeningDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : "TBD"
+                const formattedTime = screeningDate
+                    ? screeningDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                    : "--:--"
+
+                setScreening({
+                    id: data?.id || id,
+                    movieTitle: data?.movie_title || data?.movie?.title || "Sample Movie",
+                    date: formattedDate,
+                    time: formattedTime,
+                    hall: data?.hall_name || data?.hall || "Hall 1",
+                    movieId: data?.movie || data?.movie_id || null,
+                })
+
+                const parsedPrice = Number(data?.price_per_seat ?? data?.price ?? data?.ticket_price ?? data?.movie?.price)
+                setMoviePrice(Number.isFinite(parsedPrice) ? parsedPrice : DEFAULT_PRICE)
+            } catch (error) {
+                console.error("Error fetching screening:", error)
+                setScreening({
+                    id,
+                    movieTitle: "Sample Movie",
+                    date: "Dec 20, 2025",
+                    time: "19:30",
+                    hall: "Hall 1",
+                    movieId: null,
+                })
+                setMoviePrice(DEFAULT_PRICE)
+            } finally {
+                setScreeningLoading(false)
+            }
+        }
+
+        fetchScreening()
+    }, [id])
+
+    // Initialize selectedSeats from existing reservation if any
+    useEffect(() => {
+        if (!screening) return
+        const existingReservation = reservations.find(
+            r => r.movieId === screening.id && r.screeningDate === screening.date && r.screeningTime === screening.time
+        )
+        setSelectedSeats(existingReservation?.seats || [])
+    }, [reservations, screening])
+
 
     // Simulate loading from backend
     useEffect(() => {
+        if (moviePrice === null) return
+
         const fetchHallLayout = async () => {
             setLoading(true)
-            // Simulate API call delay
             await new Promise(resolve => setTimeout(resolve, 500))
 
-            // TODO: Replace with actual API call
-            // const response = await fetch(`/api/screenings/${id}/layout`)
-            // const data = await response.json()
-            // setHallLayout(data)
-
-            setHallLayout(MOCK_HALL_LAYOUT)
+            setHallLayout({
+                ...MOCK_HALL_LAYOUT,
+                pricePerSeat: Number.isFinite(moviePrice) ? moviePrice : DEFAULT_PRICE
+            })
             setLoading(false)
         }
 
         fetchHallLayout()
-    }, [id])
+    }, [moviePrice])
 
     const toggleSeat = (seat) => {
         if (!hallLayout || hallLayout.occupiedSeats.includes(seat)) return
+        if (!screening) return
+
         setSelectedSeats(prev => {
             const newSeats = prev.includes(seat)
                 ? prev.filter(s => s !== seat)
@@ -112,7 +155,7 @@ export default function Booking() {
             // Update reservation in context (this starts/updates the timer)
             if (newSeats.length > 0) {
                 addReservation(
-                    id,
+                    screening.id,
                     screening.movieTitle,
                     newSeats,
                     screening.date,
@@ -133,8 +176,8 @@ export default function Booking() {
     }
 
     const handleSubmit = () => {
-        // Clear reservations for this screening after successful booking
-        clearMovieReservations(id, screening.date, screening.time)
+        if (!screening) return
+        clearMovieReservations(screening.id, screening.date, screening.time)
 
         toast({
             title: "Booking Confirmed! 🎉",
@@ -143,7 +186,8 @@ export default function Booking() {
         setStep(4)
     }
 
-    const totalPrice = selectedSeats.length * (hallLayout?.pricePerSeat || screening.price)
+    const pricePerSeat = hallLayout?.pricePerSeat ?? moviePrice ?? DEFAULT_PRICE
+    const totalPrice = selectedSeats.length * pricePerSeat
 
     // Render a single section of seats
     const renderSection = (sectionKey, section, row) => {
@@ -223,6 +267,15 @@ export default function Booking() {
             })}
         </div>
     )
+
+    if (screeningLoading || !screening) {
+        return (
+            <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+                <Skeleton className="h-8 w-48 mb-3" />
+                <Skeleton className="h-4 w-64" />
+            </div>
+        )
+    }
 
     return (
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">

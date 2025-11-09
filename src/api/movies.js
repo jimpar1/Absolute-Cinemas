@@ -19,6 +19,11 @@ export async function getMovieScreenings(id) {
     return res.json();
 }
 
+export async function getScreening(screeningId) {
+    const res = await fetch(`http://127.0.0.1:8000/api/screenings/${screeningId}/`);
+    return res.json();
+}
+
 export async function createMovie(data) {
     const res = await fetch(API, {
         method: "POST",
