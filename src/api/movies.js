@@ -72,3 +72,44 @@ export async function getTMDBDetails(movieId) {
     const res = await fetch(`${API}tmdb_details/?movie_id=${movieId}`);
     return res.json();
 }
+
+// Booking functions
+export async function createBooking(bookingData) {
+    const res = await fetch(`http://127.0.0.1:8000/api/bookings/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookingData),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+        console.error("Booking API error:", {status: res.status, data})
+        throw new Error(data.detail || data.error || JSON.stringify(data) || "Booking failed")
+    }
+    return data;
+}
+
+export async function getScreeningBookings(screeningId) {
+    const res = await fetch(`http://127.0.0.1:8000/api/screenings/${screeningId}/bookings/`);
+    const data = await res.json();
+    console.log("Raw bookings data from API:", data);
+    
+    // Extract all seat numbers from bookings
+    const bookedSeats = [];
+    
+    // Handle both array and paginated response
+    const bookings = Array.isArray(data) ? data : (data.results || []);
+    console.log("Bookings array:", bookings);
+    
+    bookings.forEach(booking => {
+        console.log("Processing booking:", booking);
+        if (booking.seat_numbers) {
+            // seat_numbers is a string like "A1,A2,B5"
+            const seats = booking.seat_numbers.split(',').map(s => s.trim());
+            console.log("Extracted seats:", seats);
+            bookedSeats.push(...seats);
+        }
+    });
+    
+    console.log("Final booked seats:", bookedSeats);
+    return bookedSeats;
+}
