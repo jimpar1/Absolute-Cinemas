@@ -12,26 +12,29 @@ import MovieDetails from "./pages/MovieDetails"
 import Booking from "./pages/Booking"
 import AboutUs from "./pages/AboutUs"
 import { ReservationProvider } from "./context/ReservationContext"
+import { AuthProvider } from "./context/AuthContext"
 
 export default function App() {
     return (
         <BrowserRouter>
-            <ReservationProvider>
-                <Navigation />
-                <div className="min-h-screen flex flex-col">
-                    <main className="flex-grow mx-auto max-w-7xl w-full">
-                        <Routes>
-                            <Route path="/" element={<Home />} />
-                            <Route path="/movies" element={<Movies />} />
-                            <Route path="/movies/:id" element={<MovieDetails />} />
-                            <Route path="/booking/:id" element={<Booking />} />
-                            <Route path="/about" element={<AboutUs />} />
-                        </Routes>
-                    </main>
-                    <Footer />
-                </div>
-                <Toaster />
-            </ReservationProvider>
+            <AuthProvider>
+                <ReservationProvider>
+                    <Navigation />
+                    <div className="min-h-screen flex flex-col">
+                        <main className="flex-grow mx-auto max-w-7xl w-full">
+                            <Routes>
+                                <Route path="/" element={<Home />} />
+                                <Route path="/movies" element={<Movies />} />
+                                <Route path="/movies/:id" element={<MovieDetails />} />
+                                <Route path="/booking/:id" element={<Booking />} />
+                                <Route path="/about" element={<AboutUs />} />
+                            </Routes>
+                        </main>
+                        <Footer />
+                    </div>
+                    <Toaster />
+                </ReservationProvider>
+            </AuthProvider>
         </BrowserRouter>
     )
 }

@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Menu, Film, Home, Info, Inbox, X, Clock, Bookmark, Armchair, Trash2 } from "lucide-react"
+import { Menu, Film, Home, Info, Inbox, X, Clock, Bookmark, Armchair, Trash2, LogOut, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { useReservation } from "@/context/ReservationContext"
+import { useAuth } from "@/context/AuthContext"
+import LoginDialog from "./LoginDialog"
+import RegisterDialog from "./RegisterDialog"
 
 const navItems = [
     { name: "Home", path: "/", icon: Home },
@@ -35,8 +38,11 @@ function ReservationTimer({ expiresAt, getTimeRemaining }) {
 export default function Navigation() {
     const [open, setOpen] = useState(false)
     const [inboxOpen, setInboxOpen] = useState(false)
+    const [loginOpen, setLoginOpen] = useState(false)
+    const [registerOpen, setRegisterOpen] = useState(false)
     const location = useLocation()
     const { reservations, savedMovies, removeReservation, removeSavedMovie, getTimeRemaining, totalItems } = useReservation()
+    const { user, logout } = useAuth()
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -97,6 +103,43 @@ export default function Navigation() {
 
                 {/* 3. Right Slot: Actions (End aligned) */}
                 <div className="flex items-center justify-end gap-2">
+                    {/* User Menu / Login */}
+                    {user ? (
+                        <div className="flex items-center gap-2">
+                            <div className="hidden sm:flex items-center gap-1 px-3 py-2 rounded-md text-sm text-muted-foreground">
+                                <User className="h-4 w-4" />
+                                <span className="text-xs">{user.name}</span>
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={logout}
+                                className="flex items-center gap-1 text-xs sm:text-sm"
+                            >
+                                <LogOut className="h-4 w-4" />
+                                <span className="hidden sm:inline">Logout</span>
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <Button
+                                onClick={() => setLoginOpen(true)}
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs sm:text-sm"
+                            >
+                                Login
+                            </Button>
+                            <Button
+                                onClick={() => setRegisterOpen(true)}
+                                variant="default"
+                                size="sm"
+                                className="text-xs sm:text-sm"
+                            >
+                                Sign Up
+                            </Button>
+                        </div>
+                    )}
 
                     {/* Mobile Menu */}
                     <Sheet open={open} onOpenChange={setOpen}>
@@ -268,6 +311,12 @@ export default function Navigation() {
                     </div>
                 </div>
             </div>
+
+            {/* Login Dialog */}
+            <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
+
+            {/* Register Dialog */}
+            <RegisterDialog open={registerOpen} onOpenChange={setRegisterOpen} />
         </nav>
     )
 }
