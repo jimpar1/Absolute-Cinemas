@@ -4,13 +4,13 @@ A modern, responsive cinema booking application built with React, Vite, and shad
 
 ## Features
 
-### 🎬 Core Features
+### Core Features
 - **Browse Movies**: Grid view of all available movies with poster images, ratings, and genres
 - **Movie Details**: Detailed movie pages with backdrop images, metadata, cast info, and booking options
 - **Screenings**: View all available screenings with dates, times, and halls
 - **Booking System**: Complete booking flow with customer information and seat selection
 
-### 🔍 Discovery & Navigation
+### Discovery & Navigation
 - **Discover**: Advanced search with debounced input, genre filters, and sort options
 - **Now Playing**: Currently showing movies in theaters
 - **Upcoming**: Release calendar with movies grouped by month
@@ -18,7 +18,7 @@ A modern, responsive cinema booking application built with React, Vite, and shad
 - **Watchlist & Favorites**: Save movies for later (client-side)
 - **Profile**: User account management with statistics and preferences
 
-### 🎨 Design & UX
+### Design & UX
 - **Modern UI**: Built with shadcn/ui components for consistent, beautiful design
 - **Dark Theme**: Eye-friendly dark color scheme optimized for cinema content
 - **Responsive**: Mobile-first design that works on all screen sizes
@@ -27,7 +27,7 @@ A modern, responsive cinema booking application built with React, Vite, and shad
 - **Empty States**: Helpful messages when no content is available
 - **Hover Effects**: Interactive card animations and transitions
 
-### 📱 Responsive Navigation
+### Responsive Navigation
 - **Desktop**: Top navigation bar with all main sections
 - **Mobile**: Drawer/sheet navigation with hamburger menu
 - **Active States**: Visual indication of current page
