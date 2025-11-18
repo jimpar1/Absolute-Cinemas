@@ -2,17 +2,17 @@
 Αυτή η σελίδα επιτρέπει στους χρήστες να κάνουν κράτηση εισιτηρίων για μια προβολή.
 */
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, Ticket, CreditCard, User, Check } from "lucide-react"
+import { ArrowLeft, Ticket, Check } from "lucide-react"
 import { useReservation } from "@/context/ReservationContext"
-import { getScreening, getScreeningBookings, createBooking } from "@/api/movies"
+import { getScreening, getScreeningBookings, createBooking, lockSeats, unlockSeats, getLockedSeats } from "@/api/movies"
 
 // ============================================
 // LOCAL VARIABLES - Replace with backend API later
@@ -40,11 +40,53 @@ export default function Booking() {
     const [screening, setScreening] = useState(null)
     const [screeningLoading, setScreeningLoading] = useState(true)
     const [moviePrice, setMoviePrice] = useState(null)
-    const [step, setStep] = useState(1) 
+    const [step, setStep] = useState(1)
     const [selectedSeats, setSelectedSeats] = useState([])
-    const [loading, setLoading] = useState(true)
     const [hallLayout, setHallLayout] = useState(null)
     const [bookingSummary, setBookingSummary] = useState(null) // Snaphot για το Step 4
+
+    const [sessionId] = useState(() => {
+        let sid = sessionStorage.getItem(`booking_session_${id}`)
+        if (!sid) {
+            sid = crypto.randomUUID()
+            sessionStorage.setItem(`booking_session_${id}`, sid)
+        }
+        return sid
+    })
+
+    const fetchOccupiedData = useCallback(async (currentPrice) => {
+        try {
+            const bookedSeats = await getScreeningBookings(id)
+            const lockedSeatsObj = await getLockedSeats(id)
+
+            const lockedByOthers = Object.entries(lockedSeatsObj)
+                .filter(([, sid]) => sid !== sessionId)
+                .map(([seat]) => seat)
+
+            // Restore my own valid locks
+            const myLockedSeats = Object.entries(lockedSeatsObj)
+                .filter(([, sid]) => sid === sessionId)
+                .map(([seat]) => seat)
+
+            setSelectedSeats(prev => {
+                const uniqueSeats = Array.from(new Set([...prev, ...myLockedSeats]))
+                return uniqueSeats.filter(s => !bookedSeats.includes(s)) // Ensure we don't select already booked ones
+            })
+
+            setHallLayout({
+                ...MOCK_HALL_LAYOUT,
+                pricePerSeat: Number.isFinite(currentPrice) ? currentPrice : DEFAULT_PRICE,
+                occupiedSeats: [...bookedSeats, ...lockedByOthers]
+            })
+        } catch (error) {
+            console.error("Error fetching bookings/locks:", error)
+            setHallLayout({
+                ...MOCK_HALL_LAYOUT,
+                pricePerSeat: Number.isFinite(currentPrice) ? currentPrice : DEFAULT_PRICE,
+                occupiedSeats: []
+            })
+        }
+    }, [id, sessionId])
 
     const [formData, setFormData] = useState({
         name: "",
@@ -97,55 +139,64 @@ export default function Booking() {
         const existingReservation = reservations.find(
             r => r.movieId === screening.id && r.screeningDate === screening.date && r.screeningTime === screening.time
         )
-        setSelectedSeats(existingReservation?.seats || [])
-    }, [reservations, screening, step])
+        if (existingReservation && existingReservation.seats.length > 0 && selectedSeats.length === 0) {
+            // We shouldn't blindly trust persisted context state without a valid lock on the server, 
+            // but the fetchOccupiedData will re-sync our actual valid locks anyway.
+            setSelectedSeats(existingReservation.seats)
+        }
+    }, [reservations, screening, step, selectedSeats.length])
 
     useEffect(() => {
         if (moviePrice === null) return
-        const fetchHallLayout = async () => {
-            setLoading(true)
-            try {
-                // Fetch booked seats from database
-                console.log("Fetching bookings for screening:", id)
-                const bookedSeats = await getScreeningBookings(id)
-                console.log("Booked seats received:", bookedSeats)
-                
-                await new Promise(resolve => setTimeout(resolve, 500))
-                setHallLayout({
-                    ...MOCK_HALL_LAYOUT,
-                    pricePerSeat: Number.isFinite(moviePrice) ? moviePrice : DEFAULT_PRICE,
-                    occupiedSeats: bookedSeats
-                })
-                console.log("Hall layout set with occupied seats:", bookedSeats)
-            } catch (error) {
-                console.error("Error fetching bookings:", error)
-                await new Promise(resolve => setTimeout(resolve, 500))
-                setHallLayout({
-                    ...MOCK_HALL_LAYOUT,
-                    pricePerSeat: Number.isFinite(moviePrice) ? moviePrice : DEFAULT_PRICE,
-                    occupiedSeats: []
-                })
-            } finally {
-                setLoading(false)
-            }
+        fetchOccupiedData(moviePrice)
+
+        // Setup unlock on exit
+        const handleBeforeUnload = () => {
+            const data = JSON.stringify({ session_id: sessionId })
+            navigator.sendBeacon(`http://127.0.0.1:8000/api/screenings/${id}/unlock_seats/`, new Blob([data], { type: 'application/json' }))
         }
-        fetchHallLayout()
-    }, [moviePrice, id])
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [moviePrice, id, sessionId, fetchOccupiedData])
 
     const pricePerSeat = hallLayout?.pricePerSeat ?? moviePrice ?? DEFAULT_PRICE
     const totalPrice = selectedSeats.length * pricePerSeat
 
-    const toggleSeat = (seat) => {
+    const toggleSeat = async (seat) => {
         if (!hallLayout || hallLayout.occupiedSeats.includes(seat)) return
         if (!screening) return
 
-        setSelectedSeats(prev => {
-            const newSeats = prev.includes(seat) ? prev.filter(s => s !== seat) : [...prev, seat]
-            if (newSeats.length > 0) {
-                addReservation(screening.id, screening.movieTitle, newSeats, screening.date, screening.time, hallLayout?.hallName || screening.hall)
+        const isCurrentlySelected = selectedSeats.includes(seat)
+
+        if (!isCurrentlySelected) {
+            try {
+                await lockSeats(id, [seat], sessionId)
+                setSelectedSeats(prev => {
+                    const newSeats = [...prev, seat]
+                    addReservation(screening.id, screening.movieTitle, newSeats, screening.date, screening.time, hallLayout?.hallName || screening.hall)
+                    return newSeats
+                })
+            } catch (error) {
+                console.error("Lock failed:", error)
+                toast({ title: "Seat Unavailable", description: "This seat was just taken or locked by someone else.", variant: "destructive" })
+                fetchOccupiedData(pricePerSeat)
             }
-            return newSeats
-        })
+        } else {
+            try {
+                await unlockSeats(id, [seat], sessionId)
+                setSelectedSeats(prev => {
+                    const newSeats = prev.filter(s => s !== seat)
+                    if (newSeats.length > 0) {
+                        addReservation(screening.id, screening.movieTitle, newSeats, screening.date, screening.time, hallLayout?.hallName || screening.hall)
+                    } else {
+                        clearMovieReservations(screening.id, screening.date, screening.time)
+                    }
+                    return newSeats
+                })
+            } catch (error) {
+                console.error("Unlock failed", error)
+            }
+        }
     }
 
     const handleSubmit = async () => {
@@ -158,14 +209,15 @@ export default function Booking() {
                 customer_phone: formData.phone || "",
                 seats_booked: selectedSeats.length,
                 seat_numbers: selectedSeats.sort().join(','),
+                session_id: sessionId,
                 total_price: totalPrice,
                 status: 'confirmed'
             }
-            
+
             console.log("Sending booking data:", bookingData)
             const response = await createBooking(bookingData)
             console.log("Booking response:", response)
-            
+
             setBookingSummary({
                 seats: [...selectedSeats].sort(),
                 total: totalPrice,
@@ -193,11 +245,10 @@ export default function Booking() {
                             key={seat}
                             onClick={() => toggleSeat(seat)}
                             disabled={isOccupied}
-                            className={`w-6 h-6 sm:w-8 sm:h-8 rounded-t-lg text-xs font-medium transition-all duration-200 ${
-                                isOccupied ? 'bg-gradient-to-b from-red-400 to-red-600 text-red-100 cursor-not-allowed' :
+                            className={`w-6 h-6 sm:w-8 sm:h-8 rounded-t-lg text-xs font-medium transition-all duration-200 ${isOccupied ? 'bg-gradient-to-b from-red-400 to-red-600 text-red-100 cursor-not-allowed' :
                                 isSelected ? 'bg-gradient-to-b from-green-400 to-green-600 text-white hover:scale-110' :
-                                'bg-gradient-to-b from-white to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:scale-110'
-                            }`}
+                                    'bg-gradient-to-b from-white to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:scale-110'
+                                }`}
                         >
                             {seatNumber}
                         </button>
@@ -291,15 +342,15 @@ export default function Booking() {
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label>Full Name</Label>
-                            <Input name="name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                            <Input name="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
                         </div>
                         <div className="space-y-2">
                             <Label>Email</Label>
-                            <Input name="email" type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                            <Input name="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                         </div>
                         <div className="space-y-2">
                             <Label>Phone Number</Label>
-                            <Input name="phone" type="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="6912345678" />
+                            <Input name="phone" type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="6912345678" />
                         </div>
                         <div className="flex gap-3 pt-4">
                             <Button variant="outline" className="w-1/3" onClick={() => setStep(1)}>Back</Button>
@@ -318,10 +369,10 @@ export default function Booking() {
                             <span className="font-medium">Total to pay:</span>
                             <span className="font-bold text-primary">${totalPrice}</span>
                         </div>
-                        <Input placeholder="Card Number" value={formData.cardNumber} onChange={(e) => setFormData({...formData, cardNumber: e.target.value})} />
+                        <Input placeholder="Card Number" value={formData.cardNumber} onChange={(e) => setFormData({ ...formData, cardNumber: e.target.value })} />
                         <div className="grid grid-cols-2 gap-4">
-                            <Input placeholder="MM/YY" value={formData.expiry} onChange={(e) => setFormData({...formData, expiry: e.target.value})} />
-                            <Input placeholder="CVV" value={formData.cvv} onChange={(e) => setFormData({...formData, cvv: e.target.value})} />
+                            <Input placeholder="MM/YY" value={formData.expiry} onChange={(e) => setFormData({ ...formData, expiry: e.target.value })} />
+                            <Input placeholder="CVV" value={formData.cvv} onChange={(e) => setFormData({ ...formData, cvv: e.target.value })} />
                         </div>
                         <div className="flex gap-3 pt-4">
                             <Button variant="outline" className="w-1/3" onClick={() => setStep(2)}>Back</Button>

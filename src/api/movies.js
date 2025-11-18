@@ -82,7 +82,7 @@ export async function createBooking(bookingData) {
     });
     const data = await res.json();
     if (!res.ok) {
-        console.error("Booking API error:", {status: res.status, data})
+        console.error("Booking API error:", { status: res.status, data })
         throw new Error(data.detail || data.error || JSON.stringify(data) || "Booking failed")
     }
     return data;
@@ -92,14 +92,14 @@ export async function getScreeningBookings(screeningId) {
     const res = await fetch(`http://127.0.0.1:8000/api/screenings/${screeningId}/bookings/`);
     const data = await res.json();
     console.log("Raw bookings data from API:", data);
-    
+
     // Extract all seat numbers from bookings
     const bookedSeats = [];
-    
+
     // Handle both array and paginated response
     const bookings = Array.isArray(data) ? data : (data.results || []);
     console.log("Bookings array:", bookings);
-    
+
     bookings.forEach(booking => {
         console.log("Processing booking:", booking);
         if (booking.seat_numbers) {
@@ -109,7 +109,35 @@ export async function getScreeningBookings(screeningId) {
             bookedSeats.push(...seats);
         }
     });
-    
+
     console.log("Final booked seats:", bookedSeats);
     return bookedSeats;
 }
+
+export async function lockSeats(screeningId, seatNumbers, sessionId) {
+    const res = await fetch(`http://127.0.0.1:8000/api/screenings/${screeningId}/lock_seats/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seat_numbers: seatNumbers, session_id: sessionId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to lock seats");
+    return data;
+}
+
+export async function unlockSeats(screeningId, seatNumbers, sessionId) {
+    const res = await fetch(`http://127.0.0.1:8000/api/screenings/${screeningId}/unlock_seats/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seat_numbers: seatNumbers, session_id: sessionId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to unlock seats");
+    return data;
+}
+
+export async function getLockedSeats(screeningId) {
+    const res = await fetch(`http://127.0.0.1:8000/api/screenings/${screeningId}/locked_seats/`);
+    return res.json(); // returns { "A1": "session_id", "A2": "session_id" }
+}
+
