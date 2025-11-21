@@ -115,8 +115,8 @@ export default function Movies() {
     }
 
     // Get movies by status
-    const nowPlayingMovies = filterMovies(movies.filter(m => m.type === 'now_playing' || !m.type))
-    const upcomingMovies = filterMovies(movies.filter(m => m.type === 'upcoming'))
+    const nowPlayingMovies = filterMovies(movies.filter(m => m.status === 'now_playing' || !m.status))
+    const upcomingMovies = filterMovies(movies.filter(m => m.status === 'upcoming'))
 
     // Get watchlist movies - use savedMovies from context
     const watchlistMovies = filterMovies(savedMovies)
