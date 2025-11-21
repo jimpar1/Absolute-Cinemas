@@ -14,22 +14,6 @@ import { ArrowLeft, Ticket, Check } from "lucide-react"
 import { useReservation } from "@/context/ReservationContext"
 import { getScreening, getScreeningBookings, createBooking, lockSeats, unlockSeats, getLockedSeats } from "@/api/movies"
 
-// ============================================
-// LOCAL VARIABLES - Replace with backend API later
-// ============================================
-const MOCK_HALL_LAYOUT = {
-    hallName: "Hall 1",
-    rows: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
-    sections: {
-        left: { enabled: true, seatsPerRow: 3, startSeat: 1 },
-        middle: { enabled: true, seatsPerRow: 6, startSeat: 4 },
-        right: { enabled: true, seatsPerRow: 3, startSeat: 10 }
-    },
-    occupiedSeats: [],
-    pricePerSeat: 0
-}
-
-const DEFAULT_PRICE = 14
 
 export default function Booking() {
     const { id } = useParams()
@@ -54,7 +38,8 @@ export default function Booking() {
         return sid
     })
 
-    const fetchOccupiedData = useCallback(async (currentPrice) => {
+    const fetchOccupiedData = useCallback(async (currentPrice, currentLayout) => {
+        if (!currentLayout) return
         try {
             const bookedSeats = await getScreeningBookings(id)
             const lockedSeatsObj = await getLockedSeats(id)
@@ -74,15 +59,15 @@ export default function Booking() {
             })
 
             setHallLayout({
-                ...MOCK_HALL_LAYOUT,
-                pricePerSeat: Number.isFinite(currentPrice) ? currentPrice : DEFAULT_PRICE,
+                ...currentLayout,
+                pricePerSeat: Number.isFinite(currentPrice) ? currentPrice : 0,
                 occupiedSeats: [...bookedSeats, ...lockedByOthers]
             })
         } catch (error) {
             console.error("Error fetching bookings/locks:", error)
             setHallLayout({
-                ...MOCK_HALL_LAYOUT,
-                pricePerSeat: Number.isFinite(currentPrice) ? currentPrice : DEFAULT_PRICE,
+                ...currentLayout,
+                pricePerSeat: Number.isFinite(currentPrice) ? currentPrice : 0,
                 occupiedSeats: []
             })
         }
@@ -117,16 +102,17 @@ export default function Booking() {
                     time: formattedTime,
                     hall: data?.hall_name || data?.hall || "Hall 1",
                     movieId: data?.movie || data?.movie_id || null,
+                    layout: data?.hall_layout || null,
                 })
 
                 const parsedPrice = Number(data?.price_per_seat ?? data?.price ?? data?.ticket_price ?? data?.movie?.price)
-                setMoviePrice(Number.isFinite(parsedPrice) ? parsedPrice : DEFAULT_PRICE)
+                setMoviePrice(Number.isFinite(parsedPrice) ? parsedPrice : 0)
             } catch (error) {
                 console.error("Error fetching screening:", error)
                 setScreening({
-                    id, movieTitle: "Sample Movie", date: "Dec 20, 2025", time: "19:30", hall: "Hall 1", movieId: null,
+                    id, movieTitle: "Unknown", date: "—", time: "—", hall: "—", movieId: null, layout: null
                 })
-                setMoviePrice(DEFAULT_PRICE)
+                setMoviePrice(0)
             } finally {
                 setScreeningLoading(false)
             }
@@ -147,8 +133,8 @@ export default function Booking() {
     }, [reservations, screening, step, selectedSeats.length])
 
     useEffect(() => {
-        if (moviePrice === null) return
-        fetchOccupiedData(moviePrice)
+        if (moviePrice === null || !screening) return
+        fetchOccupiedData(moviePrice, screening.layout)
 
         // Setup unlock on exit
         const handleBeforeUnload = () => {
@@ -157,9 +143,9 @@ export default function Booking() {
         }
         window.addEventListener('beforeunload', handleBeforeUnload)
         return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-    }, [moviePrice, id, sessionId, fetchOccupiedData])
+    }, [moviePrice, id, sessionId, fetchOccupiedData, screening])
 
-    const pricePerSeat = hallLayout?.pricePerSeat ?? moviePrice ?? DEFAULT_PRICE
+    const pricePerSeat = hallLayout?.pricePerSeat ?? moviePrice ?? 0
     const totalPrice = selectedSeats.length * pricePerSeat
 
     const toggleSeat = async (seat) => {
@@ -179,7 +165,7 @@ export default function Booking() {
             } catch (error) {
                 console.error("Lock failed:", error)
                 toast({ title: "Seat Unavailable", description: "This seat was just taken or locked by someone else.", variant: "destructive" })
-                fetchOccupiedData(pricePerSeat)
+                fetchOccupiedData(pricePerSeat, screening.layout)
             }
         } else {
             try {
@@ -231,11 +217,16 @@ export default function Booking() {
         }
     }
 
-    const renderSection = (sectionKey, section, row) => {
+    const renderSection = (sectionKey, section, row, rowIndex) => {
         if (!section.enabled) return null
         return (
             <div key={sectionKey} className="flex gap-1 sm:gap-1.5">
                 {Array.from({ length: section.seatsPerRow }, (_, i) => {
+                    const seatIndexInTier = (rowIndex * section.seatsPerRow) + i;
+                    if (section.maxSeats && seatIndexInTier >= section.maxSeats) {
+                        return <div key={`empty-${row}-${i}`} className="w-6 h-6 sm:w-8 sm:h-8" />;
+                    }
+
                     const seatNumber = section.startSeat + i
                     const seat = `${row}${seatNumber}`
                     const isOccupied = hallLayout.occupiedSeats.includes(seat)
@@ -245,9 +236,9 @@ export default function Booking() {
                             key={seat}
                             onClick={() => toggleSeat(seat)}
                             disabled={isOccupied}
-                            className={`w-6 h-6 sm:w-8 sm:h-8 rounded-t-lg text-xs font-medium transition-all duration-200 ${isOccupied ? 'bg-gradient-to-b from-red-400 to-red-600 text-red-100 cursor-not-allowed' :
-                                isSelected ? 'bg-gradient-to-b from-green-400 to-green-600 text-white hover:scale-110' :
-                                    'bg-gradient-to-b from-white to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:scale-110'
+                            className={`w-6 h-6 sm:w-8 sm:h-8 rounded-t-lg text-xs font-medium transition-all duration-200 ${isOccupied ? 'bg-linear-to-b from-red-400 to-red-600 text-red-100 cursor-not-allowed' :
+                                isSelected ? 'bg-linear-to-b from-green-400 to-green-600 text-white hover:scale-110' :
+                                    'bg-linear-to-b from-white to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:scale-110'
                                 }`}
                         >
                             {seatNumber}
@@ -261,7 +252,7 @@ export default function Booking() {
     if (screeningLoading || !screening) return <div className="p-10 text-center"><Skeleton className="h-10 w-64 mx-auto" /></div>
 
     return (
-        <div className="w-full max-w-5xl mx-auto px-4 py-6 md:py-8">
+        <div className="w-full max-w-7xl mx-auto px-4 py-6 md:py-8">
             <Link to="/movies" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
                 <ArrowLeft className="h-4 w-4" /> Back to Movies
             </Link>
@@ -298,25 +289,30 @@ export default function Booking() {
                             </div>
 
                             {/* The 3D Curved Grid */}
-                            <div className="w-full overflow-x-auto pb-10">
-                                <div className="flex flex-col items-center gap-2 min-w-max" style={{ transform: 'rotateX(25deg)', transformStyle: 'preserve-3d' }}>
-                                    {hallLayout && hallLayout.rows.map((row, rowIndex) => {
-                                        const middleIndex = (hallLayout.rows.length - 1) / 2
-                                        const curve = Math.pow(Math.abs(rowIndex - middleIndex), 1.8) * 8
-                                        const scale = 0.85 + (rowIndex / hallLayout.rows.length) * 0.15
-                                        return (
-                                            <div key={row} className="flex items-center gap-3" style={{ paddingLeft: `${curve}px`, paddingRight: `${curve}px`, transform: `scale(${scale}) translateZ(${rowIndex * 5}px)` }}>
-                                                <span className="w-6 text-[10px] font-bold text-muted-foreground">{row}</span>
-                                                {renderSection('left', hallLayout.sections.left, row)}
-                                                <div className="w-4" />
-                                                {renderSection('middle', hallLayout.sections.middle, row)}
-                                                <div className="w-4" />
-                                                {renderSection('right', hallLayout.sections.right, row)}
-                                                <span className="w-6 text-[10px] font-bold text-muted-foreground">{row}</span>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
+                            <div className="w-full overflow-x-auto pb-10 flex flex-col items-center">
+                                {hallLayout && (hallLayout.tiers ? hallLayout.tiers : [{ name: 'Main', rows: hallLayout.rows || [], sections: hallLayout.sections }]).map((tier) => (
+                                    <div key={tier.name} className="flex flex-col items-center gap-2 min-w-max mb-6" style={{ transform: 'rotateX(25deg)', transformStyle: 'preserve-3d' }}>
+                                        {tier.name !== 'Main' && (
+                                            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold mb-4 mt-8">— {tier.name} —</div>
+                                        )}
+                                        {tier.rows && tier.rows.map((row, rowIndex) => {
+                                            const middleIndex = (tier.rows.length - 1) / 2
+                                            const curve = Math.pow(Math.abs(rowIndex - middleIndex), 1.8) * 8
+                                            const scale = 0.85 + (rowIndex / tier.rows.length) * 0.15
+                                            return (
+                                                <div key={row} className="flex items-center gap-3" style={{ paddingLeft: `${curve}px`, paddingRight: `${curve}px`, transform: `scale(${scale}) translateZ(${rowIndex * 5}px)` }}>
+                                                    <span className="w-6 text-[10px] font-bold text-muted-foreground text-right">{row}</span>
+                                                    {renderSection('left', tier.sections.left, row, rowIndex)}
+                                                    <div className="w-4" />
+                                                    {renderSection('middle', tier.sections.middle, row, rowIndex)}
+                                                    <div className="w-4" />
+                                                    {renderSection('right', tier.sections.right, row, rowIndex)}
+                                                    <span className="w-6 text-[10px] font-bold text-muted-foreground">{row}</span>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
