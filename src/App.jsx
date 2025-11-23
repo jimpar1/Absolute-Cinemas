@@ -1,6 +1,7 @@
-/*
-Αυτό το αρχείο περιέχει το κύριο στοιχείο της εφαρμογής που ρυθμίζει τις διαδρομές με το React Router και ενσωματώνει τα κύρια στοιχεία όπως πλοήγηση, υποσέλιδο και σελίδες.
-*/
+/**
+ * App – Root component. Sets up React Router, context providers
+ * (Auth + Reservation), and wraps all pages with Navigation + Footer.
+ */
 
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import Navigation from "./components/Navigation"

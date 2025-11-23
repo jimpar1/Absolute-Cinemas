@@ -1,6 +1,8 @@
-/*
-Αυτή η σελίδα εμφανίζει πληροφορίες σχετικά με το Absolute Cinema.
-*/
+/**
+ * AboutUs page – Static page with information about Absolute Cinema.
+ * Includes: Our Story, feature cards (Premium Experience, Community, Passion),
+ * contact details, and a demo disclaimer.
+ */
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Film, Users, Star, Heart, MapPin, Mail, Phone } from "lucide-react"
