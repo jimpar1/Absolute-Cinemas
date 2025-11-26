@@ -9,7 +9,7 @@
 
 import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Menu, Film, Home, Info, LogOut, User } from "lucide-react"
+import { Menu, Film, Home, Info, LogOut, User, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
@@ -17,6 +17,7 @@ import { useAuth } from "@/context/AuthContext"
 import LoginDialog from "./LoginDialog"
 import RegisterDialog from "./RegisterDialog"
 import InboxDropdown from "./navigation/InboxDropdown"
+import VideoIntro from "./VideoIntro"
 
 /** Top-level navigation link definitions */
 const navItems = [
@@ -56,7 +57,16 @@ export default function Navigation() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [loginOpen, setLoginOpen] = useState(false)
     const [registerOpen, setRegisterOpen] = useState(false)
+    const [showIntro, setShowIntro] = useState(false)
     const { user, logout } = useAuth()
+
+    const handleReplayIntro = () => {
+        setShowIntro(true)
+    }
+
+    const handleIntroComplete = () => {
+        setShowIntro(false)
+    }
 
     return (
         <nav className="sticky top-0 z-40 w-full bg-background/70 backdrop-blur">
@@ -80,6 +90,17 @@ export default function Navigation() {
 
                 {/* ─── Right: Actions ─── */}
                 <div className="flex items-center justify-end gap-2">
+                    {/* Replay Intro Button */}
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={handleReplayIntro}
+                        className="text-muted-foreground hover:text-foreground"
+                        title="Replay Intro"
+                    >
+                        <Play className="h-4 w-4" />
+                    </Button>
+
                     {/* Auth buttons / user info */}
                     {user ? (
                         <div className="flex items-center gap-2">
@@ -131,6 +152,7 @@ export default function Navigation() {
 
             <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
             <RegisterDialog open={registerOpen} onOpenChange={setRegisterOpen} />
+            {showIntro && <VideoIntro onComplete={handleIntroComplete} />}
         </nav>
     )
 }
