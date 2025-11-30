@@ -14,7 +14,8 @@ export const GENRES = [
     "Mystery",
     "Romance",
     "Science Fiction",
+    "TV Movie",
     "Thriller",
     "War",
-    "Western",
+    "Western"
 ]
