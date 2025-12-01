@@ -123,6 +123,14 @@ export default function ScreeningsCalendar({ movie, screenings }) {
                                     <div
                                         key={index}
                                         onClick={() => hasScreenings && setSelectedDate(date)}
+                                        onKeyDown={(e) => {
+                                            if (hasScreenings && (e.key === 'Enter' || e.key === ' ')) {
+                                                e.preventDefault()
+                                                setSelectedDate(date)
+                                            }
+                                        }}
+                                        role="button"
+                                        tabIndex={hasScreenings ? 0 : -1}
                                         className={`min-h-[80px] p-2 rounded-lg border transition-all ${hasScreenings ? 'cursor-pointer' : ''
                                             } ${isToday(date)
                                                 ? 'border-primary bg-primary/10'
@@ -178,6 +186,14 @@ export default function ScreeningsCalendar({ movie, screenings }) {
                                     <div
                                         key={index}
                                         onClick={() => hasScreenings && setSelectedDate(date)}
+                                        onKeyDown={(e) => {
+                                            if (hasScreenings && (e.key === 'Enter' || e.key === ' ')) {
+                                                e.preventDefault()
+                                                setSelectedDate(date)
+                                            }
+                                        }}
+                                        role="button"
+                                        tabIndex={hasScreenings ? 0 : -1}
                                         className={`min-h-[60px] p-1 rounded-lg border transition-all ${hasScreenings ? 'cursor-pointer' : ''
                                             } ${isToday(date)
                                                 ? 'border-primary bg-primary/10'
