@@ -14,10 +14,33 @@ import Booking from "./pages/Booking"
 import AboutUs from "./pages/AboutUs"
 import { ReservationProvider } from "./context/ReservationContext"
 import { AuthProvider } from "./context/AuthContext"
+import { useState, useEffect } from "react"
+import VideoIntro from "./components/VideoIntro"
 
 export default function App() {
+    const [showIntro, setShowIntro] = useState(null)
+
+    useEffect(() => {
+        const hasSeenIntro = localStorage.getItem('hasSeenIntro')
+        if (!hasSeenIntro) {
+            setShowIntro(true)
+        } else {
+            setShowIntro(false)
+        }
+    }, [])
+
+    const handleIntroComplete = () => {
+        localStorage.setItem('hasSeenIntro', 'true')
+        setShowIntro(false)
+    }
+
+    if (showIntro === null) {
+        return null
+    }
+
     return (
         <BrowserRouter>
+            {showIntro && <VideoIntro onComplete={handleIntroComplete} />}
             <AuthProvider>
                 <ReservationProvider>
                     <Navigation />
