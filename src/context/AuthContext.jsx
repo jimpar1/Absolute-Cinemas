@@ -120,6 +120,30 @@ export function AuthProvider({ children }) {
         }
     }
 
+    const updateProfile = async (profileData) => {
+        setIsLoading(true)
+        try {
+            const data = await authAPI.updateProfile(accessToken, profileData)
+            setUser(prev => ({ ...prev, ...data }))
+            return data
+        } catch (error) {
+            throw error
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const changePassword = async (oldPassword, newPassword) => {
+        setIsLoading(true)
+        try {
+            await authAPI.changePassword(accessToken, oldPassword, newPassword)
+        } catch (error) {
+            throw error
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     const value = {
         user,
         accessToken,
@@ -128,6 +152,8 @@ export function AuthProvider({ children }) {
         login,
         logout,
         register,
+        updateProfile,
+        changePassword,
         isAuthenticated: !!user && !!accessToken
     }
 
