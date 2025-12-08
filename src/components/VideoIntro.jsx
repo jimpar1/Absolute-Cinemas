@@ -19,6 +19,11 @@ export default function VideoIntro({ onComplete }) {
   const [videoZoom, setVideoZoom] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const videoRef = useRef(null)
+  const onCompleteRef = useRef(onComplete)
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
 
   useEffect(() => {
     setIsVisible(true)
@@ -39,11 +44,56 @@ export default function VideoIntro({ onComplete }) {
       }
     }
 
+    const handleError = () => {
+      console.warn('Video failed to load, skipping to page')
+      if (onCompleteRef.current) {
+        onCompleteRef.current()
+      }
+    }
+
     video.addEventListener('timeupdate', updateText)
-    video.play().catch(() => {})
+    video.addEventListener('error', handleError)
+    video.play().catch(() => {
+      if (onCompleteRef.current) {
+        onCompleteRef.current()
+      }
+    })
 
     return () => {
       video.removeEventListener('timeupdate', updateText)
+      video.removeEventListener('error', handleError)
+    }
+  }, [])
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const updateText = () => {
+      const currentTime = video.currentTime * 1000
+      for (let i = videoTexts.length - 1; i >= 0; i--) {
+        if (currentTime >= videoTexts[i].time) {
+          setVideoText(videoTexts[i].text)
+          setVideoZoom(videoTexts[i].zoom || false)
+          break
+        }
+      }
+    }
+
+    const handleError = () => {
+      console.warn('Video failed to load, skipping to page')
+      onComplete()
+    }
+
+    video.addEventListener('timeupdate', updateText)
+    video.addEventListener('error', handleError)
+    video.play().catch(() => {
+      onComplete()
+    })
+
+    return () => {
+      video.removeEventListener('timeupdate', updateText)
+      video.removeEventListener('error', handleError)
     }
   }, [])
 
