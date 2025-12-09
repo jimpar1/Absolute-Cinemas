@@ -46,11 +46,10 @@ export function AuthProvider({ children }) {
         }
     }, [refreshToken])
 
-    const login = async (email, password) => {
+    const login = async (username, password) => {
         setIsLoading(true)
         try {
-            const data = await authAPI.login(email, password)
-
+            const data = await authAPI.login(username, password)
             // Django JWT response structure: { access, refresh, user: {...} } or similar
             const userData = data.user || {
                 id: data.id,

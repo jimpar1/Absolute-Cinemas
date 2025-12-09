@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 
 export default function LoginDialog({ open, onOpenChange }) {
-    const [email, setEmail] = useState("")
+    const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const { login, isLoading } = useAuth()
@@ -16,27 +16,27 @@ export default function LoginDialog({ open, onOpenChange }) {
     const handleSubmit = async (e) => {
         e.preventDefault()
         
-        if (!email || !password) {
+        if (!username || !password) {
             toast({
                 title: "Error",
-                description: "Please enter both email and password",
+                description: "Please enter both username and password",
                 variant: "destructive",
             })
             return
         }
 
         setIsSubmitting(true)
-        console.log("Attempting login with:", email)
+        console.log("Attempting login with:", username)
 
         try {
-            const result = await login(email, password)
+            const result = await login(username, password)
             console.log("Login successful:", result)
             
             toast({
                 title: "Success",
                 description: "You have been logged in successfully!",
             })
-            setEmail("")
+            setUsername("")
             setPassword("")
             onOpenChange(false)
         } catch (error) {
@@ -63,13 +63,13 @@ export default function LoginDialog({ open, onOpenChange }) {
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="username">Username</Label>
                         <Input
-                            id="email"
-                            type="email"
-                            placeholder="your@email.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            id="username"
+                            type="text"
+                            placeholder="Enter your username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
                             disabled={isLoading || isSubmitting}
                             required
                         />

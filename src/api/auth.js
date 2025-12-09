@@ -7,12 +7,12 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export const authAPI = {
     /**
-     * Login user with email and password
-     * @param {string} email - User email
+     * Login user with username and password
+     * @param {string} username - Username
      * @param {string} password - User password
      * @returns {Promise<{access, refresh, user}>} Tokens and user data
      */
-    login: async (email, password) => {
+    login: async (username, password) => {
         try {
             const response = await fetch(`${API_URL}/api/auth/login/`, {
                 method: 'POST',
@@ -20,7 +20,7 @@ export const authAPI = {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    email,
+                    username,
                     password,
                 }),
             })
