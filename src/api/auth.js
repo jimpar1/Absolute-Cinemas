@@ -53,14 +53,42 @@ export const authAPI = {
             })
 
             if (!response.ok) {
-                const error = await response.json()
-                throw new Error(error.detail || error.message || 'Registration failed')
+                let errorData = null
+                try {
+                    errorData = await response.json()
+                } catch {
+                    // Non-JSON response
+                }
+
+                const extractMessage = (data) => {
+                    if (!data) return null
+                    if (typeof data === 'string') return data
+                    if (typeof data?.detail === 'string') return data.detail
+                    if (typeof data?.message === 'string') return data.message
+
+                    if (typeof data === 'object') {
+                        for (const value of Object.values(data)) {
+                            if (typeof value === 'string') return value
+                            if (Array.isArray(value) && typeof value[0] === 'string') return value[0]
+                        }
+                    }
+
+                    return null
+                }
+
+                const message = extractMessage(errorData) || 'Registration failed'
+                const err = new Error(message)
+                err.data = errorData
+                throw err
             }
 
             const data = await response.json()
             return data
         } catch (error) {
-            throw new Error(error.message || 'Failed to connect to server')
+            if (error instanceof Error) {
+                throw error
+            }
+            throw new Error('Failed to connect to server')
         }
     },
 
