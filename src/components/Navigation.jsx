@@ -83,10 +83,13 @@ export default function Navigation() {
                     {/* Auth buttons / user info */}
                     {user ? (
                         <div className="flex items-center gap-2">
-                            <div className="hidden sm:flex items-center gap-1 px-3 py-2 rounded-md text-sm text-muted-foreground">
-                                <User className="h-4 w-4" />
-                                <span className="text-xs">{user.name}</span>
-                            </div>
+                            <Link to="/profile">
+                                <Button variant="ghost" className="hidden sm:flex items-center gap-1 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground">
+                                    <User className="h-4 w-4" />
+                                    <span className="text-xs">{user.name || user.username || user.email}</span>
+                                </Button>
+                            </Link>
+
                             <Button variant="ghost" size="sm" onClick={logout} className="flex items-center gap-1 text-xs sm:text-sm">
                                 <LogOut className="h-4 w-4" />
                                 <span className="hidden sm:inline">Logout</span>

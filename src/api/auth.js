@@ -140,6 +140,68 @@ export const authAPI = {
     },
 
     /**
+     * Update user profile
+     * @param {string} accessToken - JWT access token
+     * @param {object} profileData - {first_name, last_name, phone, etc.}
+     * @returns {Promise<{user}>}
+     */
+    updateProfile: async (accessToken, profileData) => {
+        try {
+            const response = await fetch(`${API_URL}/api/auth/profile/`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(profileData),
+            })
+
+            if (!response.ok) {
+                const error = await response.json()
+                throw new Error(error.detail || error.message || 'Failed to update profile')
+            }
+
+            const data = await response.json()
+            return data
+        } catch (error) {
+            throw new Error(error.message || 'Failed to update profile')
+        }
+    },
+
+    /**
+     * Change user password
+     * @param {string} accessToken - JWT access token
+     * @param {string} oldPassword
+     * @param {string} newPassword
+     * @returns {Promise<{message}>}
+     */
+    changePassword: async (accessToken, oldPassword, newPassword) => {
+        try {
+            const response = await fetch(`${API_URL}/api/auth/password/change/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    old_password: oldPassword,
+                    new_password: newPassword,
+                }),
+            })
+
+            if (!response.ok) {
+                const error = await response.json()
+                throw new Error(error.detail || error.message || 'Failed to change password')
+            }
+
+            const data = await response.json()
+            return data
+        } catch (error) {
+            throw new Error(error.message || 'Failed to change password')
+        }
+    },
+
+    /**
      * Refresh JWT token
      * @param {string} refreshToken - Refresh token
      * @returns {Promise<{access}>}
