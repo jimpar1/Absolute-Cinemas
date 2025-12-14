@@ -5,10 +5,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/context/AuthContext"
 import { useToast } from "@/hooks/use-toast"
+import { Check } from "lucide-react"
 
 export default function RegisterDialog({ open, onOpenChange }) {
     const PASSWORD_MIN_LENGTH = 8
     const PHONE_MAX_LENGTH = 20
+
+    const [focusedField, setFocusedField] = useState(null)
 
     const [formData, setFormData] = useState({
         username: "",
@@ -45,7 +48,7 @@ export default function RegisterDialog({ open, onOpenChange }) {
         const usernameErrors = asStringArray(data?.username)
         if (usernameErrors.length > 0) {
             if (usernameErrors.some((m) => /already|exists|unique/i.test(m))) {
-                messages.push("Το username χρησιμοποιείται ήδη.")
+                messages.push("That username is already taken.")
             } else {
                 messages.push(usernameErrors[0])
             }
@@ -54,7 +57,7 @@ export default function RegisterDialog({ open, onOpenChange }) {
         const emailErrors = asStringArray(data?.email)
         if (emailErrors.length > 0) {
             if (emailErrors.some((m) => /already|exists|unique/i.test(m))) {
-                messages.push("Αυτό το email χρησιμοποιείται ήδη.")
+                messages.push("That email is already in use.")
             } else {
                 messages.push(emailErrors[0])
             }
@@ -63,7 +66,7 @@ export default function RegisterDialog({ open, onOpenChange }) {
         const password2Errors = asStringArray(data?.password2)
         if (password2Errors.length > 0) {
             if (password2Errors.some((m) => /match|same|two password/i.test(m))) {
-                messages.push("Οι κωδικοί δεν ταιριάζουν.")
+                messages.push("Passwords do not match.")
             } else {
                 messages.push(password2Errors[0])
             }
@@ -72,10 +75,10 @@ export default function RegisterDialog({ open, onOpenChange }) {
         const passwordErrors = asStringArray(data?.password)
         if (passwordErrors.length > 0) {
             const mapped = passwordErrors.map((m) => {
-                if (/too short|at least/i.test(m)) return `Ο κωδικός πρέπει να έχει τουλάχιστον ${PASSWORD_MIN_LENGTH} χαρακτήρες.`
-                if (/too common/i.test(m)) return "Ο κωδικός είναι πολύ κοινός."
-                if (/too similar/i.test(m)) return "Ο κωδικός μοιάζει πολύ με τα στοιχεία σου (username/email/όνομα)."
-                if (/entirely numeric|only numeric/i.test(m)) return "Ο κωδικός δεν μπορεί να είναι μόνο αριθμοί."
+                if (/too short|at least/i.test(m)) return `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`
+                if (/too common/i.test(m)) return "Password is too common."
+                if (/too similar/i.test(m)) return "Password is too similar to your personal info (username/email/name)."
+                if (/entirely numeric|only numeric/i.test(m)) return "Password cannot be only numbers."
                 return m
             })
             messages.push(...mapped)
@@ -91,7 +94,7 @@ export default function RegisterDialog({ open, onOpenChange }) {
         if (typeof data?.detail === "string") return data.detail
         if (typeof error?.message === "string" && error.message.trim().length > 0) return error.message
 
-        return "Αποτυχία δημιουργίας λογαριασμού. Δοκίμασε ξανά."
+        return "Account creation failed. Please try again."
     }
 
     const handleChange = (e) => {
@@ -101,6 +104,71 @@ export default function RegisterDialog({ open, onOpenChange }) {
             [name]: value
         }))
     }
+
+    const handleFormFocusCapture = (e) => {
+        const fieldName = e.target?.getAttribute?.("name")
+        setFocusedField(fieldName || null)
+    }
+
+    const handleFormBlurCapture = (e) => {
+        const nextTarget = e.relatedTarget
+
+        // If focus is moving to another element inside the same form (e.g. via Tab),
+        // do nothing here and let onFocusCapture set the next focused field.
+        if (nextTarget && e.currentTarget?.contains?.(nextTarget)) return
+
+        setFocusedField(null)
+    }
+
+    const normalize = (value) => (value || "").toString().trim().toLowerCase()
+
+    const isPasswordTooSimilarToProfile = () => {
+        const password = normalize(formData.password)
+        if (password.length === 0) return true
+
+        const email = normalize(formData.email)
+        const emailLocalPart = email.includes("@") ? email.split("@")[0] : email
+
+        const candidates = [
+            normalize(formData.username),
+            emailLocalPart,
+            normalize(formData.first_name),
+            normalize(formData.last_name),
+        ].filter((v) => v.length >= 3)
+
+        return candidates.some((candidate) => password.includes(candidate))
+    }
+
+    const passwordValue = (formData.password || "").toString()
+    const passwordNormalized = normalize(passwordValue)
+    const hasPassword = passwordNormalized.length > 0
+    const passwordRuleMinLength = passwordValue.length >= PASSWORD_MIN_LENGTH
+    const passwordRuleNotSimilar = hasPassword && !isPasswordTooSimilarToProfile()
+    const passwordRuleNotOnlyNumbers = hasPassword && !/^\d+$/.test(passwordValue)
+
+    const passwordRules = [
+        {
+            id: "min-length",
+            label: `At least ${PASSWORD_MIN_LENGTH} characters.`,
+            met: passwordRuleMinLength,
+            ariaLabel: `At least ${PASSWORD_MIN_LENGTH} characters`,
+        },
+        {
+            id: "not-similar",
+            label: "Not too similar to your username/email/name.",
+            met: passwordRuleNotSimilar,
+            ariaLabel: "Not too similar to username/email/name",
+        },
+        {
+            id: "not-only-numbers",
+            label: "Not only numbers.",
+            met: passwordRuleNotOnlyNumbers,
+            ariaLabel: "Not only numbers",
+        },
+    ]
+
+    const passwordRulesMetCount = passwordRules.reduce((acc, rule) => acc + (rule.met ? 1 : 0), 0)
+    const allPasswordRulesMet = passwordRulesMetCount === passwordRules.length
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -115,8 +183,8 @@ export default function RegisterDialog({ open, onOpenChange }) {
             isBlank(formData.password2)
         ) {
             toast({
-                title: "Σφάλμα",
-                description: "Συμπλήρωσε όλα τα υποχρεωτικά πεδία.",
+                title: "Error",
+                description: "Please fill in all required fields.",
                 variant: "destructive",
             })
             return
@@ -124,8 +192,8 @@ export default function RegisterDialog({ open, onOpenChange }) {
 
         if (!isValidEmail(formData.email)) {
             toast({
-                title: "Σφάλμα",
-                description: "Βάλε έγκυρο email (π.χ. name@example.com).",
+                title: "Error",
+                description: "Please enter a valid email (e.g. name@example.com).",
                 variant: "destructive",
             })
             return
@@ -133,8 +201,8 @@ export default function RegisterDialog({ open, onOpenChange }) {
 
         if (formData.phone && formData.phone.length > PHONE_MAX_LENGTH) {
             toast({
-                title: "Σφάλμα",
-                description: `Το τηλέφωνο πρέπει να είναι έως ${PHONE_MAX_LENGTH} χαρακτήρες.`,
+                title: "Error",
+                description: `Phone number must be up to ${PHONE_MAX_LENGTH} characters.`,
                 variant: "destructive",
             })
             return
@@ -142,8 +210,8 @@ export default function RegisterDialog({ open, onOpenChange }) {
 
         if (formData.password !== formData.password2) {
             toast({
-                title: "Σφάλμα",
-                description: "Οι κωδικοί δεν ταιριάζουν.",
+                title: "Error",
+                description: "Passwords do not match.",
                 variant: "destructive",
             })
             return
@@ -151,8 +219,8 @@ export default function RegisterDialog({ open, onOpenChange }) {
 
         if (formData.password.length < PASSWORD_MIN_LENGTH) {
             toast({
-                title: "Σφάλμα",
-                description: `Ο κωδικός πρέπει να έχει τουλάχιστον ${PASSWORD_MIN_LENGTH} χαρακτήρες.`,
+                title: "Error",
+                description: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
                 variant: "destructive",
             })
             return
@@ -164,8 +232,8 @@ export default function RegisterDialog({ open, onOpenChange }) {
             const result = await register(formData)
 
             toast({
-                title: "Επιτυχία",
-                description: "Ο λογαριασμός δημιουργήθηκε και έκανες είσοδο.",
+                title: "Success",
+                description: "Your account was created and you are now signed in.",
             })
 
             // Reset form
@@ -181,7 +249,7 @@ export default function RegisterDialog({ open, onOpenChange }) {
             onOpenChange(false)
         } catch (error) {
             toast({
-                title: "Αποτυχία εγγραφής",
+                title: "Registration failed",
                 description: getBackendRegistrationErrorDescription(error),
                 variant: "destructive",
             })
@@ -198,12 +266,14 @@ export default function RegisterDialog({ open, onOpenChange }) {
                     <DialogDescription>
                         Sign up to book movies and save your preferences.
                     </DialogDescription>
-                    <div className="text-xs text-muted-foreground">
-                        Υποχρεωτικά για δημιουργία λογαριασμού: username, email, όνομα, επώνυμο, κωδικός, επιβεβαίωση κωδικού.
-                    </div>
-                    <div className="text-xs text-muted-foreground">Τα πεδία με * είναι υποχρεωτικά.</div>
+                    <div className="text-xs text-muted-foreground">Fields marked with * are required.</div>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form
+                    onSubmit={handleSubmit}
+                    onFocusCapture={handleFormFocusCapture}
+                    onBlurCapture={handleFormBlurCapture}
+                    className="space-y-4"
+                >
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="username">Username *</Label>
@@ -217,9 +287,11 @@ export default function RegisterDialog({ open, onOpenChange }) {
                                 disabled={isLoading || isSubmitting}
                                 required
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Γράψε ένα μοναδικό username. Επιτρέπονται γράμματα, αριθμοί και τα σύμβολα @ . + - _.
-                            </p>
+                            {focusedField === "username" && (
+                                <p className="text-xs text-muted-foreground">
+                                    Letters, numbers, and the symbols @ . + - _ are allowed.
+                                </p>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email *</Label>
@@ -233,9 +305,9 @@ export default function RegisterDialog({ open, onOpenChange }) {
                                 disabled={isLoading || isSubmitting}
                                 required
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Βάλε έγκυρο email (π.χ. name@example.com). Πρέπει να είναι μοναδικό.
-                            </p>
+                            {focusedField === "email" && (
+                                <p className="text-xs text-muted-foreground">Enter a valid email (e.g. name@example.com).</p>
+                            )}
                         </div>
                     </div>
 
@@ -252,6 +324,9 @@ export default function RegisterDialog({ open, onOpenChange }) {
                                 disabled={isLoading || isSubmitting}
                                 required
                             />
+                            {focusedField === "first_name" && (
+                                <p className="text-xs text-muted-foreground">Enter your first name.</p>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="last_name">Last Name *</Label>
@@ -265,9 +340,9 @@ export default function RegisterDialog({ open, onOpenChange }) {
                                 disabled={isLoading || isSubmitting}
                                 required
                             />
-                        </div>
-                        <div className="col-span-2 text-xs text-muted-foreground">
-                            Συμπλήρωσε το όνομα και το επώνυμό σου.
+                            {focusedField === "last_name" && (
+                                <p className="text-xs text-muted-foreground">Enter your last name.</p>
+                            )}
                         </div>
                     </div>
 
@@ -283,7 +358,9 @@ export default function RegisterDialog({ open, onOpenChange }) {
                             disabled={isLoading || isSubmitting}
                             maxLength={PHONE_MAX_LENGTH}
                         />
-                        <p className="text-xs text-muted-foreground">Προαιρετικό (έως 20 χαρακτήρες).</p>
+                        {focusedField === "phone" && (
+                            <p className="text-xs text-muted-foreground">Optional (up to 20 characters).</p>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -293,12 +370,15 @@ export default function RegisterDialog({ open, onOpenChange }) {
                                 id="password"
                                 name="password"
                                 type="password"
-                                placeholder="••••••"
+                                placeholder="••••••••"
                                 value={formData.password}
                                 onChange={handleChange}
                                 disabled={isLoading || isSubmitting}
                                 required
                             />
+                            {focusedField === "password" && (
+                                <p className="text-xs text-muted-foreground">Choose a strong password.</p>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="password2">Confirm Password *</Label>
@@ -306,26 +386,59 @@ export default function RegisterDialog({ open, onOpenChange }) {
                                 id="password2"
                                 name="password2"
                                 type="password"
-                                placeholder="••••••"
+                                placeholder="••••••••"
                                 value={formData.password2}
                                 onChange={handleChange}
                                 disabled={isLoading || isSubmitting}
                                 required
                             />
-                            <p className="text-xs text-muted-foreground">Ξαναγράψε ακριβώς τον ίδιο κωδικό.</p>
+                            {focusedField === "password2" && (
+                                <p className="text-xs text-muted-foreground">Re-enter the exact same password.</p>
+                            )}
                         </div>
                     </div>
 
-                    <div className="rounded-md border bg-card p-3 text-xs text-muted-foreground">
-                        <div className="text-sm font-medium text-foreground">Σημείωση για τον κωδικό</div>
-                        <ul className="mt-2 list-disc space-y-1 pl-4">
-                            <li>Τουλάχιστον 8 χαρακτήρες.</li>
-                            <li>Μην είναι πολύ “κοντά” σε username/email/όνομα.</li>
-                            <li>Μην είναι πολύ κοινός.</li>
-                            <li>Όχι μόνο αριθμοί.</li>
-                        </ul>
-                        <div className="mt-2">Tip: Προτείνεται συνδυασμός γραμμάτων + αριθμών + συμβόλων.</div>
-                    </div>
+                    {(focusedField === "password" || focusedField === "password2") && (
+                        <div className="rounded-md border bg-card p-3 text-xs text-muted-foreground" aria-live="polite">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="text-sm font-medium text-foreground">Password requirements</div>
+                                <div className="rounded-full border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                                    {passwordRulesMetCount}/{passwordRules.length}
+                                </div>
+                            </div>
+
+                            <ul className="mt-3 space-y-2">
+                                {passwordRules.map((rule) => (
+                                    <li
+                                        key={rule.id}
+                                        className={
+                                            "flex items-start gap-3 rounded-md border p-2 transition-colors " +
+                                            (rule.met ? "bg-muted/40 text-foreground" : "bg-transparent text-muted-foreground")
+                                        }
+                                    >
+                                        <span
+                                            className={
+                                                "mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors " +
+                                                (rule.met
+                                                    ? allPasswordRulesMet
+                                                        ? "border-green-500 bg-green-500 text-white"
+                                                        : "border-primary bg-primary text-primary-foreground"
+                                                    : "border-input bg-background text-muted-foreground/40")
+                                            }
+                                            aria-label={rule.ariaLabel}
+                                        >
+                                            <Check className={"h-3.5 w-3.5 " + (rule.met ? "opacity-100" : "opacity-0")} />
+                                        </span>
+                                        <span className={rule.met ? "font-medium" : ""}>{rule.label}</span>
+                                    </li>
+                                ))}
+                            </ul>
+
+                            <div className="mt-3 text-[11px] text-muted-foreground/80">
+                                Tip: Use a mix of letters, numbers, and symbols.
+                            </div>
+                        </div>
+                    )}
 
                     <Button
                         type="submit"
