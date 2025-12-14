@@ -12,6 +12,7 @@ import Movies from "./pages/Movies"
 import MovieDetails from "./pages/MovieDetails"
 import Booking from "./pages/Booking"
 import AboutUs from "./pages/AboutUs"
+import Profile from "./pages/Profile"
 import { ReservationProvider } from "./context/ReservationContext"
 import { AuthProvider } from "./context/AuthContext"
 
@@ -29,6 +30,7 @@ export default function App() {
                                 <Route path="/movies/:id" element={<MovieDetails />} />
                                 <Route path="/booking/:id" element={<Booking />} />
                                 <Route path="/about" element={<AboutUs />} />
+                                <Route path="/profile" element={<Profile />} />
                             </Routes>
                         </main>
                         <Footer />
