@@ -67,7 +67,7 @@ export default function LoginDialog({ open, onOpenChange }) {
                         <Input
                             id="username"
                             type="text"
-                            placeholder="Enter your username"
+                            placeholder="yourusername"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             disabled={isLoading || isSubmitting}
