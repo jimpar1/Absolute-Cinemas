@@ -46,13 +46,12 @@ export function AuthProvider({ children }) {
         }
     }, [refreshToken])
 
-    const login = async (email, password) => {
-        setIsLoading(true)
-        try {
-            const data = await authAPI.login(email, password)
-
-            // Django JWT response structure: { access, refresh, user: {...} } or similar
-            const userData = data.user || {
+const login = async (username, password) => {
+    setIsLoading(true)
+    try {
+        const data = await authAPI.login(username, password)
+        // Django JWT response structure: { access, refresh, user: {...} } or similar
+        const userData = data.user || {
                 id: data.id,
                 email: data.email,
                 username: data.username,
@@ -120,6 +119,30 @@ export function AuthProvider({ children }) {
         }
     }
 
+    const updateProfile = async (profileData) => {
+        setIsLoading(true)
+        try {
+            const data = await authAPI.updateProfile(accessToken, profileData)
+            setUser(prev => ({ ...prev, ...data }))
+            return data
+        } catch (error) {
+            throw error
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const changePassword = async (oldPassword, newPassword) => {
+        setIsLoading(true)
+        try {
+            await authAPI.changePassword(accessToken, oldPassword, newPassword)
+        } catch (error) {
+            throw error
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     const value = {
         user,
         accessToken,
@@ -128,6 +151,8 @@ export function AuthProvider({ children }) {
         login,
         logout,
         register,
+        updateProfile,
+        changePassword,
         isAuthenticated: !!user && !!accessToken
     }
 
