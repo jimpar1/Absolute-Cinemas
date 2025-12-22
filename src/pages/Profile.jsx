@@ -254,7 +254,7 @@ export default function Profile() {
                                                 id="phone"
                                                 value={formData.phone}
                                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                                placeholder="+1 234 567 890"
+                                                placeholder="+30 69XXXXXXXX"
                                             />
                                         </div>
                                         <div className="pt-4 flex justify-end">
