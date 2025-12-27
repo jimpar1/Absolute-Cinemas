@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, User, Lock, Calendar, Ticket } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 export default function Profile() {
     const { user, accessToken, updateProfile, changePassword } = useAuth()
@@ -87,10 +87,14 @@ export default function Profile() {
 
         setIsUpdating(true)
         try {
-            await changePassword(passwordData.old_password, passwordData.new_password)
+            const result = await changePassword(
+                passwordData.old_password,
+                passwordData.new_password,
+                passwordData.confirm_password
+            )
             toast({
                 title: "Password changed",
-                description: "Your password has been updated successfully.",
+                description: result?.message || result?.detail || "Your password has been updated successfully.",
             })
             setPasswordData({ old_password: "", new_password: "", confirm_password: "" })
         } catch (error) {
