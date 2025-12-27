@@ -46,6 +46,49 @@ export function AuthProvider({ children }) {
         }
     }, [refreshToken])
 
+    const extractAccessToken = (data) => {
+        return (
+            data?.access ??
+            data?.accessToken ??
+            data?.access_token ??
+            data?.token ??
+            data?.jwt ??
+            data?.tokens?.access ??
+            data?.tokens?.access_token ??
+            null
+        )
+    }
+
+    const extractRefreshToken = (data) => {
+        return (
+            data?.refresh ??
+            data?.refreshToken ??
+            data?.refresh_token ??
+            data?.tokens?.refresh ??
+            data?.tokens?.refresh_token ??
+            null
+        )
+    }
+
+    const getValidAccessToken = async () => {
+        // Prefer state, then localStorage (covers reloads / stale renders)
+        let token = accessToken || localStorage.getItem('accessToken')
+        if (token) return token
+
+        // If we have a refresh token, try to mint a new access token.
+        const refresh = refreshToken || localStorage.getItem('refreshToken')
+        if (!refresh) return null
+
+        const refreshed = await authAPI.refreshToken(refresh)
+        const newAccess = extractAccessToken(refreshed)
+        if (newAccess) {
+            setAccessToken(newAccess)
+            return newAccess
+        }
+
+        return null
+    }
+
 const login = async (username, password) => {
     setIsLoading(true)
     try {
@@ -59,8 +102,8 @@ const login = async (username, password) => {
                 last_name: data.last_name,
             }
 
-            const newAccessToken = data.access || data.accessToken
-            const newRefreshToken = data.refresh || data.refreshToken
+            const newAccessToken = extractAccessToken(data)
+            const newRefreshToken = extractRefreshToken(data)
 
             setUser(userData)
             setAccessToken(newAccessToken)
@@ -106,8 +149,8 @@ const login = async (username, password) => {
                 last_name: data.last_name,
             }
 
-            const newAccessToken = data.access || data.accessToken
-            const newRefreshToken = data.refresh || data.refreshToken
+            const newAccessToken = extractAccessToken(data)
+            const newRefreshToken = extractRefreshToken(data)
 
             setUser(userData)
             setAccessToken(newAccessToken)
@@ -122,22 +165,24 @@ const login = async (username, password) => {
     const updateProfile = async (profileData) => {
         setIsLoading(true)
         try {
-            const data = await authAPI.updateProfile(accessToken, profileData)
+            const token = await getValidAccessToken()
+            if (!token) throw new Error('You must be logged in to update your profile')
+
+            const data = await authAPI.updateProfile(token, profileData)
             setUser(prev => ({ ...prev, ...data }))
             return data
-        } catch (error) {
-            throw error
         } finally {
             setIsLoading(false)
         }
     }
 
-    const changePassword = async (oldPassword, newPassword) => {
+    const changePassword = async (oldPassword, newPassword, confirmPassword) => {
         setIsLoading(true)
         try {
-            await authAPI.changePassword(accessToken, oldPassword, newPassword)
-        } catch (error) {
-            throw error
+            const token = await getValidAccessToken()
+            if (!token) throw new Error('You must be logged in to change your password')
+
+            return await authAPI.changePassword(token, oldPassword, newPassword, confirmPassword)
         } finally {
             setIsLoading(false)
         }
