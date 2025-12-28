@@ -4,9 +4,51 @@
   min-height: 100vh;
   background: #0a0a0a;
   position: relative;
-  overflow-x: hidden;
+  /* overflow-x: clip instead of hidden — clip doesn't create a scroll container,
+     which would break position: sticky on the stage inside scrollContainer */
+  overflow-x: clip;
 }
 
+/* Hide system cursor on pointer devices */
+@media (hover: hover) {
+  .aboutPage,
+  .aboutPage * {
+    cursor: none !important;
+  }
+}
+
+/* ── Custom Cursor ──────────────────────────────────────────── */
+.cursorOuter {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  will-change: transform;
+}
+
+.cursorInner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  will-change: transform;
+}
+
+/* ── Film Grain ─────────────────────────────────────────────── */
 .grain {
   position: fixed;
   inset: -50%;
@@ -20,24 +62,26 @@
 }
 
 @keyframes grain-move {
-  0% { transform: translate(0, 0); }
-  25% { transform: translate(-2%, 2%); }
-  50% { transform: translate(2%, -1%); }
-  75% { transform: translate(-1%, -2%); }
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-2%, 2%); }
+  50%  { transform: translate(2%, -1%); }
+  75%  { transform: translate(-1%, -2%); }
   100% { transform: translate(0, 0); }
 }
 
+/* ── Progress Bar ───────────────────────────────────────────── */
 .progressBar {
   position: fixed;
   top: 64px;
   left: 0;
   height: 2px;
   background: #fff;
-  box-shadow: 0 0 12px rgba(255,255,255,0.4);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
   z-index: 39;
   transition: width 0.1s linear;
 }
 
+/* ── Dot Nav ────────────────────────────────────────────────── */
 .dotNav {
   position: fixed;
   right: 24px;
@@ -53,21 +97,22 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .dot:hover {
-  background: rgba(255,255,255,0.4);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .dotActive {
   background: #fff;
-  box-shadow: 0 0 12px rgba(255,255,255,0.6);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
 }
 
+/* ── Hero ───────────────────────────────────────────────────── */
 .hero {
   height: 100vh;
   width: 100%;
@@ -80,10 +125,10 @@
 
 .heroBg {
   position: absolute;
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 700;
   font-size: clamp(80px, 18vw, 260px);
-  color: rgba(255,255,255,0.04);
+  color: rgba(255, 255, 255, 0.04);
   user-select: none;
   pointer-events: none;
   z-index: 0;
@@ -96,10 +141,10 @@
 }
 
 .heroLabel {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Cascadia Code', monospace;
   font-size: 14px;
-  letter-spacing: 7px;
-  color: #666;
+  letter-spacing: 3px;
+  color: #888;
   text-transform: uppercase;
   margin-bottom: 16px;
   opacity: 0;
@@ -108,12 +153,12 @@
 }
 
 .heroHeading {
-  font-family: 'Playfair Display', serif;
-  font-weight: 900;
-  font-size: clamp(42px, 7vw, 100px);
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 700;
+  font-size: clamp(48px, 8vw, 120px);
   color: #fafafa;
   line-height: 1.1;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   opacity: 0;
   transform: translateY(20px);
   animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
@@ -121,15 +166,15 @@
 
 .heroHeading em {
   font-style: italic;
-  color: #666;
+  color: #888;
 }
 
 .heroSub {
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 300;
-  font-size: 16px;
-  color: rgba(255,255,255,0.28);
-  max-width: 400px;
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 400;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 480px;
   line-height: 1.6;
   opacity: 0;
   transform: translateY(20px);
@@ -148,79 +193,49 @@
 }
 
 .scrollCue span {
-  font-family: 'Syne', sans-serif;
-  font-size: 10px;
+  font-family: 'Cascadia Code', monospace;
+  font-size: 12px;
   letter-spacing: 3px;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .scrollLine {
   width: 1px;
   height: 40px;
-  background: linear-gradient(to bottom, rgba(255,255,255,0.6), transparent);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.6), transparent);
   animation: pulse 2s ease-in-out infinite;
 }
 
 @keyframes fadeUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
+  50%       { opacity: 1; }
 }
 
-.personSection {
-  min-height: 130vh;
+/* ── Scroll Container (drives all phases) ──────────────────── */
+.scrollContainer {
+  height: 1000vh;
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   position: relative;
 }
 
-.personSticky {
+/* ── Sticky Stage (pinned viewport) ────────────────────────── */
+.stage {
+  position: sticky;
+  top: 0;
   height: 100vh;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: sticky;
-  top: 0;
+  overflow: hidden;
 }
 
-.ghostNum {
-  position: absolute;
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  font-size: clamp(160px, 26vw, 380px);
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(255,255,255,0.04);
-  user-select: none;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.inView .ghostNum {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.gnLeft {
-  left: -3%;
-}
-
-.gnRight {
-  right: -3%;
-}
-
-.photoContainer {
+/* ── Photo Frame (stable container for all photo layers) ───── */
+.photoFrame {
   position: relative;
   width: 50vw;
   max-width: 600px;
@@ -238,35 +253,36 @@
 }
 
 .ovT {
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   height: 30%;
   background: linear-gradient(to bottom, #0a0a0a, transparent);
 }
 
 .ovB {
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 0; left: 0; right: 0;
   height: 40%;
   background: linear-gradient(to top, #0a0a0a, transparent);
 }
 
 .ovL {
-  top: 0;
-  bottom: 0;
-  left: 0;
+  top: 0; bottom: 0; left: 0;
   width: 22%;
   background: linear-gradient(to right, #0a0a0a, transparent);
 }
 
 .ovR {
-  top: 0;
-  bottom: 0;
-  right: 0;
+  top: 0; bottom: 0; right: 0;
   width: 22%;
   background: linear-gradient(to left, #0a0a0a, transparent);
+}
+
+/* ── Person Layer (stacked photo layers inside photoFrame) ─── */
+.personLayer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  will-change: opacity;
 }
 
 .photoWrap {
@@ -282,6 +298,14 @@
   filter: grayscale(1);
 }
 
+.photoHover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .photoPlaceholder {
   width: 100%;
   height: 100%;
@@ -289,166 +313,94 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  font-size: 48px;
-  color: rgba(255,255,255,0.06);
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 700;
+  font-size: 72px;
+  color: rgba(255, 255, 255, 0.08);
 }
 
-.signature {
+/* ── Ghost Number ──────────────────────────────────────────── */
+.ghostNum {
   position: absolute;
-  font-family: 'Playfair Display', serif;
-  font-style: italic;
-  font-size: clamp(22px, 3vw, 44px);
-  color: rgba(255,255,255,0.04);
-  z-index: 3;
-  transition: color 1s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 700;
+  font-size: clamp(160px, 26vw, 380px);
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.04);
+  user-select: none;
+  pointer-events: none;
+  z-index: 0;
+  left: -3%;
 }
 
-.inView .signature {
-  color: rgba(255,255,255,0.1);
-}
-
-.sTr {
-  top: 8%;
-  right: 5%;
-  transform: rotate(-4deg);
-}
-
-.sBl {
-  bottom: 8%;
-  left: 5%;
-  transform: rotate(3deg);
-}
-
-.sTl {
-  top: 8%;
-  left: 5%;
-  transform: rotate(2deg);
-}
-
-.sBr {
-  bottom: 8%;
-  right: 5%;
-  transform: rotate(-3deg);
-}
-
-.personText {
+/* ── Canvas Brush ───────────────────────────────────────────── */
+.brushCanvas {
   position: absolute;
-  max-width: 340px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.brushCanvasMobileFallback {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Text Layer (positioned wrapper only — child elements own their opacity) ─ */
+.textLayer {
+  position: absolute;
+  max-width: 420px;
   z-index: 3;
+  visibility: hidden; /* JS sets to visible when any child is active */
 }
 
-.ptBl {
-  left: 5%;
-  bottom: 12%;
-}
-
-.ptCr {
-  right: 5%;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.ptCl {
-  left: 5%;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.ptBr {
-  right: 5%;
-  bottom: 12%;
-}
-
-.textReveal {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.inView .textReveal {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.inView .delay1 { transition-delay: 0.15s; }
-.inView .delay2 { transition-delay: 0.3s; }
-.inView .delay3 { transition-delay: 0.45s; }
-.inView .delay4 { transition-delay: 0.6s; }
+.ptBl { left: 5%;  bottom: 12%; }
+.ptCr { right: 5%; top: 50%; transform: translateY(-50%); }
+.ptCl { left: 5%;  top: 50%; transform: translateY(-50%); }
+.ptBr { right: 5%; bottom: 12%; }
 
 .tag {
-  font-family: 'Syne', sans-serif;
-  font-size: 16px;
+  font-family: 'Cascadia Code', monospace;
+  font-size: 18px;
   letter-spacing: 3px;
   text-transform: uppercase;
   color: #fafafa;
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .am {
-  font-family: 'Syne', sans-serif;
-  font-size: 14px;
+  font-family: 'Cascadia Code', monospace;
+  font-size: 15px;
   letter-spacing: 2px;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255, 255, 255, 0.5);
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .personName {
-  font-family: 'Playfair Display', serif;
-  font-weight: 900;
-  font-size: clamp(30px, 4vw, 52px);
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 700;
+  font-size: clamp(36px, 5vw, 64px);
   color: #fafafa;
   line-height: 1.2;
-  margin-bottom: 12px;
-}
-
-.personName em {
-  font-style: italic;
-  color: #666;
-  display: block;
+  margin-bottom: 16px;
 }
 
 .bio {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Cascadia Code', monospace;
   font-weight: 400;
   font-size: 18px;
   line-height: 1.8;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.pullQuote {
-  position: absolute;
-  max-width: 280px;
-  z-index: 3;
-}
-
-.pullQuote blockquote {
-  font-family: 'Playfair Display', serif;
-  font-style: italic;
-  font-size: 16px;
-  line-height: 1.5;
-  color: rgba(255,255,255,0.6);
-  border-left: 1.5px solid rgba(255,255,255,0.15);
-  padding-left: 14px;
-}
-
-.divider {
-  height: 6vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dividerLine {
-  width: 1px;
-  height: 50px;
-  background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.12), transparent);
-}
-
+/* ── Outro ──────────────────────────────────────────────────── */
 .outro {
   height: 70vh;
   display: flex;
@@ -459,110 +411,75 @@
 }
 
 .outroHeading {
-  font-family: 'Playfair Display', serif;
-  font-weight: 900;
-  font-size: clamp(30px, 5vw, 66px);
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 700;
+  font-size: clamp(36px, 6vw, 80px);
   color: #fafafa;
   line-height: 1.2;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .outroHeading em {
   font-style: italic;
-  color: #666;
+  color: #888;
 }
 
 .outroText {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Cascadia Code', monospace;
   font-weight: 400;
-  font-size: 16px;
-  color: rgba(255,255,255,0.5);
-  max-width: 360px;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 400px;
   line-height: 1.6;
 }
 
-.fxClipZoom .photoWrap {
-  clip-path: inset(25% 15% 25% 15%);
-  transform: scale(1.35);
-  transition: clip-path 1.6s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 1.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.fxClipZoom.inView .photoWrap {
-  clip-path: inset(0% 0% 0% 0%);
-  transform: scale(1.05);
-}
-
-.fxSplit .photoWrap {
-  clip-path: polygon(0 46%, 100% 46%, 100% 54%, 0 54%);
-  transition: clip-path 1.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.fxSplit.inView .photoWrap {
-  clip-path: polygon(0 0%, 100% 0%, 100% 100%, 0 100%);
-}
-
-.fxBlur .photoWrap {
-  opacity: 0.3;
-  filter: blur(30px);
-  transform: scale(1.15);
-  transition: all 1.8s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.fxBlur.inView .photoWrap {
-  opacity: 1;
-  filter: blur(0px);
-  transform: scale(1);
-}
-
-.fxBlinds .photoWrap {
-  clip-path: polygon(
-    0% 0%, 4% 0%, 4% 100%, 0% 100%,
-    20% 0%, 24% 0%, 24% 100%, 20% 100%,
-    40% 0%, 44% 0%, 44% 100%, 40% 100%,
-    60% 0%, 64% 0%, 64% 100%, 60% 100%,
-    80% 0%, 84% 0%, 84% 100%, 80% 100%
-  );
-  transition: clip-path 1.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.fxBlinds.inView .photoWrap {
-  clip-path: polygon(
-    0% 0%, 20% 0%, 20% 100%, 0% 100%,
-    20% 0%, 40% 0%, 40% 100%, 20% 100%,
-    40% 0%, 60% 0%, 60% 100%, 40% 100%,
-    60% 0%, 80% 0%, 80% 100%, 60% 100%,
-    80% 0%, 100% 0%, 100% 100%, 80% 100%
-  );
-}
-
+/* ── Mobile ─────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .dotNav {
-    display: none;
+  .dotNav        { display: none; }
+  .cursorOuter,
+  .cursorInner   { display: none; }
+
+  /* Disable sticky stage on mobile — stack vertically */
+  .scrollContainer {
+    height: auto;
   }
 
-  .photoContainer {
+  .stage {
+    position: relative;
+    top: auto;
+    height: auto;
+    flex-direction: column;
+    align-items: center;
+    padding: 80px 0 60px;
+    gap: 32px;
+  }
+
+  .ghostNum { display: none; }
+  .brushCanvas { display: none; }
+  .brushCanvasMobileFallback { display: block; }
+
+  .photoFrame {
     width: 85vw;
+    position: relative;
   }
 
-  .personText {
-    left: 5% !important;
-    right: 5% !important;
-    bottom: 8% !important;
+  .personLayer {
+    position: relative;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .textLayer {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
     top: auto !important;
     transform: none !important;
+    max-width: 85vw;
+    width: 85vw;
+    opacity: 1 !important;
+    visibility: visible !important;
   }
 
-  .signature {
-    display: none;
-  }
-
-  .ghostNum {
-    font-size: clamp(80px, 20vw, 160px);
-    opacity: 0.02;
-  }
-
-  .pullQuote {
-    max-width: 80%;
-  }
 }
