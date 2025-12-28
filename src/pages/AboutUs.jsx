@@ -5,64 +5,130 @@ import styles from './AboutUs.module.css'
 const people = [
   {
     first: "Dimitris",
-    last: "",
     tag: "The Swiss Knife",
     am: "21390314",
     bio: "With great CODE comes Great Responsibility. So don't let the bugs out!!",
-    quote: '"With great CODE comes Great Responsibility"',
-    effect: "clip-zoom",
-    photo: "/team/person1.jpg",
+    photo: "/team/absolute-egw.webp",
+    photo2: "/team/absolute-egw-2.webp",
   },
   {
     first: "Nikos",
-    last: "Makos",
     tag: "The MegaDev",
     am: "21390284",
     bio: "Debugging code in the morning, breaking hearts at night. Full-stack developer specializing in 'good-times-as-a-service'. If life was a script, mine would only have high-end vibes and zero errors. Cheers to good drinks and even better company.",
-    quote: '"Debugging code in the morning, breaking hearts at night"',
-    effect: "split",
-    photo: "/team/person2.jpg",
+    photo: "/team/absolute-nikos.webp",
+    photo2: "/team/absolute-nikos-2.webp",
   },
   {
     first: "George",
-    last: "",
     tag: "The .exeCutor",
     am: "22390221",
     bio: "Stack full. Glass full. Low latency in thought, high standards in life. I don't chase trends — I write version control in reality. Street vibes with production discipline.",
-    quote: '"Stack full. Glass full. Low latency in thought"',
-    effect: "blur",
-    photo: "/team/person3.jpg",
+    photo: "/team/absolute-tzimos.webp",
+    photo2: "/team/absolute-tzimos-2.webp",
   },
   {
     first: "Sotiris",
-    last: "",
     tag: "Ma1c OS",
     am: "20390136",
     bio: "The System's Operator. Keeping everything running smoothly.",
-    quote: '"The System\'s Operator"',
-    effect: "blinds",
-    photo: "/team/person4.jpg",
+    photo: "/team/absolute-makos.webp",
+    photo2: "/team/absolute-makos-2.webp",
   },
 ]
 
-const effectClass = {
-  'clip-zoom': styles.fxClipZoom,
-  'split': styles.fxSplit,
-  'blur': styles.fxBlur,
-  'blinds': styles.fxBlinds,
+const textPos = [styles.ptBl, styles.ptCr, styles.ptCl, styles.ptBr]
+
+// Ink brush constants
+const BRUSH_END     = 0.18   // brush head reaches full width
+const EVAPORATE_END = 0.35   // brush tail catches head (fully gone)
+
+// Text element stagger: 3 elements per person (tag+am, name, bio)
+const TEXT_IN       = [0.18, 0.22, 0.26]   // text starts when brush hits max
+const TEXT_OUT      = [0.88, 0.86, 0.84]   // fade-out start (reverse order)
+const TEXT_FADE_DUR = 0.08                  // duration of each fade (as fraction of local)
+
+// ── Canvas drawing ─────────────────────────────────────────────
+
+function drawInkBrush(canvas, img, brushMask, headProgress, evapProgress) {
+  const ctx = canvas.getContext('2d')
+  const w = canvas.width, h = canvas.height
+  ctx.clearRect(0, 0, w, h)
+  if (headProgress <= 0 || !brushMask) return
+
+  // Diagonal reveal: top-right → bottom-left
+  // D = w - x + y  (D=0 at top-right corner, D=w+h at bottom-left corner)
+  // A pixel is inside the band when: tailD ≤ D ≤ headD
+  // which translates to: w + y - headD ≤ x ≤ w + y - tailD
+  const totalD = w + h
+  const headD  = headProgress * totalD
+  const tailD  = evapProgress * totalD
+
+  // Parallelogram clip vertices:
+  //   at y=0: x from (w - headD) to (w - tailD)
+  //   at y=h: x from (w + h - headD) to (w + h - tailD)
+  const hTopX = w - headD
+  const tTopX = w - tailD
+  const hBotX = w + h - headD
+  const tBotX = w + h - tailD
+
+  // ── Build mask canvas with diagonal clip ──
+  const mc   = document.createElement('canvas')
+  mc.width   = w
+  mc.height  = h
+  const mCtx = mc.getContext('2d')
+
+  mCtx.save()
+  mCtx.beginPath()
+  mCtx.moveTo(hTopX, 0)
+  mCtx.lineTo(tTopX, 0)
+  mCtx.lineTo(tBotX, h)
+  mCtx.lineTo(hBotX, h)
+  mCtx.closePath()
+  mCtx.clip()
+
+  // Rotate brush PNG -45° so its organic edges align with the diagonal sweep
+  const diagLen = Math.sqrt(w * w + h * h)
+  mCtx.translate(w / 2, h / 2)
+  mCtx.rotate(-Math.PI / 4)
+  mCtx.drawImage(brushMask, -diagLen / 2, -diagLen / 2, diagLen, diagLen)
+  mCtx.restore()
+
+  // ── Composite: photo (cover-style, no stretching) through brush mask ──
+  const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight)
+  const sw = img.naturalWidth  * scale
+  const sh = img.naturalHeight * scale
+  ctx.drawImage(img, (w - sw) / 2, (h - sh) / 2, sw, sh)
+  ctx.globalCompositeOperation = 'destination-in'
+  ctx.drawImage(mc, 0, 0)
+  ctx.globalCompositeOperation = 'source-over'
 }
 
-const ghostPos = ['left', 'right', 'left', 'right']
-const textPos = [styles.ptBl, styles.ptCr, styles.ptCl, styles.ptBr]
-const sigPos = [styles.sTr, styles.sBl, styles.sTl, styles.sBr]
+// ── Component ──────────────────────────────────────────────────
 
 export default function AboutUs() {
   const [progress, setProgress] = useState(0)
-  const [activeIdx, setActiveIdx] = useState(-1)
-  const [visibleSet, setVisibleSet] = useState(new Set())
-  const lenisRef = useRef(null)
-  const sectionsRef = useRef([])
+  const [activeIdx, setActiveIdx] = useState(0)
+  const [photoErrors, setPhotoErrors] = useState({})
 
+  const lenisRef = useRef(null)
+  const containerRef = useRef(null)
+  const photoLayerRefs = useRef([])
+  const textLayerRefs = useRef([])
+  const textElemRefs = useRef(people.map(() => Array(3).fill(null)))
+  const ghostNumRef = useRef(null)
+  const cursorInnerRef = useRef(null)
+  const cursorOuterRef = useRef(null)
+  const mouseX = useRef(-200)
+  const mouseY = useRef(-200)
+  const outerX = useRef(-200)
+  const outerY = useRef(-200)
+
+  const brushCanvasRefs = useRef([])   // one <canvas> per person
+  const loadedPhoto2    = useRef([])   // preloaded Image objects
+  const brushMaskRef    = useRef(null) // converted brush PNG → alpha mask canvas
+
+  // Lenis smooth scroll
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.2,
@@ -70,38 +136,160 @@ export default function AboutUs() {
       smoothWheel: true,
     })
     lenisRef.current = lenis
-
-    function raf(time) {
-      lenis.raf(time)
-      requestAnimationFrame(raf)
-    }
+    function raf(time) { lenis.raf(time); requestAnimationFrame(raf) }
     const frameId = requestAnimationFrame(raf)
-
-    return () => {
-      cancelAnimationFrame(frameId)
-      lenis.destroy()
-    }
+    return () => { cancelAnimationFrame(frameId); lenis.destroy() }
   }, [])
 
+  // Preload color photos into Image objects for canvas drawing
+  useEffect(() => {
+    people.forEach((person, i) => {
+      if (!person.photo2) return
+      const img = new Image()
+      img.onload  = () => { loadedPhoto2.current[i] = img }
+      img.onerror = () => { loadedPhoto2.current[i] = null }
+      img.src = person.photo2
+    })
+
+    const bi = new Image()
+    bi.onload = () => {
+      // Convert white-background PNG → alpha mask (dark = opaque, light = transparent)
+      const mc = document.createElement('canvas')
+      mc.width  = bi.naturalWidth
+      mc.height = bi.naturalHeight
+      const mCtx = mc.getContext('2d')
+      mCtx.drawImage(bi, 0, 0)
+      const id   = mCtx.getImageData(0, 0, mc.width, mc.height)
+      const px   = id.data
+      for (let i = 0; i < px.length; i += 4) {
+        const lum   = px[i] * 0.299 + px[i+1] * 0.587 + px[i+2] * 0.114
+        px[i]       = 0
+        px[i+1]     = 0
+        px[i+2]     = 0
+        px[i+3]     = Math.round(255 - lum)   // dark → opaque, white → transparent
+      }
+      mCtx.putImageData(id, 0, 0)
+      brushMaskRef.current = mc
+    }
+    bi.src = '/brush-stroke.png'
+  }, [])
+
+  // Keep canvas bitmap size in sync with CSS layout size
+  useEffect(() => {
+    const observers = []
+    brushCanvasRefs.current.forEach((canvas) => {
+      if (!canvas) return
+      const rect = canvas.getBoundingClientRect()
+      if (rect.width > 0) {
+        canvas.width  = Math.round(rect.width)
+        canvas.height = Math.round(rect.height)
+      }
+      const ro = new ResizeObserver(entries => {
+        for (const e of entries) {
+          canvas.width  = Math.round(e.contentRect.width)
+          canvas.height = Math.round(e.contentRect.height)
+        }
+      })
+      ro.observe(canvas)
+      observers.push(ro)
+    })
+    return () => observers.forEach(ro => ro.disconnect())
+  }, [])
+
+  // Scroll handler: progress bar + phase-based crossfade
   useEffect(() => {
     const onScroll = () => {
       const st = window.scrollY
       const dh = document.documentElement.scrollHeight - window.innerHeight
       setProgress(dh > 0 ? (st / dh) * 100 : 0)
 
-      let newActive = -1
-      const newVisible = new Set()
+      const container = containerRef.current
+      if (!container) return
 
-      sectionsRef.current.forEach((el, i) => {
-        if (!el) return
-        const r = el.getBoundingClientRect()
-        if (r.top < window.innerHeight * 0.55 && r.bottom > window.innerHeight * 0.25) {
-          newVisible.add(i)
-          newActive = i
+      const r = container.getBoundingClientRect()
+      const totalScroll = container.offsetHeight - window.innerHeight
+      if (totalScroll <= 0) return
+
+      const globalProg = Math.max(0, Math.min(1, -r.top / totalScroll))
+
+      let currentActive = 0
+
+      people.forEach((_, i) => {
+        const phaseStart = i / people.length
+        const phaseEnd = (i + 1) / people.length
+        const phaseLen = phaseEnd - phaseStart
+
+        const local = Math.max(0, Math.min(1,
+          (globalProg - phaseStart) / phaseLen
+        ))
+
+        // Photo layer opacity
+        let photoOp
+        if (i === 0) {
+          photoOp = local > 0.88 ? (1 - local) / 0.12 : 1
+        } else if (local <= 0) {
+          photoOp = 0
+        } else if (local < 0.06) {
+          photoOp = local / 0.06          // fast fade-in for grayscale photo
+        } else if (i < people.length - 1 && local > 0.88) {
+          photoOp = (1 - local) / 0.12
+        } else {
+          photoOp = 1
         }
+
+        if (photoLayerRefs.current[i]) {
+          photoLayerRefs.current[i].style.opacity = photoOp
+          photoLayerRefs.current[i].style.visibility = photoOp > 0 || i === 0 ? 'visible' : 'hidden'
+        }
+
+        // Canvas ink brush for photo2
+        const canvas   = brushCanvasRefs.current[i]
+        const photoImg = loadedPhoto2.current[i]
+
+        if (canvas && photoImg && canvas.width > 0 && canvas.height > 0) {
+          const headProgress = Math.min(1, local / BRUSH_END)
+          const evapProgress = local < BRUSH_END
+            ? 0
+            : Math.min(1, (local - BRUSH_END) / (EVAPORATE_END - BRUSH_END))
+          drawInkBrush(canvas, photoImg, brushMaskRef.current, headProgress, evapProgress)
+        } else if (canvas) {
+          canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
+        }
+
+        // Staggered text elements — 3 elements: tag+am, name, bio
+        let anyVisible = false
+        for (let j = 0; j < 3; j++) {
+          const inStart  = TEXT_IN[j]
+          const outStart = TEXT_OUT[j]
+          let elemOp
+          if (local < inStart) {
+            elemOp = 0
+          } else if (local < inStart + TEXT_FADE_DUR) {
+            elemOp = (local - inStart) / TEXT_FADE_DUR
+          } else if (local < outStart) {
+            elemOp = 1
+          } else if (local < outStart + TEXT_FADE_DUR) {
+            elemOp = (outStart + TEXT_FADE_DUR - local) / TEXT_FADE_DUR
+          } else {
+            elemOp = 0
+          }
+          if (elemOp > 0) anyVisible = true
+          const el = textElemRefs.current[i]?.[j]
+          if (el) el.style.opacity = elemOp
+        }
+
+        // Text layer wrapper: only controls visibility for pointer-events
+        if (textLayerRefs.current[i]) {
+          textLayerRefs.current[i].style.visibility = anyVisible ? 'visible' : 'hidden'
+        }
+
+        if (local > 0.05) currentActive = i
       })
-      setVisibleSet(newVisible)
-      setActiveIdx(newActive)
+
+      setActiveIdx(currentActive)
+      if (ghostNumRef.current) {
+        ghostNumRef.current.textContent = `0${currentActive + 1}`
+      }
     }
 
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -109,27 +297,64 @@ export default function AboutUs() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const scrollToSection = useCallback((i) => {
-    const el = sectionsRef.current[i]
-    if (el && lenisRef.current) {
-      lenisRef.current.scrollTo(el, { offset: -64 })
-    } else if (i === 0 && lenisRef.current) {
-      lenisRef.current.scrollTo(0)
+  // Custom cursor
+  useEffect(() => {
+    let animId
+    let shown = false
+
+    const onMove = (e) => {
+      mouseX.current = e.clientX
+      mouseY.current = e.clientY
+      if (!shown) {
+        shown = true
+        if (cursorInnerRef.current) cursorInnerRef.current.style.opacity = '1'
+        if (cursorOuterRef.current) cursorOuterRef.current.style.opacity = '1'
+      }
     }
+
+    const lerp = (a, b, t) => a + (b - a) * t
+
+    const tick = () => {
+      outerX.current = lerp(outerX.current, mouseX.current, 0.1)
+      outerY.current = lerp(outerY.current, mouseY.current, 0.1)
+
+      if (cursorInnerRef.current)
+        cursorInnerRef.current.style.transform = `translate(${mouseX.current - 4}px, ${mouseY.current - 4}px)`
+      if (cursorOuterRef.current)
+        cursorOuterRef.current.style.transform = `translate(${outerX.current - 20}px, ${outerY.current - 20}px)`
+
+      animId = requestAnimationFrame(tick)
+    }
+
+    window.addEventListener('mousemove', onMove)
+    animId = requestAnimationFrame(tick)
+    return () => { window.removeEventListener('mousemove', onMove); cancelAnimationFrame(animId) }
+  }, [])
+
+  const scrollToSection = useCallback((i) => {
+    if (!lenisRef.current || !containerRef.current) return
+    const container = containerRef.current
+    const totalScroll = container.offsetHeight - window.innerHeight
+    const phaseStart = i / people.length
+    const targetScroll = container.offsetTop + phaseStart * totalScroll
+    lenisRef.current.scrollTo(targetScroll, { offset: 0 })
   }, [])
 
   return (
     <div className={styles.aboutPage}>
+      <div ref={cursorOuterRef} className={styles.cursorOuter} />
+      <div ref={cursorInnerRef} className={styles.cursorInner} />
+
       <div className={styles.grain} />
       <div className={styles.progressBar} style={{ width: `${progress}%` }} />
 
       <div className={styles.dotNav}>
-        {people.map((_, i) => (
+        {people.map((person, i) => (
           <button
             key={i}
             className={`${styles.dot} ${activeIdx === i ? styles.dotActive : ''}`}
             onClick={() => scrollToSection(i)}
-            aria-label={`Go to person ${i + 1}`}
+            aria-label={person.first}
           />
         ))}
       </div>
@@ -151,74 +376,86 @@ export default function AboutUs() {
         </div>
       </section>
 
-      {people.map((person, i) => (
-        <div key={i}>
-          {i > 0 && (
-            <div className={styles.divider}>
-              <div className={styles.dividerLine} />
-            </div>
-          )}
-          <section
-            ref={(el) => (sectionsRef.current[i] = el)}
-            className={`
-              ${styles.personSection}
-              ${effectClass[person.effect] || ''}
-              ${visibleSet.has(i) ? styles.inView : ''}
-            `}
-          >
-            <div className={styles.personSticky}>
-              <div className={`${styles.ghostNum} ${styles[`gn${ghostPos[i].charAt(0).toUpperCase() + ghostPos[i].slice(1)}`]}`}>
-                0{i + 1}
-              </div>
+      {/* Scroll-driven crossfade container */}
+      <div ref={containerRef} className={styles.scrollContainer}>
+        <div className={styles.stage}>
+          {/* Photo frame — gradient overlays stable */}
+          <div className={styles.photoFrame}>
+            <div className={styles.ovT} />
+            <div className={styles.ovB} />
+            <div className={styles.ovL} />
+            <div className={styles.ovR} />
 
-              <div className={styles.photoContainer}>
-                <div className={styles.ovT} />
-                <div className={styles.ovB} />
-                <div className={styles.ovL} />
-                <div className={styles.ovR} />
+            {people.map((person, i) => (
+              <div
+                key={i}
+                ref={el => { photoLayerRefs.current[i] = el }}
+                className={styles.personLayer}
+              >
                 <div className={styles.photoWrap}>
-                  <img
-                    src={person.photo}
-                    alt={person.first}
-                    className={styles.photo}
-                    onError={(e) => {
-                      e.target.style.display = 'none'
-                      e.target.nextSibling.style.display = 'flex'
-                    }}
-                  />
-                  <div className={styles.photoPlaceholder} style={{ display: 'none' }}>
-                    {person.first[0]}
-                  </div>
+                  {!photoErrors[i] ? (
+                    <img
+                      src={person.photo}
+                      alt={person.first}
+                      className={styles.photo}
+                      onError={() => setPhotoErrors(prev => ({ ...prev, [i]: true }))}
+                    />
+                  ) : (
+                    <div className={styles.photoPlaceholder}>{person.first[0]}</div>
+                  )}
+                  {person.photo2 && (
+                    <>
+                      <canvas
+                        ref={el => { brushCanvasRefs.current[i] = el }}
+                        className={styles.brushCanvas}
+                        aria-hidden="true"
+                      />
+                      <img
+                        src={person.photo2}
+                        alt={`${person.first} color`}
+                        className={styles.brushCanvasMobileFallback}
+                      />
+                    </>
+                  )}
                 </div>
               </div>
+            ))}
+          </div>
 
-              <div className={`${styles.signature} ${sigPos[i]}`}>
+          {/* Ghost number */}
+          <div className={styles.ghostNum}>
+            <span ref={ghostNumRef}>01</span>
+          </div>
+
+          {/* Text layers — each person's text block, elements stagger individually */}
+          {people.map((person, i) => (
+            <div
+              key={`text-${i}`}
+              ref={el => { textLayerRefs.current[i] = el }}
+              className={`${styles.textLayer} ${textPos[i]}`}
+            >
+              <div ref={el => { textElemRefs.current[i][0] = el }} style={{ opacity: 0 }}>
+                <span className={styles.tag}>{person.tag}</span>
+                <span className={styles.am}>AM: {person.am}</span>
+              </div>
+              <h2
+                ref={el => { textElemRefs.current[i][1] = el }}
+                className={styles.personName}
+                style={{ opacity: 0 }}
+              >
                 {person.first}
-              </div>
-
-              <div className={`${styles.personText} ${textPos[i]}`}>
-                <div className={`${styles.textReveal} ${styles.delay1}`}>
-                  <span className={styles.tag}>{person.tag}</span>
-                  <span className={styles.am}>AM: {person.am}</span>
-                </div>
-                <div className={`${styles.textReveal} ${styles.delay2}`}>
-                  <h2 className={styles.personName}>
-                    {person.first}
-                    {person.last && <em>{person.last}</em>}
-                  </h2>
-                </div>
-                <div className={`${styles.textReveal} ${styles.delay3}`}>
-                  <p className={styles.bio}>{person.bio}</p>
-                </div>
-              </div>
-
-              <div className={`${styles.pullQuote} ${styles.textReveal} ${styles.delay4}`}>
-                <blockquote>{person.quote}</blockquote>
-              </div>
+              </h2>
+              <p
+                ref={el => { textElemRefs.current[i][2] = el }}
+                className={styles.bio}
+                style={{ opacity: 0 }}
+              >
+                {person.bio}
+              </p>
             </div>
-          </section>
+          ))}
         </div>
-      ))}
+      </div>
 
       <section className={styles.outro}>
         <h2 className={styles.outroHeading}>
