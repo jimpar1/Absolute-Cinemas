@@ -433,6 +433,39 @@
   line-height: 1.6;
 }
 
+/* ── CTA Row ── */
+.ctaRow {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 48px 24px 80px;
+  background: #0a0a0a;
+  flex-wrap: wrap;
+}
+
+.ctaBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 36px;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s;
+}
+
+.ctaBtn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.7);
+}
+
+
 /* ── Mobile ─────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .dotNav        { display: none; }
