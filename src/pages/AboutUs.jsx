@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import Lenis from 'lenis'
 import styles from './AboutUs.module.css'
+import VideoIntro from '../components/VideoIntro'
 
 const people = [
   {
@@ -20,7 +22,7 @@ const people = [
     photo2: "/team/absolute-nikos-2.webp",
   },
   {
-    first: "George",
+    first: "Giorgos",
     tag: "The .exeCutor",
     am: "22390221",
     bio: "Stack full. Glass full. Low latency in thought, high standards in life. I don't chase trends — I write version control in reality. Street vibes with production discipline.",
@@ -110,6 +112,7 @@ export default function AboutUs() {
   const [progress, setProgress] = useState(0)
   const [activeIdx, setActiveIdx] = useState(0)
   const [photoErrors, setPhotoErrors] = useState({})
+  const [showVideo, setShowVideo] = useState(false)
 
   const lenisRef = useRef(null)
   const containerRef = useRef(null)
@@ -465,6 +468,21 @@ export default function AboutUs() {
           Four minds. Infinite possibilities. This is just the beginning of our story.
         </p>
       </section>
+
+      {/* ── Bottom CTA buttons ── */}
+      <div className={styles.ctaRow}>
+        <button className={styles.ctaBtn} onClick={() => setShowVideo(true)}>
+          Watch Intro
+        </button>
+        <Link to="/movies" className={styles.ctaBtn}>
+          Browse Movies
+        </Link>
+      </div>
+
+      {/* ── Video modal ── */}
+      {showVideo && (
+        <VideoIntro onComplete={() => setShowVideo(false)} />
+      )}
     </div>
   )
 }
