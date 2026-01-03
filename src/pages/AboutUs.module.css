@@ -326,10 +326,16 @@
   font-weight: 700;
   font-size: clamp(160px, 26vw, 380px);
   color: transparent;
-  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.04);
+  -webkit-text-stroke: 2px rgba(255, 255, 255, 0.15);
   user-select: none;
   pointer-events: none;
   z-index: 0;
+  right: -3%;
+  transition: left 0.3s ease, right 0.3s ease;
+}
+
+.ghostNumLeft {
+  right: auto;
   left: -3%;
 }
 
