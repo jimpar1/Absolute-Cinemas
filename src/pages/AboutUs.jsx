@@ -52,27 +52,33 @@ const TEXT_FADE_DUR = 0.08                  // duration of each fade (as fractio
 
 // ── Canvas drawing ─────────────────────────────────────────────
 
-function drawInkBrush(canvas, img, brushMask, headProgress, evapProgress) {
+function drawInkBrush(canvas, img, brushMask, headProgress, evapProgress, reverse = false) {
   const ctx = canvas.getContext('2d')
   const w = canvas.width, h = canvas.height
   ctx.clearRect(0, 0, w, h)
   if (headProgress <= 0 || !brushMask) return
 
-  // Diagonal reveal: top-right → bottom-left
-  // D = w - x + y  (D=0 at top-right corner, D=w+h at bottom-left corner)
-  // A pixel is inside the band when: tailD ≤ D ≤ headD
-  // which translates to: w + y - headD ≤ x ≤ w + y - tailD
   const totalD = w + h
   const headD  = headProgress * totalD
   const tailD  = evapProgress * totalD
 
-  // Parallelogram clip vertices:
-  //   at y=0: x from (w - headD) to (w - tailD)
-  //   at y=h: x from (w + h - headD) to (w + h - tailD)
-  const hTopX = w - headD
-  const tTopX = w - tailD
-  const hBotX = w + h - headD
-  const tBotX = w + h - tailD
+  // Parallelogram clip vertices — direction depends on reverse flag
+  let hTopX, tTopX, hBotX, tBotX
+  if (reverse) {
+    // top-left → bottom-right: D = x + y
+    // D=0 at top-left corner, D=w+h at bottom-right corner
+    hTopX = headD        // head edge at y=0: x = headD
+    tTopX = tailD
+    hBotX = headD - h    // head edge at y=h: x = headD - h
+    tBotX = tailD - h
+  } else {
+    // top-right → bottom-left: D = w - x + y (original)
+    // D=0 at top-right corner, D=w+h at bottom-left corner
+    hTopX = w - headD
+    tTopX = w - tailD
+    hBotX = w + h - headD
+    tBotX = w + h - tailD
+  }
 
   // ── Build mask canvas with diagonal clip ──
   const mc   = document.createElement('canvas')
@@ -89,10 +95,10 @@ function drawInkBrush(canvas, img, brushMask, headProgress, evapProgress) {
   mCtx.closePath()
   mCtx.clip()
 
-  // Rotate brush PNG -45° so its organic edges align with the diagonal sweep
+  // Rotate brush PNG: -45° for current direction, +45° for reverse direction
   const diagLen = Math.sqrt(w * w + h * h)
   mCtx.translate(w / 2, h / 2)
-  mCtx.rotate(-Math.PI / 4)
+  mCtx.rotate(reverse ? Math.PI / 4 : -Math.PI / 4)
   mCtx.drawImage(brushMask, -diagLen / 2, -diagLen / 2, diagLen, diagLen)
   mCtx.restore()
 
@@ -130,6 +136,7 @@ export default function AboutUs() {
   const brushCanvasRefs = useRef([])   // one <canvas> per person
   const loadedPhoto2    = useRef([])   // preloaded Image objects
   const brushMaskRef    = useRef(null) // converted brush PNG → alpha mask canvas
+  const ghostNumRef2    = useRef(null) // ghost number element for opacity control
 
   // Lenis smooth scroll
   useEffect(() => {
@@ -254,7 +261,8 @@ export default function AboutUs() {
           const evapProgress = local < BRUSH_END
             ? 0
             : Math.min(1, (local - BRUSH_END) / (EVAPORATE_END - BRUSH_END))
-          drawInkBrush(canvas, photoImg, brushMaskRef.current, headProgress, evapProgress)
+          const reverseDirection = i === 1 || i === 3
+          drawInkBrush(canvas, photoImg, brushMaskRef.current, headProgress, evapProgress, reverseDirection)
         } else if (canvas) {
           canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
         }
@@ -292,6 +300,28 @@ export default function AboutUs() {
       setActiveIdx(currentActive)
       if (ghostNumRef.current) {
         ghostNumRef.current.textContent = `0${currentActive + 1}`
+      }
+
+      // Ghost number opacity: fade in when brush starts, fade out at TEXT_OUT[0]
+      if (ghostNumRef2.current) {
+        const brushStartProgress = BRUSH_END
+        const brushFadeOutProgress = TEXT_OUT[0]
+        const ghostFadeInDur = 0.08
+        const globalLocalProgress = (globalProg - (currentActive / people.length)) / (1 / people.length)
+
+        let ghostOp
+        if (globalLocalProgress < brushStartProgress) {
+          ghostOp = 0
+        } else if (globalLocalProgress < brushStartProgress + ghostFadeInDur) {
+          ghostOp = (globalLocalProgress - brushStartProgress) / ghostFadeInDur
+        } else if (globalLocalProgress < brushFadeOutProgress) {
+          ghostOp = 1
+        } else if (globalLocalProgress < brushFadeOutProgress + ghostFadeInDur) {
+          ghostOp = (brushFadeOutProgress + ghostFadeInDur - globalLocalProgress) / ghostFadeInDur
+        } else {
+          ghostOp = 0
+        }
+        ghostNumRef2.current.style.opacity = ghostOp
       }
     }
 
@@ -426,7 +456,7 @@ export default function AboutUs() {
           </div>
 
           {/* Ghost number */}
-          <div className={styles.ghostNum}>
+          <div ref={ghostNumRef2} className={`${styles.ghostNum} ${[1, 3].includes(activeIdx) ? styles.ghostNumLeft : ''}`}>
             <span ref={ghostNumRef}>01</span>
           </div>
 
