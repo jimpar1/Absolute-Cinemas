@@ -1,56 +1,23 @@
-/*
-Αυτή η σελίδα εμφανίζει όλες τις ταινίες με φίλτρα, αναζήτηση και καρτέλες για Now Playing, Upcoming και Watchlist.
-*/
+/**
+ * Movies page – Browse all movies with search, genre filters, and tabs.
+ *
+ * Tabs:
+ *   • Now Playing – movies currently in theaters
+ *   • Upcoming    – movies coming soon
+ *   • Watchlist   – user's saved/bookmarked movies (from ReservationContext)
+ *
+ * Delegates UI to MovieFilters (search + genre) and MovieGrid (card grid).
+ */
 
 import { useEffect, useState } from "react"
-import { getMovies } from "../api/movies"
-import MovieCard from "../components/MovieCard"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { getMovies } from "@/api/movies"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useReservation } from "@/context/ReservationContext"
-import {
-    Film,
-    Play,
-    Calendar,
-    Bookmark,
-    Search,
-    X,
-    SlidersHorizontal
-} from "lucide-react"
+import { Film, Play, Calendar, Bookmark } from "lucide-react"
 
-// Common genre list for filtering
-const GENRES = [
-    "Action",
-    "Adventure",
-    "Animation",
-    "Comedy",
-    "Crime",
-    "Documentary",
-    "Drama",
-    "Family",
-    "Fantasy",
-    "Horror",
-    "Mystery",
-    "Romance",
-    "Sci-Fi",
-    "Thriller",
-    "War",
-    "Western"
-]
-
-function MovieCardSkeleton() {
-    return (
-        <div className="space-y-3">
-            <Skeleton className="aspect-[2/3] w-full rounded-xl" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/2" />
-        </div>
-    )
-}
+import MovieFilters from "@/components/movies/MovieFilters"
+import MovieGrid from "@/components/movies/MovieGrid"
 
 export default function Movies() {
     const [movies, setMovies] = useState([])
@@ -60,9 +27,9 @@ export default function Movies() {
     const [showFilters, setShowFilters] = useState(false)
     const [activeTab, setActiveTab] = useState("now-playing")
 
-    // Get watchlist from global context
     const { savedMovies } = useReservation()
 
+    /* Fetch movies on mount */
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true)
@@ -79,8 +46,7 @@ export default function Movies() {
         fetchData()
     }, [])
 
-
-    // Toggle genre selection
+    /** Toggle a genre in the selected list */
     const toggleGenre = (genre) => {
         setSelectedGenres(prev =>
             prev.includes(genre)
@@ -89,22 +55,20 @@ export default function Movies() {
         )
     }
 
-    // Clear all filters
+    /** Reset all filters */
     const clearFilters = () => {
         setSearchQuery("")
         setSelectedGenres([])
     }
 
-    // Filter movies based on search and genres
+    /** Apply search + genre filters to a movie list */
     const filterMovies = (movieList) => {
         return movieList.filter(movie => {
-            // Search filter
             const matchesSearch = searchQuery === "" ||
                 movie.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 movie.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 movie.overview?.toLowerCase().includes(searchQuery.toLowerCase())
 
-            // Genre filter - movie.genre is a string like "Action, Adventure"
             const matchesGenre = selectedGenres.length === 0 ||
                 selectedGenres.some(genre =>
                     movie.genre?.toLowerCase().includes(genre.toLowerCase())
@@ -114,51 +78,11 @@ export default function Movies() {
         })
     }
 
-    // Get movies by status
-    const nowPlayingMovies = filterMovies(movies.filter(m => m.type === 'now_playing' || !m.type))
-    const upcomingMovies = filterMovies(movies.filter(m => m.type === 'upcoming'))
-
-    // Get watchlist movies - use savedMovies from context
+    /* Derived filtered lists */
+    const nowPlayingMovies = filterMovies(movies.filter(m => m.status === 'now_playing' || !m.status))
+    const upcomingMovies = filterMovies(movies.filter(m => m.status === 'upcoming'))
     const watchlistMovies = filterMovies(savedMovies)
-
     const hasActiveFilters = searchQuery !== "" || selectedGenres.length > 0
-
-    const renderMovieGrid = (movieList, emptyIcon, emptyTitle, emptyDescription) => {
-        if (loading) {
-            return (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-                    {Array.from({ length: 12 }).map((_, i) => (
-                        <MovieCardSkeleton key={i} />
-                    ))}
-                </div>
-            )
-        }
-
-        if (movieList.length === 0) {
-            return (
-                <Card>
-                    <CardContent className="py-16 text-center">
-                        {emptyIcon}
-                        <h3 className="text-xl font-semibold mb-2">{emptyTitle}</h3>
-                        <p className="text-muted-foreground mb-4">{emptyDescription}</p>
-                        {hasActiveFilters && (
-                            <Button variant="outline" onClick={clearFilters}>
-                                Clear Filters
-                            </Button>
-                        )}
-                    </CardContent>
-                </Card>
-            )
-        }
-
-        return (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-                {movieList.map(movie => (
-                    <MovieCard key={movie.id} movie={movie} />
-                ))}
-            </div>
-        )
-    }
 
     return (
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
@@ -176,105 +100,17 @@ export default function Movies() {
                 </Badge>
             </div>
 
-            {/* Search and Filter Bar */}
-            <div className="mb-6 space-y-4">
-                <div className="flex flex-col sm:flex-row gap-3">
-                    {/* Search Input */}
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            type="text"
-                            placeholder="Search movies..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 pr-10"
-                        />
-                        {searchQuery && (
-                            <button
-                                onClick={() => setSearchQuery("")}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Filter Toggle Button */}
-                    <Button
-                        variant={showFilters ? "default" : "outline"}
-                        onClick={() => setShowFilters(!showFilters)}
-                        className="gap-2"
-                    >
-                        <SlidersHorizontal className="h-4 w-4" />
-                        Filters
-                        {selectedGenres.length > 0 && (
-                            <Badge variant="secondary" className="ml-1">
-                                {selectedGenres.length}
-                            </Badge>
-                        )}
-                    </Button>
-                </div>
-
-                {/* Genre Filters */}
-                {showFilters && (
-                    <Card>
-                        <CardContent className="pt-4 pb-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="font-medium text-sm">Filter by Genre</h3>
-                                {selectedGenres.length > 0 && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setSelectedGenres([])}
-                                    >
-                                        Clear
-                                    </Button>
-                                )}
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {GENRES.map(genre => (
-                                    <Badge
-                                        key={genre}
-                                        variant={selectedGenres.includes(genre) ? "default" : "outline"}
-                                        className="cursor-pointer hover:bg-primary/80 transition-colors"
-                                        onClick={() => toggleGenre(genre)}
-                                    >
-                                        {genre}
-                                    </Badge>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* Active Filters Display */}
-                {hasActiveFilters && (
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Active filters:</span>
-                        {searchQuery && (
-                            <Badge variant="secondary" className="gap-1">
-                                Search: "{searchQuery}"
-                                <X
-                                    className="h-3 w-3 cursor-pointer"
-                                    onClick={() => setSearchQuery("")}
-                                />
-                            </Badge>
-                        )}
-                        {selectedGenres.map(genre => (
-                            <Badge key={genre} variant="secondary" className="gap-1">
-                                {genre}
-                                <X
-                                    className="h-3 w-3 cursor-pointer"
-                                    onClick={() => toggleGenre(genre)}
-                                />
-                            </Badge>
-                        ))}
-                        <Button variant="ghost" size="sm" onClick={clearFilters}>
-                            Clear all
-                        </Button>
-                    </div>
-                )}
-            </div>
+            {/* Search & Genre Filters */}
+            <MovieFilters
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                selectedGenres={selectedGenres}
+                onToggleGenre={toggleGenre}
+                onClearGenres={() => setSelectedGenres([])}
+                showFilters={showFilters}
+                onToggleFilters={() => setShowFilters(!showFilters)}
+                onClearAll={clearFilters}
+            />
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -295,49 +131,43 @@ export default function Movies() {
                     </TabsList>
                 </div>
 
-                {/* Now Playing Tab */}
                 <TabsContent value="now-playing">
                     <div className="mb-4 text-center">
-                        <p className="text-muted-foreground">
-                            {nowPlayingMovies.length} movies currently in theaters
-                        </p>
+                        <p className="text-muted-foreground">{nowPlayingMovies.length} movies currently in theaters</p>
                     </div>
-                    {renderMovieGrid(
-                        nowPlayingMovies,
-                        <Play className="h-16 w-16 mx-auto text-muted-foreground mb-4" />,
-                        "No movies currently playing",
-                        "Check back soon for new releases"
-                    )}
+                    <MovieGrid
+                        movies={nowPlayingMovies} loading={loading}
+                        emptyIcon={<Play className="h-16 w-16 mx-auto text-muted-foreground mb-4" />}
+                        emptyTitle="No movies currently playing"
+                        emptyDescription="Check back soon for new releases"
+                        hasActiveFilters={hasActiveFilters} onClearFilters={clearFilters}
+                    />
                 </TabsContent>
 
-                {/* Upcoming Tab */}
                 <TabsContent value="upcoming">
                     <div className="mb-4 text-center">
-                        <p className="text-muted-foreground">
-                            {upcomingMovies.length} movies coming soon
-                        </p>
+                        <p className="text-muted-foreground">{upcomingMovies.length} movies coming soon</p>
                     </div>
-                    {renderMovieGrid(
-                        upcomingMovies,
-                        <Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />,
-                        "No upcoming movies",
-                        "Check back later for future releases"
-                    )}
+                    <MovieGrid
+                        movies={upcomingMovies} loading={loading}
+                        emptyIcon={<Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />}
+                        emptyTitle="No upcoming movies"
+                        emptyDescription="Check back later for future releases"
+                        hasActiveFilters={hasActiveFilters} onClearFilters={clearFilters}
+                    />
                 </TabsContent>
 
-                {/* Watchlist Tab */}
                 <TabsContent value="watchlist">
                     <div className="mb-4 text-center">
-                        <p className="text-muted-foreground">
-                            {watchlistMovies.length} movies in your watchlist
-                        </p>
+                        <p className="text-muted-foreground">{watchlistMovies.length} movies in your watchlist</p>
                     </div>
-                    {renderMovieGrid(
-                        watchlistMovies,
-                        <Bookmark className="h-16 w-16 mx-auto text-muted-foreground mb-4" />,
-                        "Your watchlist is empty",
-                        "Add movies to your watchlist to see them here"
-                    )}
+                    <MovieGrid
+                        movies={watchlistMovies} loading={loading}
+                        emptyIcon={<Bookmark className="h-16 w-16 mx-auto text-muted-foreground mb-4" />}
+                        emptyTitle="Your watchlist is empty"
+                        emptyDescription="Add movies to your watchlist to see them here"
+                        hasActiveFilters={hasActiveFilters} onClearFilters={clearFilters}
+                    />
                 </TabsContent>
             </Tabs>
         </div>

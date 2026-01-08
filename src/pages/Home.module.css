@@ -1,6 +1,7 @@
 /*
-Αυτό το αρχείο CSS περιέχει τα στυλ για τη σελίδα Home, συμπεριλαμβανομένης της hero section και του slider.
-*/
+ * Home.module.css – Scoped styles for the Home page.
+ * Covers the hero section, Swiper coverflow slider, and features section.
+ */
 
 /* === HERO SECTION WITH FULL ORIGINAL IMAGE === */
 .heroSection {
