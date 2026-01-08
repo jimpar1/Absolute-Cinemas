@@ -1,6 +1,7 @@
-/*
-Αυτή η σελίδα είναι η αρχική σελίδα της εφαρμογής με hero section και λίστα ταινιών.
-*/
+/**
+ * Home page – Landing page with a hero section, a coverflow movie slider (Swiper),
+ * and tabbed sections for Now Playing / Upcoming movie grids.
+ */
 
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
