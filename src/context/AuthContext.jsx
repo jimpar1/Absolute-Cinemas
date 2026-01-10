@@ -50,7 +50,7 @@ export function AuthProvider({ children }) {
         setIsLoading(true)
         try {
             const data = await authAPI.login(email, password)
-
+            
             // Django JWT response structure: { access, refresh, user: {...} } or similar
             const userData = data.user || {
                 id: data.id,
@@ -59,15 +59,17 @@ export function AuthProvider({ children }) {
                 first_name: data.first_name,
                 last_name: data.last_name,
             }
-
+            
             const newAccessToken = data.access || data.accessToken
             const newRefreshToken = data.refresh || data.refreshToken
 
             setUser(userData)
             setAccessToken(newAccessToken)
             setRefreshToken(newRefreshToken)
-
+            
             return userData
+        } catch (error) {
+            throw error
         } finally {
             setIsLoading(false)
         }
@@ -97,7 +99,7 @@ export function AuthProvider({ children }) {
         setIsLoading(true)
         try {
             const data = await authAPI.register(formData)
-
+            
             // Django JWT response structure for registration
             const userData = data.user || {
                 id: data.id,
@@ -106,15 +108,17 @@ export function AuthProvider({ children }) {
                 first_name: data.first_name,
                 last_name: data.last_name,
             }
-
+            
             const newAccessToken = data.access || data.accessToken
             const newRefreshToken = data.refresh || data.refreshToken
 
             setUser(userData)
             setAccessToken(newAccessToken)
             setRefreshToken(newRefreshToken)
-
+            
             return userData
+        } catch (error) {
+            throw error
         } finally {
             setIsLoading(false)
         }
@@ -134,7 +138,6 @@ export function AuthProvider({ children }) {
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
     const context = useContext(AuthContext)
     if (!context) {
