@@ -5,7 +5,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-const Label = React.forwardRef(({ className, children, ...props }, ref) => (
+const Label = React.forwardRef(({ className, ...props }, ref) => (
   <label
     ref={ref}
     className={cn(
@@ -13,9 +13,7 @@ const Label = React.forwardRef(({ className, children, ...props }, ref) => (
       className
     )}
     {...props}
-  >
-    {children}
-  </label>
+  />
 ))
 Label.displayName = "Label"
 

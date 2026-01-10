@@ -1,8 +1,6 @@
-/**
- * Footer – Application-wide footer.
- * Shows logos, project info (student project / University of West Attica),
- * quick links, and contact details.
- */
+/*
+Αυτό το στοιχείο εμφανίζει το υποσέλιδο της εφαρμογής με λογότυπα, πληροφορίες, συνδέσμους και στοιχεία επικοινωνίας.
+*/
 
 import React from 'react';
 import './Footer.css';
