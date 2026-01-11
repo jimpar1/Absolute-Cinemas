@@ -17,14 +17,14 @@
   --color-secondary: #2e2e2e;
   --color-secondary-foreground: #fafafa;
   --color-muted: #2e2e2e;
-  --color-muted-foreground: #c8c8c8;
+  --color-muted-foreground: #a3a3a3;
   --color-accent: #2e2e2e;
   --color-accent-foreground: #fafafa;
   --color-destructive: #ef4444;
   --color-destructive-foreground: #fafafa;
   --color-border: #2e2e2e;
   --color-input: #2e2e2e;
-  --color-ring: #ffffff;
+  --color-ring: #d4d4d4;
   --radius: 0.5rem;
 }
 
