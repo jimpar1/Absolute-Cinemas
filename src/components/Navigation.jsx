@@ -1,98 +1,85 @@
-import { useState, useEffect } from "react"
+/**
+ * Navigation – Main top navigation bar.
+ *
+ * Layout (desktop): Logo | Nav Links (center) | Actions (right)
+ * Layout (mobile):  Logo | Hamburger menu (Sheet)
+ *
+ * Delegates the inbox panel to InboxDropdown and auth dialogs to LoginDialog / RegisterDialog.
+ */
+
+import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Menu, Film, Home, Info, Inbox, X, Clock, Bookmark, Armchair, Trash2, LogOut, User } from "lucide-react"
+import { Menu, Film, Home, Info, LogOut, User, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
-import { useReservation } from "@/context/ReservationContext"
 import { useAuth } from "@/context/AuthContext"
 import LoginDialog from "./LoginDialog"
 import RegisterDialog from "./RegisterDialog"
+import InboxDropdown from "./navigation/InboxDropdown"
+import VideoIntro from "./VideoIntro"
 
+/** Top-level navigation link definitions */
 const navItems = [
     { name: "Home", path: "/", icon: Home },
     { name: "Movies", path: "/movies", icon: Film },
     { name: "About Us", path: "/about", icon: Info },
 ]
 
-function ReservationTimer({ expiresAt, getTimeRemaining }) {
-    const [timeLeft, setTimeLeft] = useState(getTimeRemaining(expiresAt))
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setTimeLeft(getTimeRemaining(expiresAt))
-        }, 1000)
-        return () => clearInterval(interval)
-    }, [expiresAt, getTimeRemaining])
-
-    if (timeLeft.expired) return <span className="text-red-500 text-xs">Expired</span>
+/**
+ * NavLink – A single navigation item with an icon and label.
+ * Highlights when active. Can render in desktop or mobile mode.
+ */
+function NavLink({ item, mobile = false, onNavigate }) {
+    const Icon = item.icon
+    const location = useLocation()
+    const isActive = location.pathname === item.path
 
     return (
-        <span className="text-xs text-orange-400 flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-            {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
-       </span>
+        <Link
+            to={item.path}
+            onClick={onNavigate}
+            className={cn(
+                "flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-[120px]",
+                isActive
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                mobile && "text-base py-3 w-auto justify-start"
+            )}
+        >
+            <Icon className="h-4 w-4" />
+            <span>{item.name}</span>
+        </Link>
     )
 }
 
 export default function Navigation() {
-    const [open, setOpen] = useState(false)
-    const [inboxOpen, setInboxOpen] = useState(false)
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [loginOpen, setLoginOpen] = useState(false)
     const [registerOpen, setRegisterOpen] = useState(false)
-    const location = useLocation()
-    const { reservations, savedMovies, removeReservation, removeSavedMovie, getTimeRemaining, totalItems } = useReservation()
+    const [showIntro, setShowIntro] = useState(false)
     const { user, logout } = useAuth()
 
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (inboxOpen && !e.target.closest('.inbox-dropdown') && !e.target.closest('.inbox-trigger')) {
-                setInboxOpen(false)
-            }
-        }
-        document.addEventListener('click', handleClickOutside)
-        return () => document.removeEventListener('click', handleClickOutside)
-    }, [inboxOpen])
+    const handleReplayIntro = () => {
+        setShowIntro(true)
+    }
 
-    const NavLink = ({ item, mobile = false }) => {
-		const Icon = item.icon
-		const isActive = location.pathname === item.path
-
-		return (
-			<Link
-				to={item.path}
-				onClick={() => mobile && setOpen(false)}
-				className={cn(
-					"flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-[120px]",
-					isActive
-						? "bg-accent text-accent-foreground"
-						: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-					mobile && "text-base py-3 w-auto justify-start"
-				)}
-			>
-				<Icon className="h-4 w-4" />
-				<span>{item.name}</span>
-			</Link>
-		)
-	}
+    const handleIntroComplete = () => {
+        setShowIntro(false)
+    }
 
     return (
         <nav className="sticky top-0 z-40 w-full bg-background/70 backdrop-blur">
-            {/* LAYOUT FIX:
-               - Mobile: 'flex' with 'justify-between' puts Logo left and Menu right.
-               - Desktop: 'lg:grid' with 'grid-cols-3' creates 3 equal slots.
-            */}
-			<div className="w-full h-16 px-4 lg:px-8 flex items-center justify-between lg:grid lg:grid-cols-3">
+            <div className="w-full h-16 px-4 lg:px-8 flex items-center justify-between lg:grid lg:grid-cols-3">
 
-                {/* 1. Left Slot: Logo (Start aligned) */}
+                {/* ─── Left: Logo ─── */}
                 <div className="flex items-center justify-start">
                     <Link to="/" className="flex items-center whitespace-nowrap">
                         <span className="font-bold text-xl">Absolute Cinemas</span>
                     </Link>
                 </div>
 
-                {/* 2. Center Slot: Navigation (Center aligned) */}
-                {/* 'justify-self-center' ensures it sits in the exact middle of the grid cell */}
+                {/* ─── Center: Desktop Nav ─── */}
                 <div className="hidden lg:flex items-center justify-center w-full">
                     <div className="flex items-center space-x-4">
                         {navItems.map((item) => (
@@ -101,48 +88,47 @@ export default function Navigation() {
                     </div>
                 </div>
 
-                {/* 3. Right Slot: Actions (End aligned) */}
+                {/* ─── Right: Actions ─── */}
                 <div className="flex items-center justify-end gap-2">
-                    {/* User Menu / Login */}
+                    {/* Replay Intro Button */}
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={handleReplayIntro}
+                        className="text-muted-foreground hover:text-foreground"
+                        title="Replay Intro"
+                    >
+                        <Play className="h-4 w-4" />
+                    </Button>
+
+                    {/* Auth buttons / user info */}
                     {user ? (
                         <div className="flex items-center gap-2">
-                            <div className="hidden sm:flex items-center gap-1 px-3 py-2 rounded-md text-sm text-muted-foreground">
-                                <User className="h-4 w-4" />
-                                <span className="text-xs">{user.name}</span>
-                            </div>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={logout}
-                                className="flex items-center gap-1 text-xs sm:text-sm"
-                            >
+                            <Link to="/profile">
+                                <Button variant="ghost" className="hidden sm:flex items-center gap-1 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground">
+                                    <User className="h-4 w-4" />
+                                    <span className="text-xs">{user.name || user.username || user.email}</span>
+                                </Button>
+                            </Link>
+
+                            <Button variant="ghost" size="sm" onClick={logout} className="flex items-center gap-1 text-xs sm:text-sm">
                                 <LogOut className="h-4 w-4" />
                                 <span className="hidden sm:inline">Logout</span>
                             </Button>
                         </div>
                     ) : (
                         <div className="flex items-center gap-2">
-                            <Button
-                                onClick={() => setLoginOpen(true)}
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs sm:text-sm"
-                            >
+                            <Button onClick={() => setLoginOpen(true)} variant="ghost" size="sm" className="text-xs sm:text-sm">
                                 Login
                             </Button>
-                            <Button
-                                onClick={() => setRegisterOpen(true)}
-                                variant="default"
-                                size="sm"
-                                className="text-xs sm:text-sm"
-                            >
+                            <Button onClick={() => setRegisterOpen(true)} variant="default" size="sm" className="text-xs sm:text-sm">
                                 Sign Up
                             </Button>
                         </div>
                     )}
 
-                    {/* Mobile Menu */}
-                    <Sheet open={open} onOpenChange={setOpen}>
+                    {/* Mobile hamburger */}
+                    <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                         <SheetTrigger asChild className="lg:hidden">
                             <Button variant="ghost" size="icon" aria-label="Open menu">
                                 <Menu className="h-5 w-5" />
@@ -156,167 +142,20 @@ export default function Navigation() {
                             </SheetHeader>
                             <div className="flex flex-col space-y-2 mt-6">
                                 {navItems.map((item) => (
-                                    <NavLink key={item.path} item={item} mobile />
+                                    <NavLink key={item.path} item={item} mobile onNavigate={() => setMobileMenuOpen(false)} />
                                 ))}
                             </div>
                         </SheetContent>
                     </Sheet>
 
                     {/* Inbox */}
-                    <div className="relative">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="inbox-trigger relative"
-                            onClick={() => setInboxOpen(!inboxOpen)}
-                            aria-label="Inbox"
-                        >
-                            <Inbox className="h-5 w-5" />
-                            {totalItems > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                                    {totalItems}
-                                </span>
-                            )}
-                        </Button>
-
-                        {/* Dropdown */}
-                        {inboxOpen && (
-                            <div className="inbox-dropdown absolute right-0 top-full mt-2 w-80 sm:w-96 bg-background border rounded-lg shadow-xl z-50 max-h-[70vh] overflow-hidden flex flex-col">
-                                <div className="flex items-center justify-between p-4 border-b">
-                                    <h3 className="font-semibold text-lg">My Inbox</h3>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => setInboxOpen(false)}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-
-                                <div className="overflow-y-auto flex-1">
-                                    {/* Reservations */}
-                                    {reservations.length > 0 && (
-                                        <div className="p-4 border-b">
-                                            <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                                                <Armchair className="h-4 w-4" />
-                                                Reserved Seats
-                                            </h4>
-                                            <div className="space-y-3">
-                                                {reservations.map((reservation) => (
-                                                    <div key={reservation.id} className="bg-muted/50 rounded-lg p-3 relative group">
-                                                        <div className="flex justify-between items-start">
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="font-medium text-sm truncate">{reservation.movieTitle}</p>
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    {reservation.screeningDate} • {reservation.screeningTime}
-                                                                </p>
-                                                                <p className="text-xs text-muted-foreground">{reservation.hallName}</p>
-                                                                <div className="flex items-center gap-2 mt-1">
-                                                                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-                                                                       Seats: {reservation.seats.sort().join(", ")}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex flex-col items-end gap-2">
-                                                                <ReservationTimer expiresAt={reservation.expiresAt} getTimeRemaining={getTimeRemaining} />
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                    onClick={() => removeReservation(reservation.id)}
-                                                                >
-                                                                    <Trash2 className="h-3 w-3 text-destructive" />
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                        <Link
-                                                            to={`/booking/${reservation.movieId}`}
-                                                            className="absolute inset-0 rounded-lg"
-                                                            onClick={() => setInboxOpen(false)}
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Saved Movies */}
-                                    {savedMovies.length > 0 && (
-                                        <div className="p-4">
-                                            <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                                                <Bookmark className="h-4 w-4" />
-                                                Saved Movies
-                                            </h4>
-                                            <div className="space-y-2">
-                                                {savedMovies.map((movie) => (
-                                                    <div
-                                                        key={movie.id}
-                                                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group relative"
-                                                    >
-                                                        {movie.poster_url ? (
-                                                            <img
-                                                                src={movie.poster_url}
-                                                                alt={movie.title}
-                                                                className="w-10 h-14 object-cover rounded"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
-                                                                <Film className="h-4 w-4 text-muted-foreground" />
-                                                            </div>
-                                                        )}
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="font-medium text-sm truncate">{movie.title}</p>
-                                                            {movie.release_date && (
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    {new Date(movie.release_date).getFullYear()}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                                            onClick={(e) => {
-                                                                e.preventDefault()
-                                                                e.stopPropagation()
-                                                                removeSavedMovie(movie.id)
-                                                            }}
-                                                        >
-                                                            <Trash2 className="h-3 w-3 text-destructive" />
-                                                        </Button>
-                                                        <Link
-                                                            to={`/movies/${movie.id}`}
-                                                            className="absolute inset-0 rounded-lg"
-                                                            onClick={() => setInboxOpen(false)}
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {reservations.length === 0 && savedMovies.length === 0 && (
-                                        <div className="p-8 text-center">
-                                            <Inbox className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-                                            <p className="text-muted-foreground">Your inbox is empty</p>
-                                            <p className="text-sm text-muted-foreground/70 mt-1">
-                                                Reserved seats and saved movies will appear here
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    <InboxDropdown />
                 </div>
             </div>
 
-            {/* Login Dialog */}
             <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
-
-            {/* Register Dialog */}
             <RegisterDialog open={registerOpen} onOpenChange={setRegisterOpen} />
+            {showIntro && <VideoIntro onComplete={handleIntroComplete} />}
         </nav>
     )
 }

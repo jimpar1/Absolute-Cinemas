@@ -1,0 +1,524 @@
+.aboutPage {
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  min-height: 100vh;
+  background: #0a0a0a;
+  position: relative;
+  /* overflow-x: clip instead of hidden — clip doesn't create a scroll container,
+     which would break position: sticky on the stage inside scrollContainer */
+  overflow-x: clip;
+}
+
+/* Hide system cursor on pointer devices */
+@media (hover: hover) {
+  .aboutPage,
+  .aboutPage * {
+    cursor: none !important;
+  }
+}
+
+/* ── Custom Cursor ──────────────────────────────────────────── */
+.cursorOuter {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  will-change: transform;
+}
+
+.cursorInner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  will-change: transform;
+}
+
+/* ── Film Grain ─────────────────────────────────────────────── */
+.grain {
+  position: fixed;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,<svg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  animation: grain-move 0.4s steps(4) infinite;
+}
+
+@keyframes grain-move {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-2%, 2%); }
+  50%  { transform: translate(2%, -1%); }
+  75%  { transform: translate(-1%, -2%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ── Progress Bar ───────────────────────────────────────────── */
+.progressBar {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  height: 2px;
+  background: #fff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+  z-index: 39;
+  transition: width 0.1s linear;
+}
+
+/* ── Dot Nav ────────────────────────────────────────────────── */
+.dotNav {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 38;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dot:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.dotActive {
+  background: #fff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+}
+
+/* ── Hero ───────────────────────────────────────────────────── */
+.hero {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.heroBg {
+  position: absolute;
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 700;
+  font-size: clamp(80px, 18vw, 260px);
+  color: rgba(255, 255, 255, 0.04);
+  user-select: none;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.heroContent {
+  text-align: center;
+  z-index: 1;
+  position: relative;
+}
+
+.heroLabel {
+  font-family: 'Cascadia Code', monospace;
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: #888;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+
+.heroHeading {
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 700;
+  font-size: clamp(48px, 8vw, 120px);
+  color: #fafafa;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+}
+
+.heroHeading em {
+  font-style: italic;
+  color: #888;
+}
+
+.heroSub {
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 400;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 480px;
+  line-height: 1.6;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+}
+
+.scrollCue {
+  position: absolute;
+  bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1s forwards;
+}
+
+.scrollCue span {
+  font-family: 'Cascadia Code', monospace;
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.scrollLine {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.6), transparent);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 1; }
+}
+
+/* ── Scroll Container (drives all phases) ──────────────────── */
+.scrollContainer {
+  height: 1000vh;
+  width: 100%;
+  position: relative;
+}
+
+/* ── Sticky Stage (pinned viewport) ────────────────────────── */
+.stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ── Photo Frame (stable container for all photo layers) ───── */
+.photoFrame {
+  position: relative;
+  width: 50vw;
+  max-width: 600px;
+  aspect-ratio: 3/4;
+  overflow: hidden;
+}
+
+.ovT,
+.ovB,
+.ovL,
+.ovR {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.ovT {
+  top: 0; left: 0; right: 0;
+  height: 30%;
+  background: linear-gradient(to bottom, #0a0a0a, transparent);
+}
+
+.ovB {
+  bottom: 0; left: 0; right: 0;
+  height: 40%;
+  background: linear-gradient(to top, #0a0a0a, transparent);
+}
+
+.ovL {
+  top: 0; bottom: 0; left: 0;
+  width: 22%;
+  background: linear-gradient(to right, #0a0a0a, transparent);
+}
+
+.ovR {
+  top: 0; bottom: 0; right: 0;
+  width: 22%;
+  background: linear-gradient(to left, #0a0a0a, transparent);
+}
+
+/* ── Person Layer (stacked photo layers inside photoFrame) ─── */
+.personLayer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  will-change: opacity;
+}
+
+.photoWrap {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1);
+}
+
+.photoHover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photoPlaceholder {
+  width: 100%;
+  height: 100%;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 700;
+  font-size: 72px;
+  color: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Ghost Number ──────────────────────────────────────────── */
+.ghostNum {
+  position: absolute;
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 700;
+  font-size: clamp(160px, 26vw, 380px);
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(255, 255, 255, 0.15);
+  user-select: none;
+  pointer-events: none;
+  z-index: 0;
+  right: -3%;
+  transition: left 0.3s ease, right 0.3s ease;
+}
+
+.ghostNumLeft {
+  right: auto;
+  left: -3%;
+}
+
+/* ── Canvas Brush ───────────────────────────────────────────── */
+.brushCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.brushCanvasMobileFallback {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Text Layer (positioned wrapper only — child elements own their opacity) ─ */
+.textLayer {
+  position: absolute;
+  max-width: 420px;
+  z-index: 3;
+  visibility: hidden; /* JS sets to visible when any child is active */
+}
+
+.ptBl { left: 5%;  bottom: 12%; }
+.ptCr { right: 5%; top: 50%; transform: translateY(-50%); }
+.ptCl { left: 5%;  top: 50%; transform: translateY(-50%); }
+.ptBr { right: 5%; bottom: 12%; }
+
+.tag {
+  font-family: 'Cascadia Code', monospace;
+  font-size: 18px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #fafafa;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.am {
+  font-family: 'Cascadia Code', monospace;
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.5);
+  display: block;
+  margin-bottom: 16px;
+}
+
+.personName {
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 700;
+  font-size: clamp(36px, 5vw, 64px);
+  color: #fafafa;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.bio {
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ── Outro ──────────────────────────────────────────────────── */
+.outro {
+  height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.outroHeading {
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 700;
+  font-size: clamp(36px, 6vw, 80px);
+  color: #fafafa;
+  line-height: 1.2;
+  margin-bottom: 24px;
+}
+
+.outroHeading em {
+  font-style: italic;
+  color: #888;
+}
+
+.outroText {
+  font-family: 'Cascadia Code', monospace;
+  font-weight: 400;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+/* ── CTA Row ── */
+.ctaRow {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 48px 24px 80px;
+  background: #0a0a0a;
+  flex-wrap: wrap;
+}
+
+.ctaBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 36px;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s;
+}
+
+.ctaBtn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.7);
+}
+
+
+/* ── Mobile ─────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .dotNav        { display: none; }
+  .cursorOuter,
+  .cursorInner   { display: none; }
+
+  /* Disable sticky stage on mobile — stack vertically */
+  .scrollContainer {
+    height: auto;
+  }
+
+  .stage {
+    position: relative;
+    top: auto;
+    height: auto;
+    flex-direction: column;
+    align-items: center;
+    padding: 80px 0 60px;
+    gap: 32px;
+  }
+
+  .ghostNum { display: none; }
+  .brushCanvas { display: none; }
+  .brushCanvasMobileFallback { display: block; }
+
+  .photoFrame {
+    width: 85vw;
+    position: relative;
+  }
+
+  .personLayer {
+    position: relative;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .textLayer {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    top: auto !important;
+    transform: none !important;
+    max-width: 85vw;
+    width: 85vw;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+}

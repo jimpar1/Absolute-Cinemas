@@ -1,6 +1,8 @@
-/*
-Αυτό το στοιχείο εμφανίζει μια κάρτα ταινίας με πόστερ, τίτλο, βαθμολογία, διάρκεια, κατάσταση και κουμπί για λεπτομέρειες.
-*/
+/**
+ * MovieCard – Displays a single movie as a card with poster, title, rating,
+ * duration, status badge, genre, and action buttons (Watchlist / TMDB link).
+ * Used in both the Movies and Home page grids.
+ */
 
 import { Link } from "react-router-dom"
 import { Star, Clock, Play, Users, Image, Bookmark, ExternalLink } from "lucide-react"
@@ -13,6 +15,7 @@ export default function MovieCard({ movie }) {
     const { savedMovies, addSavedMovie, removeSavedMovie } = useReservation()
     const isInWatchlist = savedMovies.some(m => m.id === movie.id)
 
+    /** Toggle this movie in the user's watchlist, preventing navigation */
     const handleWatchlistClick = (e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -23,6 +26,7 @@ export default function MovieCard({ movie }) {
         }
     }
 
+    /** Open the movie's TMDB page in a new tab, preventing card navigation */
     const handleTmdbClick = (e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -36,8 +40,8 @@ export default function MovieCard({ movie }) {
             <Card className="group overflow-hidden transition-all hover:shadow-lg hover:shadow-primary/20 hover:scale-[1.02] duration-300 flex flex-col h-full">
                 <div className="relative aspect-[2/3] overflow-hidden bg-muted">
                     {movie.poster_url ? (
-                        <img 
-                            src={movie.poster_url} 
+                        <img
+                            src={movie.poster_url}
                             alt={movie.title}
                             className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
                         />
@@ -65,7 +69,7 @@ export default function MovieCard({ movie }) {
                 </div>
                 <CardContent className="p-4 flex-grow">
                     <h3 className="font-semibold text-base line-clamp-1 mb-2">{movie.title}</h3>
-                    
+
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                         {movie.rating && (
                             <div className="flex items-center gap-1">
@@ -80,7 +84,7 @@ export default function MovieCard({ movie }) {
                             </div>
                         )}
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-2 mb-2">
                         {movie.status && (
                             <Badge variant={movie.status === 'now_playing' ? 'default' : 'secondary'} className="text-xs">
