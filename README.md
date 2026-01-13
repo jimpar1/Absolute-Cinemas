@@ -1,240 +1,331 @@
-# Absolute Cinema
+# Absolute Cinema (Frontend)
 
-A modern, responsive cinema booking application built with React, Vite, and shadcn/ui.
+Single‑page εφαρμογή κρατήσεων σινεμά (React + Vite) με:
 
-## Features
+- browsing ταινιών (Now Playing / Upcoming)
+- movie details με screenings
+- πλήρη ροή κράτησης (multi‑step) με seat locking
+- Auth (login/register), Profile, αλλαγή κωδικού
+- Watchlist + local reservations timer
 
-### Core Features
-- **Browse Movies**: Grid view of all available movies with poster images, ratings, and genres
-- **Movie Details**: Detailed movie pages with backdrop images, metadata, cast info, and booking options
-- **Screenings**: View all available screenings with dates, times, and halls
-- **Booking System**: Complete booking flow with customer information and seat selection
+> Σημείωση: Το repo αυτό είναι **frontend**. Περιμένει Django backend API (REST) να τρέχει ξεχωριστά.
 
-### Discovery & Navigation
-- **Discover**: Advanced search with debounced input, genre filters, and sort options
-- **Now Playing**: Currently showing movies in theaters
-- **Upcoming**: Release calendar with movies grouped by month
-- **Genres**: Browse movies by category with visual genre cards
-- **Watchlist & Favorites**: Save movies for later (client-side)
-- **Profile**: User account management with statistics and preferences
+## Περιεχόμενα
 
-### Design & UX
-- **Modern UI**: Built with shadcn/ui components for consistent, beautiful design
-- **Dark Theme**: Eye-friendly dark color scheme optimized for cinema content
-- **Responsive**: Mobile-first design that works on all screen sizes
-- **Loading States**: Skeleton loaders for better perceived performance
-- **Toast Notifications**: User feedback for actions like bookings and favorites
-- **Empty States**: Helpful messages when no content is available
-- **Hover Effects**: Interactive card animations and transitions
+- [Γρήγορη εκκίνηση](#γρήγορη-εκκίνηση)
+- [4. Αρχιτεκτονική συστήματος](#4-αρχιτεκτονική-συστήματος)
+- [5. Front-end (SPA)](#5-front-end-spa)
+- [Ρoutes / Σελίδες](#routes--σελίδες)
+- [Ρυθμίσεις περιβάλλοντος](#ρυθμίσεις-περιβάλλοντος)
+- [Backend API (Django) – σύμβαση endpoints](#backend-api-django--σύμβαση-endpoints)
+- [Κύριες ροές](#κύριες-ροές)
+- [Δομή φακέλων](#δομή-φακέλων)
+- [Scripts](#scripts)
+- [Troubleshooting](#troubleshooting)
 
-### Responsive Navigation
-- **Desktop**: Top navigation bar with all main sections
-- **Mobile**: Drawer/sheet navigation with hamburger menu
-- **Active States**: Visual indication of current page
-- **Accessibility**: labels and keyboard navigation support
+## Γρήγορη εκκίνηση
 
-## Tech Stack
+### Προαπαιτούμενα
 
-- **React 19.2** - UI library
-- **Vite 7.2** - Build tool and dev server
-- **React Router 7** - Client-side routing
-- **Tailwind CSS v4** - Utility-first CSS framework
-- **shadcn/ui** - Re-usable component library built on Radix UI
-- **Lucide React** - Beautiful icon set
-- **Radix UI** - Accessible component primitives
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ 
+- Node.js 18+ (συνιστάται 20+)
 - npm
 
-### Installation
+### 1) Εγκατάσταση
 
 ```bash
-# Clone the repository
-git clone https://github.com/jimpar1/absolute-cinema.git
-cd absolute-cinema
-
-# Checkout the redesigned branch
-git checkout main
-
-# Install dependencies
 npm install
+```
 
-# Start development server
+### 2) Environment variables
+
+Υπάρχει ήδη αρχείο [.env](.env) με default backend:
+
+```dotenv
+VITE_API_URL=http://localhost:8000
+```
+
+
+### 3) Εκκίνηση (dev)
+
+```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173`
+Η εφαρμογή ανοίγει στο `http://localhost:5173`.
 
-### Backend Setup
+### 4) Production build / preview
 
-This frontend expects a Django backend API running at `http://127.0.0.1:8000/api/`. The following endpoints should be available:
-
-- `GET /api/movies/` - List all movies
-- `GET /api/movies/:id/` - Get movie details
-- `GET /api/movies/:id/screenings/` - Get movie screenings
-- `GET /api/movies/search_tmdb/` - Search TMDB
-- `GET /api/movies/popular_tmdb/` - Get popular movies from TMDB
-- `GET /api/screenings/` - List all screenings
-- `GET /api/screenings/:id/` - Get screening details
-- `POST /api/bookings/` - Create booking
-
-## Project Structure
-
+```bash
+npm run build
+npm run preview
 ```
+
+## 4. Αρχιτεκτονική συστήματος
+
+Η λύση ακολουθεί **3‑tier αρχιτεκτονική** (front‑end, business logic, database), όπως απαιτείται.
+
+### 4.1 Επίπεδα (3‑tier)
+
+1) **Front‑end (Presentation Layer)**
+- Υλοποίηση: React SPA (Vite) που τρέχει στον browser.
+- Ευθύνη: UI/UX, πλοήγηση, φόρμες, εμφάνιση δεδομένων, client‑side κατάσταση (watchlist/reservations), και κλήσεις στο API.
+
+2) **Business Logic (Application Layer / API)**
+- Υλοποίηση (αναμενόμενη): Django (Python, αντικειμενοστρεφής γλώσσα) + REST API (π.χ. Django REST Framework).
+- Ευθύνη: κανόνες κράτησης, έλεγχοι εγκυρότητας, authentication/authorization, ανάκτηση/μετασχηματισμός δεδομένων, και συντονισμός των operations (π.χ. seat locking, δημιουργία booking).
+
+3) **Database (Data Layer)**
+- Τύπος: **σχεσιακή βάση δεδομένων** (RDBMS).
+- Πρόσβαση: το business logic επικοινωνεί με τη βάση **μέσω ORM** (αναμενόμενο: Django ORM).
+
+> Το συγκεκριμένο repository περιέχει το **front‑end**. Το backend/DB υλοποιούνται ως ξεχωριστή υπηρεσία, στην οποία συνδέεται το SPA μέσω `VITE_API_URL`.
+
+### 4.2 Επικοινωνία Front‑end ↔ Business Logic (REST)
+
+Ο περιορισμός “RESTful web services” καλύπτεται ως εξής:
+
+- Το front‑end καλεί endpoints τύπου `GET/POST/PATCH` κάτω από `${VITE_API_URL}/api/...`.
+- Payloads σε JSON.
+- Auth: JWT access token σε header `Authorization: Bearer <token>` όπου απαιτείται.
+- Συμβάσεις endpoints περιγράφονται στην ενότητα [Backend API (Django) – σύμβαση endpoints](#backend-api-django--σύμβαση-endpoints).
+
+### 4.3 Business Logic + ORM + Σχεσιακή ΒΔ
+
+Ο περιορισμός “ORM πάνω από σχεσιακή βάση” καλύπτεται τυπικά από:
+
+- **Django ORM** για mapping πινάκων ↔ αντικειμένων (models).
+- Σχεσιακές σχέσεις όπως:
+  - Movie 1‑N Screenings
+  - Screening 1‑N Bookings
+  - User 1‑N Bookings
+
+Ενδεικτικές οντότητες (domain objects) που φαίνονται από τα δεδομένα που καταναλώνει το front‑end:
+
+- **Movie**: τίτλος, περιγραφή, poster/backdrop, status (now_playing/upcoming), (προαιρετικά) tmdb_id
+- **Screening**: start_time, hall/hall_layout, price_per_seat, movie
+- **Booking**: screening, customer info, seat_numbers, total_price, status
+- **SeatLock** (ή ισοδύναμος μηχανισμός): map seat → session_id για προσωρινό αποκλεισμό θέσεων
+
+### 4.4 Concurrency: Seat locking
+
+Για να μη “κλείνουν” δύο χρήστες την ίδια θέση ταυτόχρονα, η εφαρμογή χρησιμοποιεί **seat locking** στο επίπεδο business logic:
+
+- Κατά την επιλογή θέσης (step 1) το front‑end καλεί `lock_seats` με `session_id`.
+- Κατά την αποεπιλογή ή στην έξοδο από τη σελίδα, καλεί `unlock_seats`.
+- Το UI ενημερώνεται με συνδυασμό:
+  - booked seats από `GET /screenings/{id}/bookings/`
+  - locked seats από `GET /screenings/{id}/locked_seats/`
+
+### 4.5 Διάγραμμα υψηλού επιπέδου
+
+```mermaid
+flowchart LR
+  U[Χρήστης / Browser]
+  FE[React SPA (Vite)
+  Presentation Layer]
+  BE[Django REST API
+  Business Logic]
+  DB[(Relational DB
+  via ORM)]
+
+  U --> FE
+  FE -- "REST/JSON + JWT" --> BE
+  BE -- "ORM" --> DB
+```
+
+## 5. Front-end (SPA)
+
+Το front‑end υλοποιείται ως **Single Page Application**.
+
+### 5.1 Framework & tooling
+
+- Framework: **React**
+- Build tool / dev server: **Vite**
+- Routing: **React Router**
+
+### 5.2 Πλοήγηση & routing
+
+- Το SPA χρησιμοποιεί client‑side routing (χωρίς full page reload).
+- Τα routes ορίζονται στο [src/App.jsx](src/App.jsx) (βλ. ενότητα [Routes / Σελίδες](#routes--σελίδες)).
+
+### 5.3 Διαχείριση κατάστασης (state)
+
+- **Auth state** (user + tokens) μέσω Context: [src/context/AuthContext.jsx](src/context/AuthContext.jsx)
+  - αποθήκευση σε `localStorage`
+  - JWT refresh όταν υπάρχει refresh token
+- **Reservation/Watchlist state** μέσω Context: [src/context/ReservationContext.jsx](src/context/ReservationContext.jsx)
+  - watchlist σε `localStorage`
+  - reservations με timeout 10 λεπτών
+  - `sessionStorage` για per‑tab booking `sessionId`
+
+### 5.4 Επικοινωνία με backend
+
+- Η επικοινωνία γίνεται με `fetch` wrappers στον φάκελο [src/api/](src/api/).
+- To base URL παραμετροποιείται από `VITE_API_URL` (βλ. [Ρυθμίσεις περιβάλλοντος](#ρυθμίσεις-περιβάλλοντος)).
+
+### 5.5 UI / Components
+
+- Styling: Tailwind CSS
+- UI primitives: Radix‑based components (shadcn/ui‑style) στον φάκελο [src/components/ui/](src/components/ui/)
+- Reusable components ανά feature (booking/movie/movies/navigation).
+
+## Routes / Σελίδες
+
+Οι βασικές διαδρομές ορίζονται στο [src/App.jsx](src/App.jsx):
+
+- `/` → Home (hero + Swiper slider + tabs Now Playing / Upcoming)
+- `/movies` → Movies (tabs Now Playing / Upcoming / Watchlist + φίλτρα)
+- `/movies/:id` → MovieDetails (gallery, screenings calendar, trailer, sidebar)
+- `/booking/:id` → Booking (multi‑step κράτηση για screening)
+- `/about` → About Us (custom “team” page)
+- `/profile` → Profile (bookings, προσωπικά στοιχεία, αλλαγή κωδικού)
+
+## Ρυθμίσεις περιβάλλοντος
+
+### `VITE_API_URL`
+
+- Χρησιμοποιείται ως base URL για το backend API.
+- Default: `http://localhost:8000`
+- Αν το backend έχει trailing slash, δεν υπάρχει πρόβλημα (γίνεται normalize).
+
+Παράδειγμα:
+
+```dotenv
+VITE_API_URL=http://127.0.0.1:8000
+```
+
+## Backend API (Django) – σύμβαση endpoints
+
+Το frontend καλεί endpoints κάτω από `${VITE_API_URL}/api/...`.
+
+### Movies
+
+Χρησιμοποιούνται από [src/api/movies.js](src/api/movies.js):
+
+- `GET /api/movies/` → λίστα (συνήθως paginated: `{ count, next, previous, results }`)
+- `GET /api/movies/{id}/` → λεπτομέρειες
+- `GET /api/movies/{id}/screenings/` → screenings για τη συγκεκριμένη ταινία
+
+Υπάρχουν επίσης helpers για TMDB proxy (αν το backend τα παρέχει):
+
+- `GET /api/movies/search_tmdb/?query=...&page=...`
+- `GET /api/movies/popular_tmdb/?page=...`
+- `GET /api/movies/tmdb_details/?movie_id=...`
+
+### Screenings
+
+Χρησιμοποιούνται από [src/api/screenings.js](src/api/screenings.js):
+
+- `GET /api/screenings/{id}/` → screening details (start_time, hall_layout, price_per_seat κ.ά.)
+
+### Bookings + Seat locking
+
+Χρησιμοποιούνται από [src/api/bookings.js](src/api/bookings.js) και τη σελίδα booking:
+
+- `POST /api/bookings/` → δημιουργία κράτησης
+- `GET /api/bookings/` → bookings χρήστη (απαιτεί auth)
+- `GET /api/screenings/{id}/bookings/` → κλεισμένες/αγορασμένες θέσεις
+- `POST /api/screenings/{id}/lock_seats/` → lock θέσεων (body: `{ seat_numbers, session_id }`)
+- `POST /api/screenings/{id}/unlock_seats/` → unlock θέσεων (body: `{ seat_numbers, session_id }` ή beacon μόνο `{ session_id }`)
+- `GET /api/screenings/{id}/locked_seats/` → map κλειδωμένων θέσεων (π.χ. `{ "A1": "session-uuid" }`)
+
+### Auth (JWT)
+
+Χρησιμοποιούνται από [src/api/auth.js](src/api/auth.js) + [src/context/AuthContext.jsx](src/context/AuthContext.jsx):
+
+- `POST /api/auth/login/` → επιστρέφει access/refresh (+ user)
+- `POST /api/auth/register/` → δημιουργία λογαριασμού
+- `POST /api/auth/logout/` → blacklist refresh (αν υποστηρίζεται)
+- `GET /api/auth/profile/` → προφίλ
+- `PATCH /api/auth/profile/` → ενημέρωση προφίλ
+- `POST /api/auth/change-password/` (ή fallback `POST /api/auth/password/change/`) → αλλαγή κωδικού
+- `POST /api/token/refresh/` → refresh access token
+
+## Κύριες ροές
+
+### Intro video
+
+- Εμφανίζεται στην πρώτη επίσκεψη.
+- Αποθηκεύεται flag `hasSeenIntro` σε `localStorage`.
+- Υπάρχει κουμπί replay στο navigation.
+
+### Watchlist + Reservations
+
+Υλοποιούνται στο [src/context/ReservationContext.jsx](src/context/ReservationContext.jsx):
+
+- **Watchlist** αποθηκεύεται σε `localStorage` (`watchlist`).
+- **Seat reservations** αποθηκεύονται σε `localStorage` (`reservations`) και λήγουν μετά από 10 λεπτά.
+
+### Booking flow (multi‑step)
+
+Η σελίδα [src/pages/Booking.jsx](src/pages/Booking.jsx) υλοποιεί 4 βήματα:
+
+1. Seat selection (με real‑time locks)
+2. Contact form
+3. Payment form (UI μόνο)
+4. Confirmation
+
+Τεχνικά σημεία:
+
+- Δημιουργείται `sessionId` ανά tab και screening (σε `sessionStorage`) για να “ξεχωρίζει” τα locks.
+- Σε `beforeunload` γίνεται beacon σε `unlock_seats` ώστε να ελευθερώνονται locks αν κλείσει το tab.
+
+### Authentication + Profile + Change password
+
+- Login / Register γίνονται μέσω dialogs από το navigation.
+- Tokens + user αποθηκεύονται σε `localStorage`.
+- Το Profile έχει tabs: Bookings, Profile, Security (change password).
+
+## Δομή φακέλων
+
+```text
+public/
+  original_images/         # static assets
+  team/                    # photos για About Us
+
 src/
-├── api/              # API client functions
-├── components/       
-│   ├── ui/          # shadcn/ui components
-│   ├── MovieCard.jsx
-│   ├── Navigation.jsx
-│   └── Footer.jsx
-├── hooks/           # Custom React hooks
-│   └── use-toast.js
-├── lib/             # Utility functions
-│   └── utils.js
-├── pages/           # Page components
-│   ├── Home.jsx
-│   ├── Movies.jsx
-│   ├── MovieDetails.jsx
-│   ├── Discover.jsx
-│   ├── NowPlaying.jsx
-│   ├── Upcoming.jsx
-│   ├── Genres.jsx
-│   ├── Screenings.jsx
-│   ├── Booking.jsx
-│   └── Watchlist.jsx
-├── App.jsx          # Main app component with routing
-├── main.jsx         # App entry point
-└── index.css        # Global styles and Tailwind config
+  api/                     # fetch wrappers προς Django API
+    auth.js
+    bookings.js
+    movies.js
+    screenings.js
+
+  components/
+    booking/               # multi-step booking UI
+    movie/                 # MovieDetails sub-components
+    movies/                # filters + grid για Movies page
+    navigation/            # inbox + reservation timer
+    ui/                    # shadcn/ui-style primitives (Radix)
+
+  context/
+    AuthContext.jsx
+    ReservationContext.jsx
+
+  hooks/
+    use-toast.js
+
+  lib/
+    utils.js               # cn() + helpers
+
+  pages/
+    Home.jsx
+    Movies.jsx
+    MovieDetails.jsx
+    Booking.jsx
+    AboutUs.jsx
+    Profile.jsx
+
+  utils/
+    calendar.js
+    image.js
+    youtube.js
 ```
 
-## Available Scripts
+## Scripts
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
+Ορίζονται στο [package.json](package.json):
 
-## Design System
-
-### Colors
-The application uses a dark theme with the following color palette:
-- **Background**: `#0a0a0a` - Deep black for main background
-- **Card**: `#1c1c1c` - Slightly lighter for cards
-- **Primary**: `#fafafa` - White for text and primary actions
-- **Muted**: `#2e2e2e` - For borders and subtle backgrounds
-- **Accent**: Inherits from secondary for hover states
-
-### Typography
-- **Headings**: Bold, large font sizes with proper hierarchy
-- **Body**: Base font with good readability
-- **Muted Text**: Secondary information with reduced opacity
-
-### Spacing
-- Consistent padding and margins using Tailwind's spacing scale
-- Container max-width for proper content alignment
-- Generous whitespace for better readability
-
-### Components
-All UI components follow shadcn/ui's design patterns:
-- Consistent border radius (0.5rem)
-- Smooth transitions and animations
-- Focus states for accessibility
-- Hover effects for interactive elements
-
-## API Integration
-
-All existing API contracts have been preserved. The frontend makes the same API calls as before:
-
-```javascript
-// Example: Fetching movies
-import { getMovies } from '@/api/movies'
-
-const movies = await getMovies()
-// Returns: { count, next, previous, results }
-```
-
-No backend changes are required - the redesign is purely frontend.
-
-## Features In Detail
-
-### Search & Filters
-- **Debounced Search**: 500ms delay to reduce API calls
-- **Genre Filters**: Click badges to filter by genre
-- **Sort Options**: Sort by popularity, rating, title, or release date
-- **Clear Filters**: Easy reset button
-
-### Calendar View
-The Upcoming page features a release calendar:
-- Movies grouped by month
-- Visual calendar grid showing release counts
-- Easy navigation between months
-- Release date display for each movie
-
-### Booking Flow
-1. View screening details with movie, date, time, and price
-2. Enter customer information (name, email, phone)
-3. Select number of seats
-4. See live total price calculation
-5. Confirm booking with toast notification
-6. Redirect to screenings list
-
-### Responsive Breakpoints
-- **Mobile**: < 640px (2 columns)
-- **Tablet**: 640px - 1024px (3-4 columns)
-- **Desktop**: > 1024px (5-6 columns)
-- **Large**: > 1400px (6 columns)
-
-## Browser Support
-
-- Chrome/Edge (latest)
-- Firefox (latest)
-- Safari (latest)
-- Mobile browsers (iOS Safari, Chrome Mobile)
-
-## Performance
-
-- **Code Splitting**: React Router handles route-based code splitting
-- **Lazy Loading**: Images load as they enter viewport
-- **Optimized Builds**: Vite's production builds are optimized
-- **Minimal Bundle**: Tree-shaking removes unused code
-
-## Accessibility
-
-- Semantic HTML elements
-- ARIA labels on interactive elements
-- Keyboard navigation support
-- Focus states on all interactive elements
-- Screen reader friendly
-- Color contrast ratios meet WCAG standards
-
-## Future Enhancements
-
-- [ ] Video trailer integration
-- [ ] User authentication
-- [ ] Persistent watchlist/favorites with backend
-- [ ] Movie recommendations
-- [ ] Social sharing
-- [ ] Advanced seat selection with hall layout
-- [ ] Payment integration
-- [ ] Email confirmations
-- [ ] PWA support
-
-## Contributing
-
-This is a demonstration project showing modern React and shadcn/ui integration. Feel free to use it as a reference for your own projects.
-
-## License
-
-MIT
-
-## Acknowledgments
-
-- [shadcn/ui](https://ui.shadcn.com/) - Beautiful component library
-- [Radix UI](https://www.radix-ui.com/) - Accessible primitives
-- [Lucide](https://lucide.dev/) - Icon set
-- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS
+- `npm run dev` → Vite dev server
+- `npm run build` → production build
+- `npm run preview` → preview του build
+- `npm run lint` → ESLint

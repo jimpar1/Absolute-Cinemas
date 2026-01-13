@@ -46,30 +46,70 @@ export function AuthProvider({ children }) {
         }
     }, [refreshToken])
 
-    const login = async (email, password) => {
-        setIsLoading(true)
-        try {
-            const data = await authAPI.login(email, password)
-            
-            // Django JWT response structure: { access, refresh, user: {...} } or similar
-            const userData = data.user || {
+    const extractAccessToken = (data) => {
+        return (
+            data?.access ??
+            data?.accessToken ??
+            data?.access_token ??
+            data?.token ??
+            data?.jwt ??
+            data?.tokens?.access ??
+            data?.tokens?.access_token ??
+            null
+        )
+    }
+
+    const extractRefreshToken = (data) => {
+        return (
+            data?.refresh ??
+            data?.refreshToken ??
+            data?.refresh_token ??
+            data?.tokens?.refresh ??
+            data?.tokens?.refresh_token ??
+            null
+        )
+    }
+
+    const getValidAccessToken = async () => {
+        // Prefer state, then localStorage (covers reloads / stale renders)
+        let token = accessToken || localStorage.getItem('accessToken')
+        if (token) return token
+
+        // If we have a refresh token, try to mint a new access token.
+        const refresh = refreshToken || localStorage.getItem('refreshToken')
+        if (!refresh) return null
+
+        const refreshed = await authAPI.refreshToken(refresh)
+        const newAccess = extractAccessToken(refreshed)
+        if (newAccess) {
+            setAccessToken(newAccess)
+            return newAccess
+        }
+
+        return null
+    }
+
+const login = async (username, password) => {
+    setIsLoading(true)
+    try {
+        const data = await authAPI.login(username, password)
+        // Django JWT response structure: { access, refresh, user: {...} } or similar
+        const userData = data.user || {
                 id: data.id,
                 email: data.email,
                 username: data.username,
                 first_name: data.first_name,
                 last_name: data.last_name,
             }
-            
-            const newAccessToken = data.access || data.accessToken
-            const newRefreshToken = data.refresh || data.refreshToken
+
+            const newAccessToken = extractAccessToken(data)
+            const newRefreshToken = extractRefreshToken(data)
 
             setUser(userData)
             setAccessToken(newAccessToken)
             setRefreshToken(newRefreshToken)
-            
+
             return userData
-        } catch (error) {
-            throw error
         } finally {
             setIsLoading(false)
         }
@@ -99,7 +139,7 @@ export function AuthProvider({ children }) {
         setIsLoading(true)
         try {
             const data = await authAPI.register(formData)
-            
+
             // Django JWT response structure for registration
             const userData = data.user || {
                 id: data.id,
@@ -108,17 +148,41 @@ export function AuthProvider({ children }) {
                 first_name: data.first_name,
                 last_name: data.last_name,
             }
-            
-            const newAccessToken = data.access || data.accessToken
-            const newRefreshToken = data.refresh || data.refreshToken
+
+            const newAccessToken = extractAccessToken(data)
+            const newRefreshToken = extractRefreshToken(data)
 
             setUser(userData)
             setAccessToken(newAccessToken)
             setRefreshToken(newRefreshToken)
-            
+
             return userData
-        } catch (error) {
-            throw error
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const updateProfile = async (profileData) => {
+        setIsLoading(true)
+        try {
+            const token = await getValidAccessToken()
+            if (!token) throw new Error('You must be logged in to update your profile')
+
+            const data = await authAPI.updateProfile(token, profileData)
+            setUser(prev => ({ ...prev, ...data }))
+            return data
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const changePassword = async (oldPassword, newPassword, confirmPassword) => {
+        setIsLoading(true)
+        try {
+            const token = await getValidAccessToken()
+            if (!token) throw new Error('You must be logged in to change your password')
+
+            return await authAPI.changePassword(token, oldPassword, newPassword, confirmPassword)
         } finally {
             setIsLoading(false)
         }
@@ -132,12 +196,15 @@ export function AuthProvider({ children }) {
         login,
         logout,
         register,
+        updateProfile,
+        changePassword,
         isAuthenticated: !!user && !!accessToken
     }
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
     const context = useContext(AuthContext)
     if (!context) {

@@ -1,6 +1,7 @@
-/*
-Αυτό το αρχείο περιέχει το κύριο στοιχείο της εφαρμογής που ρυθμίζει τις διαδρομές με το React Router και ενσωματώνει τα κύρια στοιχεία όπως πλοήγηση, υποσέλιδο και σελίδες.
-*/
+/**
+ * App – Root component. Sets up React Router, context providers
+ * (Auth + Reservation), and wraps all pages with Navigation + Footer.
+ */
 
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import Navigation from "./components/Navigation"
@@ -11,12 +12,36 @@ import Movies from "./pages/Movies"
 import MovieDetails from "./pages/MovieDetails"
 import Booking from "./pages/Booking"
 import AboutUs from "./pages/AboutUs"
+import Profile from "./pages/Profile"
 import { ReservationProvider } from "./context/ReservationContext"
 import { AuthProvider } from "./context/AuthContext"
+import { useState, useEffect } from "react"
+import VideoIntro from "./components/VideoIntro"
 
 export default function App() {
+    const [showIntro, setShowIntro] = useState(null)
+
+    useEffect(() => {
+        const hasSeenIntro = localStorage.getItem('hasSeenIntro')
+        if (!hasSeenIntro) {
+            setShowIntro(true)
+        } else {
+            setShowIntro(false)
+        }
+    }, [])
+
+    const handleIntroComplete = () => {
+        localStorage.setItem('hasSeenIntro', 'true')
+        setShowIntro(false)
+    }
+
+    if (showIntro === null) {
+        return null
+    }
+
     return (
         <BrowserRouter>
+            {showIntro && <VideoIntro onComplete={handleIntroComplete} />}
             <AuthProvider>
                 <ReservationProvider>
                     <Navigation />
@@ -28,6 +53,7 @@ export default function App() {
                                 <Route path="/movies/:id" element={<MovieDetails />} />
                                 <Route path="/booking/:id" element={<Booking />} />
                                 <Route path="/about" element={<AboutUs />} />
+                                <Route path="/profile" element={<Profile />} />
                             </Routes>
                         </main>
                         <Footer />
