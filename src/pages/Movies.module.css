@@ -1,0 +1,220 @@
+/*
+ * Movies.module.css – cinematic animations for the /movies page.
+ * Mirrors Home.module.css patterns: film grain, spotlight heading,
+ * marquee ticker, char animation.
+ */
+
+/* ─── Film grain overlay ─────────────────────────────────────── */
+.grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 200px 200px;
+}
+
+/* ─── Cinema marquee ticker ──────────────────────────────────── */
+.marqueeWrapper {
+    overflow: hidden;
+    padding: 10px 0;
+    background: #050505;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.marqueeTrack {
+    display: flex;
+    white-space: nowrap;
+    animation: marquee 30s linear infinite;
+}
+
+.marqueeTrack:hover {
+    animation-play-state: paused;
+}
+
+.filmItem {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.25);
+    padding: 0 28px;
+    user-select: none;
+}
+
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* ─── Hero heading area ──────────────────────────────────────── */
+.heroSection {
+    padding: 40px 24px 28px;
+    background: #050505;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    min-height: 160px;
+}
+
+/* ─── Animated poster collage ────────────────────────────────── */
+.posterCollage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    filter: blur(3px) brightness(0.45);
+    transform: scale(1.06);
+    pointer-events: none;
+}
+
+.posterRow {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.posterImg {
+    height: 130px;
+    width: 87px;
+    object-fit: cover;
+    flex-shrink: 0;
+    border-radius: 3px;
+}
+
+@keyframes slideLeft {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+@keyframes slideRight {
+    from { transform: translateX(-50%); }
+    to   { transform: translateX(0); }
+}
+
+.posterRowLeft     { animation: slideLeft  45s linear infinite; }
+.posterRowRight    { animation: slideRight 55s linear infinite; }
+.posterRowLeftSlow { animation: slideLeft  65s linear infinite; }
+
+/* Vignette over collage */
+.heroDimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to bottom,
+        #050505 0%,
+        rgba(5, 5, 5, 0.55) 35%,
+        rgba(5, 5, 5, 0.55) 65%,
+        #050505 100%
+    );
+    pointer-events: none;
+}
+
+/* ─── Heading — curve-swipe reveal ──────────────────────────── */
+.spotlightHeading {
+    position: relative;
+    z-index: 2;
+    font-family: 'Syne', sans-serif;
+    font-weight: 900;
+    font-size: clamp(2.2rem, 6vw, 5rem);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0;
+    padding: 0 1rem;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.95) 30%,
+        #ffffff 50%,
+        rgba(255, 255, 255, 0.95) 70%,
+        rgba(255, 255, 255, 0.55) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+/* Each character span produced by <SplitChars> */
+.char {
+    display: inline-block;
+}
+
+/* ─── Layout wrappers ────────────────────────────────────────── */
+.filtersWrapper {
+    /* initial opacity/y set by GSAP */
+}
+
+.gridWrapper {
+    position: relative;
+    transform-origin: center center;
+    will-change: transform;
+}
+
+/* ─── Pill tab switcher (mirrors Home page) ──────────────────── */
+.pillSwitcher {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    padding: 5px;
+    gap: 0;
+}
+
+.pillIndicator {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    height: calc(100% - 10px);
+    background: #ffffff;
+    border-radius: 9999px;
+    opacity: 0;
+    pointer-events: none;
+    will-change: transform, width, opacity;
+}
+
+.pillItem {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.55rem 1.4rem;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+    white-space: nowrap;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 0.25s ease;
+}
+
+.pillItem:hover,
+.pillItemActive {
+    color: #0a0a0a;
+}
+
+.pillIcon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+/* ─── Reduced motion fallback ────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .marqueeTrack,
+    .posterRowLeft,
+    .posterRowRight,
+    .posterRowLeftSlow {
+        animation: none;
+    }
+}
