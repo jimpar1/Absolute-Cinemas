@@ -2,7 +2,7 @@
 Αυτό το αρχείο CSS περιέχει τους παγκόσμιους στυλ της εφαρμογής, συμπεριλαμβανομένων των εισαγωγών Tailwind και γραμματοσειρών, καθώς και τις μεταβλητές θέματος για το σκούρο θέμα.
 */
 
-@import url('https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@400;700&family=Permanent+Marker&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -30,6 +30,13 @@
 
 * {
   border-color: var(--color-border);
+}
+
+/* Hide native cursor on pointer devices — custom cursor handles it */
+@media (hover: hover) {
+  *, *::before, *::after {
+    cursor: none !important;
+  }
 }
 
 body {
