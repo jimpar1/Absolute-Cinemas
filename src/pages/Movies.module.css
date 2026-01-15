@@ -218,3 +218,29 @@
         animation: none;
     }
 }
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 480px) {
+    .heroSection {
+        padding: 28px 16px 20px;
+        min-height: 120px;
+    }
+    .pillItem {
+        padding: 0.45rem 1rem;
+        font-size: 0.72rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .heroSection {
+        padding: 56px 32px 36px;
+        min-height: 200px;
+    }
+}
+
+@media (min-width: 1440px) {
+    .heroSection {
+        padding: 72px 48px 48px;
+        min-height: 240px;
+    }
+}

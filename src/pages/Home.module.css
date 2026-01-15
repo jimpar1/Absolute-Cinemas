@@ -271,6 +271,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0;
     padding: 2.5rem 1rem;
     /* Subtle scan-line texture */
@@ -287,7 +288,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 0 2.5rem;
+    padding: 0 clamp(0.75rem, 3vw, 2.5rem);
     position: relative;
 }
 
@@ -501,6 +502,36 @@
     .sliderSection :global(.swiper-button-next::after),
     .sliderSection :global(.swiper-button-prev::after) {
         font-size: 1.5rem;
+    }
+}
+
+@media (min-width: 1440px) {
+    .sliderSection :global(.swiper-slide) {
+        width: 260px !important;
+        height: 390px !important;
+    }
+    .heroHeading { font-size: 3rem; }
+}
+
+/* Stats: stack dividers vertically on small screens */
+@media (max-width: 479px) {
+    .statsSection {
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 2rem 1rem;
+    }
+    .statItem + .statItem::before {
+        display: none;
+    }
+    .statItem {
+        padding: 0;
+        width: 100%;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        padding-top: 1.5rem;
+    }
+    .statItem:first-child {
+        border-top: none;
+        padding-top: 0;
     }
 }
 

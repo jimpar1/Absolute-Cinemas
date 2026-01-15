@@ -114,6 +114,7 @@ export default function Booking() {
                     date: formattedDate,
                     time: formattedTime,
                     hall: data?.hall_name || data?.hall || "Hall 1",
+                    hallImage: data?.hall_image_url || null,
                     movieId: data?.movie || data?.movie_id || null,
                     layout: data?.hall_layout || null,
                 })
@@ -242,6 +243,7 @@ export default function Booking() {
             {step === 1 && (
                 <SeatSelection
                     hallLayout={hallLayout}
+                    hallImage={screening.hallImage}
                     selectedSeats={selectedSeats}
                     totalPrice={totalPrice}
                     onToggleSeat={toggleSeat}

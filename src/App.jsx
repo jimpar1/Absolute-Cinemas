@@ -47,7 +47,7 @@ export default function App() {
                     <Navigation />
                     <ScrollToTop />
                     <div className="min-h-screen flex flex-col">
-                        <main className="flex-grow mx-auto max-w-7xl w-full">
+                        <main className="flex-grow w-full">
                             <Routes>
                                 <Route path="/" element={<Home />} />
                                 <Route path="/movies" element={<Movies />} />

@@ -376,7 +376,9 @@ export default function Home() {
                     <img ref={heroLogoRef} src="/logo.webp" className={styles.heroLogo} alt="Absolute Cinema" />
                     <div className={styles.heroText}>
                         <h1 ref={heroTitleRef} className={styles.heroHeading}>
-                            <SplitChars text="Welcome to Absolute        Cinemas" charClass={styles.char} />
+                            <SplitChars text="Welcome to Absolute" charClass={styles.char} />
+                            <br />
+                            <SplitChars text="Cinemas" charClass={styles.char} />
                         </h1>
                         <p ref={heroSubRef} className={styles.heroSub}>
                             Book FAKE tickets at the best FAKE cinemas.
