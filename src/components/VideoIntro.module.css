@@ -116,3 +116,20 @@
   color: #fff;
   border-color: rgba(255,255,255,0.5);
 }
+
+@media (max-width: 480px) {
+  .videoControls {
+    bottom: 20px;
+    right: 16px;
+    gap: 8px;
+  }
+  .muteButton {
+    width: 36px;
+    height: 36px;
+  }
+  .skipButton {
+    font-size: 10px;
+    padding: 8px 16px;
+    letter-spacing: 2px;
+  }
+}

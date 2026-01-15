@@ -1,6 +1,5 @@
 .aboutPage {
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
+  width: 100%;
   min-height: 100vh;
   background: #0a0a0a;
   position: relative;
@@ -137,7 +136,7 @@
 .heroSub {
   font-family: 'Cascadia Code', monospace;
   font-weight: 400;
-  font-size: 18px;
+  font-size: clamp(14px, 2vw, 18px);
   color: rgba(255, 255, 255, 0.5);
   max-width: 480px;
   line-height: 1.6;
@@ -339,7 +338,7 @@
 
 .tag {
   font-family: 'Cascadia Code', monospace;
-  font-size: 18px;
+  font-size: clamp(13px, 1.5vw, 18px);
   letter-spacing: 3px;
   text-transform: uppercase;
   color: #fafafa;
@@ -349,7 +348,7 @@
 
 .am {
   font-family: 'Cascadia Code', monospace;
-  font-size: 15px;
+  font-size: clamp(12px, 1.3vw, 15px);
   letter-spacing: 2px;
   color: rgba(255, 255, 255, 0.5);
   display: block;
@@ -368,7 +367,7 @@
 .bio {
   font-family: 'Cascadia Code', monospace;
   font-weight: 400;
-  font-size: 18px;
+  font-size: clamp(14px, 1.5vw, 18px);
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.7);
 }
@@ -408,7 +407,7 @@
 .outroText {
   font-family: 'Cascadia Code', monospace;
   font-weight: 400;
-  font-size: 18px;
+  font-size: clamp(14px, 1.5vw, 18px);
   color: rgba(255, 255, 255, 0.5);
   max-width: 400px;
   line-height: 1.6;

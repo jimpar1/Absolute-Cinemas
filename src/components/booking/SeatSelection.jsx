@@ -18,7 +18,7 @@ function SeatSection({ sectionKey, section, row, rowIndex, hallLayout, selectedS
             {Array.from({ length: section.seatsPerRow }, (_, i) => {
                 const seatIndexInTier = (rowIndex * section.seatsPerRow) + i;
                 if (section.maxSeats && seatIndexInTier >= section.maxSeats) {
-                    return <div key={`empty-${row}-${i}`} className="w-6 h-6 sm:w-8 sm:h-8" />;
+                    return <div key={`empty-${row}-${i}`} className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" />;
                 }
                 const seatNumber = section.startSeat + i
                 const seat = `${row}${seatNumber}`
@@ -29,7 +29,7 @@ function SeatSection({ sectionKey, section, row, rowIndex, hallLayout, selectedS
                         key={seat}
                         onClick={() => onToggleSeat(seat)}
                         disabled={isOccupied}
-                        className={`w-6 h-6 sm:w-8 sm:h-8 rounded-t-lg text-xs font-medium transition-all duration-200 ${isOccupied ? 'bg-linear-to-b from-red-400 to-red-600 text-red-100 cursor-not-allowed' :
+                        className={`w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 rounded-t-lg text-xs font-medium transition-all duration-200 ${isOccupied ? 'bg-linear-to-b from-red-400 to-red-600 text-red-100 cursor-not-allowed' :
                             isSelected ? 'bg-linear-to-b from-green-400 to-green-600 text-white hover:scale-110' :
                                 'bg-linear-to-b from-white to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:scale-110'
                             }`}
@@ -42,16 +42,21 @@ function SeatSection({ sectionKey, section, row, rowIndex, hallLayout, selectedS
     )
 }
 
-export default function SeatSelection({ hallLayout, selectedSeats, totalPrice, onToggleSeat, onConfirm }) {
+export default function SeatSelection({ hallLayout, hallImage, selectedSeats, totalPrice, onToggleSeat, onConfirm }) {
     if (!hallLayout) return null
 
     return (
         <Card className="overflow-visible border-none shadow-none bg-transparent">
             <CardContent className="overflow-visible">
+                {hallImage && (
+                    <div className="mb-6 rounded-xl overflow-hidden">
+                        <img src={hallImage} alt="Hall" className="w-full h-48 object-cover" />
+                    </div>
+                )}
                 <div className="relative" style={{ perspective: '1000px', perspectiveOrigin: '50% 20%' }}>
                     {/* The Screen */}
                     <div className="mb-12 flex flex-col items-center">
-                        <img src="/screen.webp" alt="Screen" className="w-[45%] max-w-md h-auto" style={{ transform: 'rotateX(10deg)', filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.5))' }} />
+                        <img src="/screen.webp" alt="Screen" className="w-[65%] sm:w-[50%] md:w-[45%] max-w-md h-auto" style={{ transform: 'rotateX(10deg)', filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.5))' }} />
                         <p className="text-[10px] tracking-[0.3em] text-muted-foreground mt-4 uppercase">Cinema Screen</p>
                     </div>
 
