@@ -22,12 +22,12 @@ export default function ContactForm({ formData, onChange, onBack, onNext }) {
                     <Input name="email" type="email" value={formData.email} onChange={(e) => onChange({ ...formData, email: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                    <Label>Phone Number</Label>
+                    <Label>Phone Number (Optional)</Label>
                     <Input name="phone" type="tel" value={formData.phone} onChange={(e) => onChange({ ...formData, phone: e.target.value })} placeholder="6912345678" />
                 </div>
                 <div className="flex gap-3 pt-4">
                     <Button variant="outline" className="w-1/3" onClick={onBack}>Back</Button>
-                    <Button className="flex-1" disabled={!formData.name || !formData.email || !formData.phone} onClick={onNext}>Next</Button>
+                    <Button className="flex-1" disabled={!formData.name || !formData.email} onClick={onNext}>Next</Button>
                 </div>
             </CardContent>
         </Card>
