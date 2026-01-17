@@ -303,7 +303,7 @@ export default function MovieDetails() {
                 <div className="relative h-[60vh] bg-muted">
                     <Skeleton className="h-full w-full" />
                 </div>
-                <div className="container py-8">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <Skeleton className="h-8 w-2/3 mb-4" />
                     <Skeleton className="h-4 w-full mb-2" />
                     <Skeleton className="h-4 w-5/6" />
@@ -315,7 +315,7 @@ export default function MovieDetails() {
     /* Movie not found */
     if (!movie) {
         return (
-            <div className="container py-16 text-center">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
                 <h2 className="text-2xl font-bold mb-4">Movie not found</h2>
                 <Link to="/movies"><Button>Back to Movies</Button></Link>
             </div>
@@ -369,7 +369,7 @@ export default function MovieDetails() {
             </div>
 
             {/* Content Section */}
-            <div className="container py-8">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="grid lg:grid-cols-3 gap-8">
                     {/* Main Column */}
                     <div className="lg:col-span-2 space-y-8">

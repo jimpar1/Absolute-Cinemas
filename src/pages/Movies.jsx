@@ -13,18 +13,18 @@
  *   • Watchlist   – user's saved/bookmarked movies (from ReservationContext)
  */
 
-import { useEffect, useRef, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { useSearchParams, Link } from "react-router-dom"
 import { getMovies } from "@/api/movies"
+import { getScreenings } from "@/api/screenings"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { useReservation } from "@/context/ReservationContext"
-import { Play, Calendar, Bookmark } from "lucide-react"
+import { Play, Calendar, Bookmark, SlidersHorizontal, X } from "lucide-react"
 
 import MovieFilters from "@/components/movies/MovieFilters"
 import MovieGrid from "@/components/movies/MovieGrid"
 import SplitChars from '../components/SplitChars'
-import CreatorPromo from '../components/CreatorPromo'
 import styles from './Movies.module.css'
 
 import gsap from 'gsap'
@@ -45,18 +45,59 @@ const PILL_TABS = [
     { label: 'Watchlist',   value: 'watchlist'   },
 ]
 
+const HALLS = [
+    { id: '01', name: 'Hall Alpha', badge: 'IMAX',  image: '/screen.webp',              seats: '280 seats', tech: '4K Laser · Dolby Atmos'         },
+    { id: '02', name: 'Hall Beta',  badge: 'Dolby', image: '/backGroundHomePage.webp',   seats: '200 seats', tech: 'Premium Audio · Recliner Seating' },
+    { id: '03', name: 'Hall Gamma', badge: 'VIP',   image: '/backGroundHomePage2.webp',  seats: '80 seats',  tech: 'Private Lounge · Waiter Service'  },
+]
+
+const PASS_TIERS = [
+    {
+        name: 'Student Plan',
+        currency: '',
+        priceDisplay: 'Free',
+        priceNum: null,
+        note: "it's all fake anyway",
+        features: ['Watch imaginary movies', 'Pretend to reserve seats', 'Tell your friends you go to the cinema a lot'],
+        cta: 'Get This Fake Plan',
+    },
+    {
+        name: 'Regular Pass',
+        currency: '€',
+        priceDisplay: '9',
+        priceNum: 9,
+        note: '/month',
+        features: ["Everything from Student, but you paid for it", "Our dev will buy a coffee", 'Warm fuzzy feeling inside'],
+        cta: 'Most Popular (Allegedly)',
+        highlight: true,
+    },
+    {
+        name: 'VIP Delusion Pass',
+        currency: '€',
+        priceDisplay: '29',
+        priceNum: 29,
+        note: '/month',
+        features: ['Absolutely identical to Regular', 'Fancy golden button on the website', "A heartfelt 'thank you' from our developer"],
+        cta: 'Get This Fake Plan',
+    },
+]
+
 export default function Movies() {
     const [movies, setMovies] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedGenres, setSelectedGenres] = useState([])
-    const [showFilters, setShowFilters] = useState(false)
+    const [sidebarOpen, setSidebarOpen] = useState(false)
 
     const { savedMovies } = useReservation()
     const [searchParams] = useSearchParams()
 
     // Initialise active tab from ?tab= query param (e.g. linked from Home page pills)
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'now-playing')
+    const [hoveredIdx, setHoveredIdx] = useState(null)
+    const [selectedHall, setSelectedHall] = useState(null)
+    const [hallMovieIds, setHallMovieIds] = useState({}) // { 'Hall Alpha': Set([id, ...]) }
+    const [promoIdx, setPromoIdx] = useState(0)
 
     // GSAP refs
     const headingRef        = useRef(null)
@@ -65,6 +106,14 @@ export default function Movies() {
     const pillContainerRef  = useRef(null)
     const pillIndicatorRef  = useRef(null)
     const pillItemRefs      = useRef([])
+    const upcomingPromoRef  = useRef(null)
+    const promoPosterRef    = useRef(null)
+    const promoContentRef   = useRef(null)
+    const passPromoRef      = useRef(null)
+    const tierRefs          = useRef([])
+    const priceNumRefs      = useRef([])
+    const hallsSectionRef   = useRef(null)
+    const hallCardRefs      = useRef([])
 
     /* Fetch movies on mount */
     useEffect(() => {
@@ -81,6 +130,22 @@ export default function Movies() {
             }
         }
         fetchData()
+    }, [])
+
+    /* Fetch screenings to build hall → movie ID mapping */
+    useEffect(() => {
+        getScreenings()
+            .then(data => {
+                const list = data.results || data || []
+                const map = {}
+                list.forEach(s => {
+                    if (!s.hall_name || !s.movie) return
+                    if (!map[s.hall_name]) map[s.hall_name] = new Set()
+                    map[s.hall_name].add(s.movie)
+                })
+                setHallMovieIds(map)
+            })
+            .catch(() => {}) // hall filter gracefully degrades if API is unavailable
     }, [])
 
     // ─── Lenis smooth scroll ──────────────────────────────────────
@@ -199,6 +264,90 @@ export default function Movies() {
         return () => st.kill()
     }, [])
 
+    // ─── Halls staggered curve-swipe reveal ──────────────────────
+    useEffect(() => {
+        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        if (prefersReduced) return
+
+        const ctx = gsap.context(() => {
+            const cards = hallCardRefs.current.filter(Boolean)
+            if (!cards.length) return
+
+            gsap.set(cards, { clipPath: 'inset(0 105% 0 0 round 0 100px 100px 0)' })
+            gsap.to(cards, {
+                clipPath: 'inset(0 0% 0 0 round 0 0px 0px 0)',
+                duration: 0.85,
+                stagger: 0.18,
+                ease: 'power2.inOut',
+                scrollTrigger: {
+                    trigger: hallsSectionRef.current,
+                    start: 'top 78%',
+                    toggleActions: 'play none none reset',
+                },
+            })
+            cards.forEach(card => {
+                const ghost = card.querySelector(`.${styles.hallGhost}`)
+                if (!ghost) return
+                gsap.fromTo(ghost,
+                    { opacity: 0, scale: 1.4 },
+                    { opacity: 1, scale: 1, duration: 1.1, ease: 'power3.out',
+                      scrollTrigger: { trigger: hallsSectionRef.current, start: 'top 78%', toggleActions: 'play none none reset' } }
+                )
+            })
+        })
+        return () => ctx.revert()
+    }, [])
+
+    // ─── Cinema Pass pricing cards GSAP ──────────────────────────
+    useEffect(() => {
+        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        if (prefersReduced || !passPromoRef.current) return
+
+        const ctx = gsap.context(() => {
+            const cards = tierRefs.current.filter(Boolean)
+            if (!cards.length) return
+
+            const trigger = { trigger: passPromoRef.current, start: 'top 80%', toggleActions: 'play none none reset' }
+
+            // 1. Clip-path reveal: each card wipes up from the bottom, staggered
+            gsap.fromTo(cards,
+                { clipPath: 'inset(100% 0 0 0 round 12px)', opacity: 0 },
+                {
+                    clipPath: 'inset(0% 0 0 0 round 12px)', opacity: 1,
+                    duration: 0.85, stagger: 0.18, ease: 'power3.out',
+                    scrollTrigger: trigger,
+                }
+            )
+
+            // 2. Price counter — animate numbers from 0 up
+            priceNumRefs.current.forEach((el, i) => {
+                if (!el || !PASS_TIERS[i]?.priceNum) return
+                const target = PASS_TIERS[i].priceNum
+                gsap.fromTo(el,
+                    { innerText: 0 },
+                    {
+                        innerText: target, duration: 1.4, ease: 'power2.out',
+                        snap: { innerText: 1 },
+                        scrollTrigger: { ...trigger, start: 'top 78%' },
+                        delay: i * 0.18,
+                    }
+                )
+            })
+
+            // 3. Feature items slide in from the left, staggered per card
+            cards.forEach((card, i) => {
+                const items = card.querySelectorAll('li')
+                if (!items.length) return
+                gsap.from(items, {
+                    x: -24, opacity: 0, duration: 0.5, stagger: 0.08, ease: 'power2.out',
+                    scrollTrigger: { trigger: card, start: 'top 88%', toggleActions: 'play none none reset' },
+                    delay: i * 0.18,
+                })
+            })
+        })
+        return () => ctx.revert()
+    }, [])
+
     // ─── Pill indicator helpers ───────────────────────────────────
     const movePillTo = (idx) => {
         const el  = pillItemRefs.current[idx]
@@ -225,6 +374,13 @@ export default function Movies() {
         if (idx >= 0) movePillTo(idx)
     }
 
+    // Return indicator to the currently active tab (called on mouse-leave)
+    const restorePillToActive = () => {
+        setHoveredIdx(null)
+        const idx = PILL_TABS.findIndex(t => t.value === activeTab)
+        if (idx >= 0) movePillTo(idx)
+    }
+
     /** Toggle a genre in the selected list */
     const toggleGenre = (genre) => {
         setSelectedGenres(prev =>
@@ -238,6 +394,7 @@ export default function Movies() {
     const clearFilters = () => {
         setSearchQuery("")
         setSelectedGenres([])
+        setSelectedHall(null)
     }
 
     /** Apply search + genre filters to a movie list */
@@ -258,10 +415,74 @@ export default function Movies() {
     }
 
     /* Derived filtered lists */
-    const nowPlayingMovies = filterMovies(movies.filter(m => m.status === 'now_playing' || !m.status))
+    const nowPlayingBase   = movies.filter(m => m.status === 'now_playing' || !m.status)
+    const nowPlayingMovies = (() => {
+        const filtered = filterMovies(nowPlayingBase)
+        if (!selectedHall || !hallMovieIds[selectedHall]) return filtered
+        return filtered.filter(m => hallMovieIds[selectedHall].has(m.id))
+    })()
     const upcomingMovies   = filterMovies(movies.filter(m => m.status === 'upcoming'))
     const watchlistMovies  = filterMovies(savedMovies)
     const hasActiveFilters = searchQuery !== "" || selectedGenres.length > 0
+    const upcomingList     = movies.filter(m => m.status === 'upcoming')
+    const featuredMovie    = upcomingList[promoIdx] || null
+
+    // ─── Promo auto-rotation ──────────────────────────────────────
+    const promoIntervalRef = useRef(null)
+
+    const startPromoInterval = useCallback(() => {
+        clearInterval(promoIntervalRef.current)
+        if (upcomingList.length < 2) return
+        promoIntervalRef.current = setInterval(() => {
+            setPromoIdx(prev => (prev + 1) % upcomingList.length)
+        }, 9000)
+    }, [upcomingList.length])
+
+    useEffect(() => {
+        startPromoInterval()
+        return () => clearInterval(promoIntervalRef.current)
+    }, [startPromoInterval])
+
+    const goPromo = (dir) => {
+        setPromoIdx(prev => (prev + dir + upcomingList.length) % upcomingList.length)
+        startPromoInterval() // reset timer so it doesn't jump right after manual nav
+    }
+
+    // ─── Promo GSAP transition on movie change ────────────────────
+    useEffect(() => {
+        if (!promoPosterRef.current || !promoContentRef.current || !featuredMovie) return
+
+        const ctx = gsap.context(() => {
+            const tl = gsap.timeline()
+            // Poster: clip-path wipe in from left
+            tl.fromTo(promoPosterRef.current,
+                { clipPath: 'inset(0 100% 0 0 round 8px)' },
+                { clipPath: 'inset(0 0% 0 0 round 8px)', duration: 0.7, ease: 'power2.inOut' }
+            )
+            // Content: fade + slide from right
+            tl.fromTo(promoContentRef.current,
+                { opacity: 0, x: 30 },
+                { opacity: 1, x: 0, duration: 0.55, ease: 'power3.out' },
+                '-=0.4'
+            )
+        })
+        return () => ctx.revert()
+    }, [promoIdx, featuredMovie])
+
+    // ─── Ticket 3D hover tilt ─────────────────────────────────────
+    const handleTicketMouseMove = (e, el) => {
+        if (!el) return
+        const rect = el.getBoundingClientRect()
+        const cx = rect.left + rect.width / 2
+        const cy = rect.top + rect.height / 2
+        const rx = ((e.clientY - cy) / (rect.height / 2)) * -6
+        const ry = ((e.clientX - cx) / (rect.width  / 2)) *  6
+        gsap.to(el, { rotateX: rx, rotateY: ry, duration: 0.35, ease: 'power2.out', overwrite: 'auto' })
+    }
+    const handleTicketMouseLeave = (el) => {
+        if (!el) return
+        gsap.to(el, { rotateX: 0, rotateY: 0, duration: 0.5, ease: 'power3.out', overwrite: 'auto' })
+    }
 
     return (
         <>
@@ -309,40 +530,71 @@ export default function Movies() {
             </section>
 
             <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-                {/* Badge showing total count */}
-                <div className="flex justify-end mb-4">
-                    <Badge variant="secondary">{movies.length} Movies</Badge>
-                </div>
+                <div className={styles.pageLayout}>
+                    {/* ── Left Sidebar Filter ───────────────────────────── */}
+                    <aside
+                        ref={filtersRef}
+                        className={`${styles.filterSidebar} ${!sidebarOpen ? styles.sidebarClosed : ''}`}
+                        aria-hidden={!sidebarOpen}
+                    >
+                        <MovieFilters
+                            searchQuery={searchQuery}
+                            onSearchChange={setSearchQuery}
+                            selectedGenres={selectedGenres}
+                            onToggleGenre={toggleGenre}
+                            onClearGenres={() => setSelectedGenres([])}
+                            halls={HALLS}
+                            selectedHall={selectedHall}
+                            onSelectHall={setSelectedHall}
+                            onClearAll={clearFilters}
+                        />
+                    </aside>
 
-                {/* Search & Genre Filters — animated as one unit */}
-                <div ref={filtersRef} className={styles.filtersWrapper}>
-                    <MovieFilters
-                        searchQuery={searchQuery}
-                        onSearchChange={setSearchQuery}
-                        selectedGenres={selectedGenres}
-                        onToggleGenre={toggleGenre}
-                        onClearGenres={() => setSelectedGenres([])}
-                        showFilters={showFilters}
-                        onToggleFilters={() => setShowFilters(!showFilters)}
-                        onClearAll={clearFilters}
-                    />
-                </div>
+                    {/* ── Main Content ──────────────────────────────────── */}
+                    <div className={`${styles.mainContent} ${!sidebarOpen ? styles.mainContentFull : ''}`}>
+                        {/* Top row: filter toggle + movie count */}
+                        <div className={styles.filterToggleRow}>
+                            <button
+                                className={`${styles.filterToggleBtn} ${sidebarOpen ? styles.filterToggleBtnActive : ''}`}
+                                onClick={() => setSidebarOpen(o => !o)}
+                                aria-expanded={sidebarOpen}
+                                aria-label="Toggle filters"
+                            >
+                                {sidebarOpen
+                                    ? <X className="h-3.5 w-3.5" />
+                                    : <SlidersHorizontal className="h-3.5 w-3.5" />
+                                }
+                                Filters
+                                {(selectedGenres.length > 0 || searchQuery || selectedHall) && (
+                                    <span className={styles.filterBadge}>
+                                        {selectedGenres.length + (searchQuery ? 1 : 0) + (selectedHall ? 1 : 0)}
+                                    </span>
+                                )}
+                            </button>
+                            <Badge variant="secondary" className="ml-auto">{movies.length} Movies</Badge>
+                        </div>
 
-                {/* Tabs */}
-                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                        {/* Tabs */}
+                        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                     <div className="flex justify-center mb-6">
-                        <div ref={pillContainerRef} className={styles.pillSwitcher}>
+                        <div ref={pillContainerRef} className={styles.pillSwitcher}
+                            onMouseLeave={restorePillToActive}
+                        >
                             <span ref={pillIndicatorRef} className={styles.pillIndicator} />
-                            {PILL_TABS.map(({ label, value }, i) => (
-                                <button
-                                    key={value}
-                                    ref={el => { pillItemRefs.current[i] = el }}
-                                    className={`${styles.pillItem} ${activeTab === value ? styles.pillItemActive : ''}`}
-                                    onClick={() => handleTabChange(value)}
-                                >
-                                    {label}
-                                </button>
-                            ))}
+                            {PILL_TABS.map(({ label, value }, i) => {
+                                const isLit = hoveredIdx !== null ? hoveredIdx === i : activeTab === value
+                                return (
+                                    <button
+                                        key={value}
+                                        ref={el => { pillItemRefs.current[i] = el }}
+                                        className={`${styles.pillItem} ${isLit ? styles.pillItemActive : ''}`}
+                                        onClick={() => handleTabChange(value)}
+                                        onMouseEnter={() => { setHoveredIdx(i); movePillTo(i) }}
+                                    >
+                                        {label}
+                                    </button>
+                                )
+                            })}
                         </div>
                     </div>
 
@@ -387,9 +639,150 @@ export default function Movies() {
                         </TabsContent>
                     </div>
                 </Tabs>
+                    </div>{/* end mainContent */}
+                </div>{/* end pageLayout */}
             </div>
 
-            <CreatorPromo />
+            {/* ── Upcoming Movie Promo ─────────────────────────────── */}
+            {featuredMovie && (
+                <section ref={upcomingPromoRef} className={styles.upcomingPromo}>
+                    {/* Blurred poster backdrop — very subtle */}
+                    <div
+                        className={styles.upcomingPromoBg}
+                        style={{ backgroundImage: `url(${featuredMovie.poster_url})` }}
+                    />
+
+                    {/* Poster frame */}
+                    <div ref={promoPosterRef} className={styles.upcomingPosterWrap}>
+                        <img
+                            key={featuredMovie.id}
+                            src={featuredMovie.poster_url}
+                            alt={featuredMovie.title}
+                            className={styles.upcomingPosterImg}
+                        />
+                        <div className={styles.upcomingPosterGlow} />
+                    </div>
+
+                    {/* Content */}
+                    <div ref={promoContentRef} className={styles.upcomingPromoContent}>
+                        <p className={styles.upcomingPromoLabel}>Coming Soon (Allegedly)</p>
+                        <h2 className={styles.upcomingPromoTitle}>{featuredMovie.title}</h2>
+                        {featuredMovie.genre && (
+                            <p className={styles.upcomingPromoGenre}>{featuredMovie.genre}</p>
+                        )}
+                        <p className={styles.upcomingPromoMeta}>
+                            We fetched this from an API and are choosing to believe it's real.
+                            Our developer is very excited about this one.
+                        </p>
+
+                        {/* Navigation: arrows + dots */}
+                        {upcomingList.length > 1 && (
+                            <div className={styles.promoNav} aria-label="Select movie">
+                                <button
+                                    className={styles.promoArrow}
+                                    onClick={() => goPromo(-1)}
+                                    aria-label="Previous movie"
+                                >&#8592;</button>
+
+                                <div className={styles.promoDots}>
+                                    {upcomingList.map((_, i) => (
+                                        <button
+                                            key={i}
+                                            className={`${styles.promoDot} ${i === promoIdx ? styles.promoDotActive : ''}`}
+                                            onClick={() => { setPromoIdx(i); startPromoInterval() }}
+                                            aria-label={`Movie ${i + 1}`}
+                                        />
+                                    ))}
+                                </div>
+
+                                <button
+                                    className={styles.promoArrow}
+                                    onClick={() => goPromo(1)}
+                                    aria-label="Next movie"
+                                >&#8594;</button>
+                            </div>
+                        )}
+
+                        <Link to={`/movies/${featuredMovie.id}`} className={styles.upcomingPromoCTA}>
+                            Stare Longingly at This Movie
+                        </Link>
+                    </div>
+                </section>
+            )}
+
+            {/* ── Cinema Pass Promo ────────────────────────────────── */}
+            <section ref={passPromoRef} className={styles.passPromo}>
+                <div className={styles.passPromoInner}>
+                    <p className={styles.passPromoLabel}>The Cinema Pass™</p>
+                    <h2 className={styles.passPromoTitle}>
+                        A subscription for a cinema that doesn't technically exist.
+                    </h2>
+                    <div className={styles.passTiers}>
+                        {PASS_TIERS.map((tier, i) => (
+                            <div
+                                key={i}
+                                data-tier
+                                ref={el => { tierRefs.current[i] = el }}
+                                className={`${styles.pricingCard} ${tier.highlight ? styles.pricingCardHL : ''}`}
+                                onMouseMove={e => handleTicketMouseMove(e, e.currentTarget)}
+                                onMouseLeave={e => handleTicketMouseLeave(e.currentTarget)}
+                            >
+                                <p className={styles.pricingTierName}>{tier.name}</p>
+                                <div className={styles.pricingDivider} />
+
+                                <p className={styles.pricingPrice}>
+                                    {tier.currency && (
+                                        <span className={styles.pricingCurrency}>{tier.currency}</span>
+                                    )}
+                                    <span
+                                        ref={el => { priceNumRefs.current[i] = el }}
+                                        className={styles.pricingNum}
+                                    >
+                                        {tier.priceDisplay}
+                                    </span>
+                                    <span className={styles.pricingNote}>{tier.note}</span>
+                                </p>
+
+                                <ul className={styles.pricingFeatures}>
+                                    {tier.features.map((f, j) => <li key={j}>{f}</li>)}
+                                </ul>
+
+                                <button className={`${styles.pricingBtn} ${tier.highlight ? styles.pricingBtnHL : ''}`}>
+                                    {tier.cta}
+                                </button>
+
+                                {tier.highlight && <div className={styles.pricingGlow} aria-hidden="true" />}
+                                {tier.highlight && <div className={styles.ticketShimmer} aria-hidden="true" />}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Cinema Halls ─────────────────────────────────────── */}
+            <section ref={hallsSectionRef} className={styles.hallsSection}>
+                <div className={styles.hallsLabel}>Our Cinemas</div>
+                <div className={styles.hallsScroller}>
+                    <div className={styles.hallsTrack}>
+                        {HALLS.map((hall, i) => (
+                            <div
+                                key={hall.id}
+                                ref={el => { hallCardRefs.current[i] = el }}
+                                className={styles.hallCard}
+                            >
+                                <div className={styles.hallGhost}>{hall.id}</div>
+                                <img src={hall.image} alt={hall.name} className={styles.hallImg} />
+                                <div className={styles.hallOverlay}>
+                                    <span className={styles.hallBadge}>{hall.badge}</span>
+                                    <h3 className={styles.hallName}>{hall.name}</h3>
+                                    <p className={styles.hallSeats}>{hall.seats}</p>
+                                    <p className={styles.hallTech}>{hall.tech}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
         </>
     )
 }
