@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft, Ticket } from "lucide-react"
 import { useReservation } from "@/context/ReservationContext"
+import { useAuth } from "@/context/AuthContext"
 import { getScreening } from "@/api/screenings"
 import { getScreeningBookings, createBooking, lockSeats, unlockSeats, getLockedSeats } from "@/api/bookings"
 
@@ -31,6 +32,7 @@ export default function Booking() {
     const navigate = useNavigate()
     const { toast } = useToast()
     const { addReservation, clearMovieReservations, reservations } = useReservation()
+    const { user, isAuthenticated } = useAuth()
 
     const [screening, setScreening] = useState(null)
     const [screeningLoading, setScreeningLoading] = useState(true)
@@ -86,7 +88,9 @@ export default function Booking() {
     }, [id, sessionId])
 
     const [formData, setFormData] = useState({
-        name: "", email: "", phone: "",
+        name: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || "" : "",
+        email: user?.email || "",
+        phone: user?.profile?.phone || user?.phone || "",
         cardNumber: "", expiry: "", cvv: ""
     })
 
@@ -241,7 +245,13 @@ export default function Booking() {
                     selectedSeats={selectedSeats}
                     totalPrice={totalPrice}
                     onToggleSeat={toggleSeat}
-                    onConfirm={() => setStep(2)}
+                    onConfirm={() => {
+                        if (isAuthenticated) {
+                            setStep(3); // Skip ContactForm if signed in
+                        } else {
+                            setStep(2); // Ask for Contact info if guest
+                        }
+                    }}
                 />
             )}
 
@@ -259,7 +269,13 @@ export default function Booking() {
                     formData={formData}
                     onChange={setFormData}
                     totalPrice={totalPrice}
-                    onBack={() => setStep(2)}
+                    onBack={() => {
+                        if (isAuthenticated) {
+                            setStep(1); // Go back to Seat Selection
+                        } else {
+                            setStep(2); // Go back to Contact Form
+                        }
+                    }}
                     onSubmit={handleSubmit}
                 />
             )}
