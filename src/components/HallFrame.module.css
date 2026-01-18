@@ -1,0 +1,173 @@
+/* ── Hall Gallery Frame ──────────────────────────────────────────── */
+
+.gallery {
+    position: relative;
+    width: 100%;
+    height: 360px;
+    overflow: hidden;
+    background: #0a0a0a;
+    border-radius: 0;
+}
+
+/* ── Two absolute layers (A + B) for GSAP crossfade ─────────────── */
+
+.layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    gap: 3px;
+    padding: 0 2rem;
+}
+
+/* ── Individual photo slot ───────────────────────────────────────── */
+
+.slot {
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    border-radius: 4px;
+    /* flex value set via inline style based on photo count */
+}
+
+.slotImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* ── Broken-image placeholder ────────────────────────────────────── */
+
+.placeholder {
+    width: 100%;
+    height: 100%;
+    background: #1c1c1c;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+}
+
+.placeholderIcon {
+    width: 28px;
+    height: 28px;
+    color: rgba(255, 255, 255, 0.18);
+    flex-shrink: 0;
+}
+
+.placeholderText {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.18);
+}
+
+/* ── Info overlay — only on first slot ───────────────────────────── */
+
+.slotOverlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1.5rem 1.5rem 1.25rem;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.92) 0%,
+        rgba(0, 0, 0, 0.6) 55%,
+        transparent 100%
+    );
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.hallBadge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    padding: 0.15rem 0.5rem;
+    color: #fff;
+    width: fit-content;
+    margin-bottom: 0.25rem;
+}
+
+.hallName {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    line-height: 1.15;
+}
+
+.hallSeats {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+}
+
+.hallTech {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0;
+}
+
+/* ── Hall indicator dots (bottom-right) ──────────────────────────── */
+
+.hallDots {
+    position: absolute;
+    bottom: 14px;
+    right: 2rem;
+    display: flex;
+    gap: 5px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.hallDot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    transition: background 0.4s;
+}
+
+.hallDotActive {
+    background: rgba(255, 255, 255, 0.75);
+}
+
+/* ── Empty / loading state ───────────────────────────────────────── */
+
+.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+    .gallery {
+        height: 260px;
+    }
+    .layer {
+        padding: 0 1rem;
+        gap: 2px;
+    }
+    .hallName {
+        font-size: 1rem;
+    }
+    .slot:not(:first-child) {
+        flex: 1.5;
+    }
+}
