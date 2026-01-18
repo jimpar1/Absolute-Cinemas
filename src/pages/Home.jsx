@@ -19,6 +19,9 @@ import { Button } from '@/components/ui/button'
 import { getMovies } from '../api/movies'
 import styles from './Home.module.css'
 import SplitChars from '../components/SplitChars'
+import HallFrame from '../components/HallFrame'
+import CinemaPass from '../components/CinemaPass'
+import { useHalls } from '../hooks/useHalls'
 
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { EffectCoverflow, Pagination, Navigation, Autoplay } from 'swiper/modules'
@@ -33,40 +36,6 @@ import Lenis from 'lenis'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// ─── Cinema halls data ────────────────────────────────────────────
-const HALLS = [
-    {
-        id: '01',
-        name: 'Hall Alpha',
-        badge: 'IMAX',
-        image: '/screen.webp',
-        seats: '280 seats',
-        tech: '4K Laser · Dolby Atmos',
-    },
-    {
-        id: '02',
-        name: 'Hall Beta',
-        badge: 'Dolby',
-        image: '/backGroundHomePage.webp',
-        seats: '200 seats',
-        tech: 'Premium Audio · Recliner Seating',
-    },
-    {
-        id: '03',
-        name: 'Hall Gamma',
-        badge: 'VIP',
-        image: '/backGroundHomePage2.webp',
-        seats: '80 seats',
-        tech: 'Private Lounge · Waiter Service',
-    },
-]
-
-// ─── Derived stat values ──────────────────────────────────────────
-const TOTAL_SEATS = HALLS.reduce((sum, hall) => {
-    const m = hall.seats.match(/(\d+)/)
-    return sum + (m ? parseInt(m[1]) : 0)
-}, 0)
-
 const STAT_META = [
     { label: 'Films', suffix: '+' },
     { label: 'Halls', suffix: '' },
@@ -78,6 +47,11 @@ export default function Home() {
     const heroBg = '/absulute-cinema.webp'
     const [movies, setMovies] = useState([])
     const [movieCount, setMovieCount] = useState(null)
+    const { hallGroups, halls } = useHalls()
+    const totalSeats = hallGroups.reduce((sum, h) => {
+        const m = String(h.seats || '').match(/(\d+)/)
+        return sum + (m ? parseInt(m[1]) : 0)
+    }, 0)
 
     // Refs for GSAP targets
     const heroSectionRef = useRef(null)
@@ -86,9 +60,6 @@ export default function Home() {
     const heroTitleRef = useRef(null)
     const heroSubRef = useRef(null)
     const heroBtnRef = useRef(null)
-
-    const hallsSectionRef = useRef(null)
-    const hallCardRefs = useRef([])
 
     const statsRef = useRef(null)
     const statNumRefs = useRef([])
@@ -205,53 +176,6 @@ export default function Home() {
         return () => ctx.revert()
     }, [])
 
-    // ─── Halls staggered curve-swipe reveal ───────────────────────
-    useEffect(() => {
-        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        if (prefersReduced) return
-
-        const ctx = gsap.context(() => {
-            const cards = hallCardRefs.current.filter(Boolean)
-            if (!cards.length) return
-
-            // Set all cards hidden behind a curved clip before animating
-            gsap.set(cards, { clipPath: 'inset(0 105% 0 0 round 0 100px 100px 0)' })
-
-            // Staggered curve swipe across all cards when section enters
-            gsap.to(cards, {
-                clipPath: 'inset(0 0% 0 0 round 0 0px 0px 0)',
-                duration: 0.85,
-                stagger: 0.18,
-                ease: 'power2.inOut',
-                scrollTrigger: {
-                    trigger: hallsSectionRef.current,
-                    start: 'top 78%',
-                    toggleActions: 'play none none reset',
-                },
-            })
-
-            // Ghost numbers bloom in behind the cards
-            cards.forEach((card) => {
-                const ghost = card.querySelector(`.${styles.hallGhost}`)
-                if (!ghost) return
-                gsap.fromTo(ghost,
-                    { opacity: 0, scale: 1.4 },
-                    {
-                        opacity: 1, scale: 1,
-                        duration: 1.1, ease: 'power3.out',
-                        scrollTrigger: {
-                            trigger: hallsSectionRef.current,
-                            start: 'top 78%',
-                            toggleActions: 'play none none reset',
-                        },
-                    }
-                )
-            })
-        })
-
-        return () => ctx.revert()
-    }, [])
-
     // ─── Stats slot-machine counters ──────────────────────────────
     useEffect(() => {
         if (movieCount === null) return  // wait until the API responds
@@ -259,7 +183,7 @@ export default function Home() {
         const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
         if (prefersReduced) return
 
-        const statValues = [movieCount, HALLS.length, TOTAL_SEATS]
+        const statValues = [movieCount, hallGroups.length, totalSeats]
 
         const ctx = gsap.context(() => {
             statNumRefs.current.forEach((el, i) => {
@@ -282,7 +206,7 @@ export default function Home() {
             })
         })
         return () => ctx.revert()
-    }, [movieCount])
+    }, [movieCount, hallGroups, totalSeats])
 
     // ─── Slider spotlight heading ─────────────────────────────────
     useEffect(() => {
@@ -480,29 +404,13 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* === 5. CINEMA HALLS — STAGGERED CURVE-SWIPE REVEAL === */}
-            <section ref={hallsSectionRef} className={styles.hallsSection}>
+            {/* === 5. CINEMA PASS — SUBSCRIPTION TIERS === */}
+            <CinemaPass />
+
+            {/* === 6. CINEMA HALLS — DIGITAL PICTURE FRAME === */}
+            <section className={styles.hallsSection}>
                 <div className={styles.hallsLabel}>Our Cinemas</div>
-                <div className={styles.hallsScroller}>
-                    <div className={styles.hallsTrack}>
-                        {HALLS.map((hall, i) => (
-                            <div
-                                key={hall.id}
-                                ref={(el) => { hallCardRefs.current[i] = el }}
-                                className={styles.hallCard}
-                            >
-                                <div className={styles.hallGhost}>{hall.id}</div>
-                                <img src={hall.image} alt={hall.name} className={styles.hallImg} />
-                                <div className={styles.hallOverlay}>
-                                    <span className={styles.hallBadge}>{hall.badge}</span>
-                                    <h3 className={styles.hallName}>{hall.name}</h3>
-                                    <p className={styles.hallSeats}>{hall.seats}</p>
-                                    <p className={styles.hallTech}>{hall.tech}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <HallFrame hallGroups={hallGroups} />
             </section>
         </>
     )
