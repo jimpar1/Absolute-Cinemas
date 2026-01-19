@@ -69,7 +69,7 @@ export default function Navigation() {
     }
 
     return (
-        <nav className="sticky top-0 z-40 w-full bg-background/70 backdrop-blur">
+        <nav className="sticky top-0 z-40 w-full bg-background/70 backdrop-blur" style={{ borderBottom: '1px solid var(--tier-color)', transition: 'border-color 0.5s ease' }}>
             <div className="w-full h-16 px-4 lg:px-8 flex items-center justify-between lg:grid lg:grid-cols-3">
 
                 {/* ─── Left: Logo ─── */}
@@ -106,7 +106,7 @@ export default function Navigation() {
                         <div className="flex items-center gap-2">
                             <Link to="/profile">
                                 <Button variant="ghost" className="hidden sm:flex items-center gap-1 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground">
-                                    <User className="h-4 w-4" />
+                                    <User className="h-4 w-4" style={{ color: 'var(--tier-solid)', transition: 'color 0.5s ease' }} />
                                     <span className="text-xs">{user.name || user.username || user.email}</span>
                                 </Button>
                             </Link>

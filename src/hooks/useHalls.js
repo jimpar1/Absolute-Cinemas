@@ -16,8 +16,10 @@ const FALLBACK_META = [
 ]
 
 export function useHalls() {
-    const [hallGroups, setHallGroups] = useState([])
-    const [halls, setHalls]           = useState([])
+    const [hallGroups, setHallGroups]     = useState([])
+    const [halls, setHalls]               = useState([])
+    const [hallCount, setHallCount]       = useState(0)
+    const [totalCapacity, setTotalCapacity] = useState(0)
 
     useEffect(() => {
         getHalls()
@@ -44,11 +46,15 @@ export function useHalls() {
 
                 if (groups.length > 0)    setHallGroups(groups)
                 if (hallsMeta.length > 0) setHalls(hallsMeta)
+
+                // Raw counts (not filtered by photos) — used for stats display
+                setHallCount(hallList.length)
+                setTotalCapacity(hallList.reduce((sum, h) => sum + (h.capacity || 0), 0))
             })
             .catch(() => {
                 // API unavailable — keep fallbacks
             })
     }, [])
 
-    return { hallGroups, halls }
+    return { hallGroups, halls, hallCount, totalCapacity }
 }

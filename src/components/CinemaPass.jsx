@@ -5,8 +5,10 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useAuth } from '@/context/AuthContext'
 import styles from './CinemaPass.module.css'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -59,6 +61,10 @@ const PASS_TIERS = [
 
 export default function CinemaPass() {
     const [isAnnual, setIsAnnual] = useState(false)
+    const [activatingTier, setActivatingTier] = useState(null)
+
+    const { isAuthenticated, subscription, subscribeTier } = useAuth()
+    const navigate = useNavigate()
 
     const sectionRef   = useRef(null)
     const tierRefs     = useRef([])
@@ -147,47 +153,112 @@ export default function CinemaPass() {
                 </div>
 
                 <div className={styles.tiers}>
-                    {PASS_TIERS.map((tier, i) => (
-                        <div
-                            key={i}
-                            ref={el => { tierRefs.current[i] = el }}
-                            className={`${styles.card} ${tier.highlight ? styles.cardHL : ''}`}
-                            onMouseMove={e => handleMouseMove(e, e.currentTarget)}
-                            onMouseLeave={e => handleMouseLeave(e.currentTarget)}
-                        >
-                            <p className={styles.tierBadge}>{tier.badge}</p>
-                            <p className={styles.planName}>{tier.name}</p>
-                            <div className={styles.divider} />
+                    {PASS_TIERS.map((tier, i) => {
+                        const tierKey  = tier.name.toLowerCase()
+                        const isPro    = tierKey === 'pro'
+                        const isUltra  = tierKey === 'ultra'
+                        const isCurrent    = subscription?.tier === tierKey
+                        const isActivating = activatingTier === tierKey
 
-                            <p className={styles.price}>
-                                {tier.priceMonthly && (
-                                    <span className={styles.currency}>€</span>
-                                )}
-                                <span
-                                    ref={el => { priceNumRefs.current[i] = el }}
-                                    className={styles.priceNum}
+                        const cardClass = [
+                            styles.card,
+                            isPro   ? styles.cardPro   : '',
+                            isUltra ? styles.cardUltra : '',
+                        ].join(' ')
+
+                        const badgeClass = [
+                            styles.tierBadge,
+                            isPro   ? styles.tierBadgePro   : '',
+                            isUltra ? styles.tierBadgeUltra : '',
+                        ].join(' ')
+
+                        const glowClass = [
+                            styles.glow,
+                            isPro   ? styles.glowPro   : '',
+                            isUltra ? styles.glowUltra : '',
+                        ].join(' ')
+
+                        const shimmerClass = [
+                            styles.shimmer,
+                            isPro   ? styles.shimmerPro   : '',
+                            isUltra ? styles.shimmerUltra : '',
+                        ].join(' ')
+
+                        let btn
+                        if (!isAuthenticated) {
+                            const btnClass = [styles.btn, isPro ? styles.btnPro : '', isUltra ? styles.btnUltra : ''].join(' ')
+                            btn = <button className={btnClass} onClick={() => navigate('/auth')}>Sign In to Subscribe</button>
+                        } else if (isCurrent) {
+                            const labelClass = [
+                                styles.currentPlanLabel,
+                                isPro   ? styles.currentPlanLabelPro   :
+                                isUltra ? styles.currentPlanLabelUltra : styles.currentPlanLabelFree,
+                            ].join(' ')
+                            btn = (
+                                <>
+                                    <span className={labelClass}>Your Plan</span>
+                                    <button className={styles.btn} disabled style={{ opacity: 0.4, cursor: 'default' }}>
+                                        Active
+                                    </button>
+                                </>
+                            )
+                        } else {
+                            const btnClass = [styles.btn, isPro ? styles.btnPro : '', isUltra ? styles.btnUltra : ''].join(' ')
+                            btn = (
+                                <button
+                                    className={btnClass}
+                                    disabled={isActivating}
+                                    onClick={async () => {
+                                        setActivatingTier(tierKey)
+                                        try { await subscribeTier(tierKey) } catch { /* noop */ }
+                                        setTimeout(() => setActivatingTier(null), 1000)
+                                    }}
                                 >
-                                    {tier.priceMonthly
-                                        ? (isAnnual ? tier.priceAnnual : tier.priceMonthly)
-                                        : 'Free'}
-                                </span>
-                                <span className={styles.priceNote}>
-                                    {isAnnual ? tier.noteAnnual : tier.noteMonthly}
-                                </span>
-                            </p>
+                                    {isActivating ? 'Activating...' : tier.cta}
+                                </button>
+                            )
+                        }
 
-                            <ul className={styles.features}>
-                                {tier.features.map((f, j) => <li key={j}>{f}</li>)}
-                            </ul>
+                        return (
+                            <div
+                                key={i}
+                                ref={el => { tierRefs.current[i] = el }}
+                                className={cardClass}
+                                onMouseMove={e => handleMouseMove(e, e.currentTarget)}
+                                onMouseLeave={e => handleMouseLeave(e.currentTarget)}
+                            >
+                                <p className={badgeClass}>{tier.badge}</p>
+                                <p className={styles.planName}>{tier.name}</p>
+                                <div className={styles.divider} />
 
-                            <button className={`${styles.btn} ${tier.highlight ? styles.btnHL : ''}`}>
-                                {tier.cta}
-                            </button>
+                                <p className={styles.price}>
+                                    {tier.priceMonthly && (
+                                        <span className={styles.currency}>€</span>
+                                    )}
+                                    <span
+                                        ref={el => { priceNumRefs.current[i] = el }}
+                                        className={styles.priceNum}
+                                    >
+                                        {tier.priceMonthly
+                                            ? (isAnnual ? tier.priceAnnual : tier.priceMonthly)
+                                            : 'Free'}
+                                    </span>
+                                    <span className={styles.priceNote}>
+                                        {isAnnual ? tier.noteAnnual : tier.noteMonthly}
+                                    </span>
+                                </p>
 
-                            {tier.highlight && <div className={styles.glow} aria-hidden="true" />}
-                            {tier.highlight && <div className={styles.shimmer} aria-hidden="true" />}
-                        </div>
-                    ))}
+                                <ul className={styles.features}>
+                                    {tier.features.map((f, j) => <li key={j}>{f}</li>)}
+                                </ul>
+
+                                {btn}
+
+                                {(isPro || isUltra) && <div className={glowClass} aria-hidden="true" />}
+                                {(isPro || isUltra) && <div className={shimmerClass} aria-hidden="true" />}
+                            </div>
+                        )
+                    })}
                 </div>
             </div>
         </section>

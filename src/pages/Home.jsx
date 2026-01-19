@@ -47,11 +47,7 @@ export default function Home() {
     const heroBg = '/absulute-cinema.webp'
     const [movies, setMovies] = useState([])
     const [movieCount, setMovieCount] = useState(null)
-    const { hallGroups, halls } = useHalls()
-    const totalSeats = hallGroups.reduce((sum, h) => {
-        const m = String(h.seats || '').match(/(\d+)/)
-        return sum + (m ? parseInt(m[1]) : 0)
-    }, 0)
+    const { hallGroups, halls, hallCount, totalCapacity } = useHalls()
 
     // Refs for GSAP targets
     const heroSectionRef = useRef(null)
@@ -178,12 +174,12 @@ export default function Home() {
 
     // ─── Stats slot-machine counters ──────────────────────────────
     useEffect(() => {
-        if (movieCount === null) return  // wait until the API responds
+        if (movieCount === null || hallCount === 0) return  // wait for both APIs
 
         const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
         if (prefersReduced) return
 
-        const statValues = [movieCount, hallGroups.length, totalSeats]
+        const statValues = [movieCount, hallCount, totalCapacity]
 
         const ctx = gsap.context(() => {
             statNumRefs.current.forEach((el, i) => {
@@ -206,7 +202,7 @@ export default function Home() {
             })
         })
         return () => ctx.revert()
-    }, [movieCount, hallGroups, totalSeats])
+    }, [movieCount, hallCount, totalCapacity])
 
     // ─── Slider spotlight heading ─────────────────────────────────
     useEffect(() => {

@@ -30,7 +30,7 @@ function SeatSection({ sectionKey, section, row, rowIndex, hallLayout, selectedS
                         onClick={() => onToggleSeat(seat)}
                         disabled={isOccupied}
                         className={`w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 rounded-t-lg text-xs font-medium transition-all duration-200 ${isOccupied ? 'bg-linear-to-b from-red-400 to-red-600 text-red-100 cursor-not-allowed' :
-                            isSelected ? 'bg-linear-to-b from-green-400 to-green-600 text-white hover:scale-110' :
+                            isSelected ? 'seat-selected hover:scale-110' :
                                 'bg-linear-to-b from-white to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:scale-110'
                             }`}
                     >
