@@ -16,7 +16,7 @@ export default function StepProgress({ currentStep }) {
                     <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs ${currentStep > index + 1
                             ? 'bg-green-500 text-white'
                             : currentStep === index + 1
-                                ? 'bg-primary text-primary-foreground'
+                                ? 'step-active'
                                 : 'bg-muted'
                         }`}>
                         {currentStep > index + 1 ? <Check className="h-4 w-4" /> : index + 1}

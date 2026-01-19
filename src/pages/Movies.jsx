@@ -69,7 +69,6 @@ export default function Movies() {
     // GSAP refs
     const headingRef        = useRef(null)
     const filtersRef        = useRef(null)
-    const gridWrapRef       = useRef(null)
     const pillContainerRef  = useRef(null)
     const pillIndicatorRef  = useRef(null)
     const pillItemRefs      = useRef([])
@@ -172,64 +171,6 @@ export default function Movies() {
         return () => ctx.revert()
     }, [])
 
-    // ─── ScrollTrigger.batch card reveals ────────────────────────
-    const batchTriggersRef = useRef([])
-
-    useEffect(() => {
-        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        if (prefersReduced) return
-
-        const id = requestAnimationFrame(() => {
-            const grid =
-                gridWrapRef.current?.querySelector('[class*="grid"]') ||
-                gridWrapRef.current?.firstElementChild
-            if (!grid?.children.length) return
-
-            batchTriggersRef.current = ScrollTrigger.batch(grid.children, {
-                onEnter: (batch) =>
-                    gsap.fromTo(
-                        batch,
-                        { opacity: 0, y: 28, scale: 0.95 },
-                        { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.06, ease: 'power3.out', overwrite: true }
-                    ),
-                start: 'top 92%',
-            })
-        })
-
-        return () => {
-            cancelAnimationFrame(id)
-            batchTriggersRef.current.forEach(t => t.kill())
-            batchTriggersRef.current = []
-        }
-    }, [movies, searchQuery, selectedGenres, activeTab])
-
-    // ─── Scroll velocity skew on grid ────────────────────────────
-    useEffect(() => {
-        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        if (prefersReduced || !gridWrapRef.current) return
-
-        const proxy = { skewY: 0 }
-        const skewSetter = gsap.quickSetter(gridWrapRef.current, 'skewY', 'deg')
-        const clamp = gsap.utils.clamp(-6, 6)
-
-        const st = ScrollTrigger.create({
-            onUpdate: (self) => {
-                const skew = clamp(self.getVelocity() / -300)
-                if (Math.abs(skew) > Math.abs(proxy.skewY)) {
-                    proxy.skewY = skew
-                    gsap.to(proxy, {
-                        skewY: 0,
-                        duration: 0.8,
-                        ease: 'power3',
-                        overwrite: true,
-                        onUpdate: () => skewSetter(proxy.skewY),
-                    })
-                }
-            },
-        })
-
-        return () => st.kill()
-    }, [])
 
     // ─── Pill indicator helpers ───────────────────────────────────
     const movePillTo = (idx) => {
@@ -466,7 +407,7 @@ export default function Movies() {
                         </div>
                     </div>
 
-                    <div ref={gridWrapRef} className={styles.gridWrapper}>
+                    <div className={styles.gridWrapper}>
                         <TabsContent value="now-playing">
                             <div className="mb-4 text-center">
                                 <p className="text-muted-foreground">{nowPlayingMovies.length} movies currently in theaters</p>
