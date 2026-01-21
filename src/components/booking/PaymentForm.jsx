@@ -1,28 +1,21 @@
 /**
  * PaymentForm – Step 3 of the booking flow.
- * Uses Stripe CardElement for real (test-mode) payment processing.
+ * Shows a pre-filled test card (4242 4242 4242 4242) and processes
+ * payments through Stripe test mode. Card is read-only — no user input needed.
  * Falls back to a free-only form when Stripe is unavailable.
  */
 
 import { useState } from "react"
-import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js"
+import { useStripe } from "@stripe/react-stripe-js"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createBookingIntent } from "@/api/payments"
 import { useAuth } from "@/context/AuthContext"
 import { useStripeStatus } from "@/components/StripeProvider"
 
-const CARD_ELEMENT_OPTIONS = {
-    style: {
-        base: {
-            fontSize: '16px',
-            color: '#ffffff',
-            fontFamily: 'Cascadia Code, monospace',
-            '::placeholder': { color: 'rgba(255,255,255,0.35)' },
-        },
-        invalid: { color: '#ef4444' },
-    },
-}
+const TEST_CARD = "4242  4242  4242  4242"
+const TEST_EXPIRY = "12/29"
+const TEST_CVC = "123"
 
 function PricingDisplay({ pricingBreakdown, totalPrice }) {
     if (pricingBreakdown) {
@@ -79,12 +72,42 @@ function SuccessDisplay({ totalPrice }) {
     )
 }
 
+/** Read-only test card display */
+function TestCardDisplay() {
+    return (
+        <div style={{
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: '8px',
+            padding: '14px 16px',
+            background: 'rgba(255,255,255,0.04)',
+            fontFamily: 'Cascadia Code, monospace',
+        }}>
+            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                Test Card (read-only)
+            </div>
+            <div style={{ fontSize: '1.1rem', color: '#fff', letterSpacing: '0.12em', marginBottom: '10px' }}>
+                {TEST_CARD}
+            </div>
+            <div style={{ display: 'flex', gap: '2rem', fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)' }}>
+                <div>
+                    <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', display: 'block', marginBottom: '2px' }}>EXPIRES</span>
+                    {TEST_EXPIRY}
+                </div>
+                <div>
+                    <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', display: 'block', marginBottom: '2px' }}>CVC</span>
+                    {TEST_CVC}
+                </div>
+            </div>
+        </div>
+    )
+}
+
 /**
- * StripeCardForm – uses Stripe hooks. Only rendered inside Elements provider.
+ * StripeCardForm – uses Stripe test payment method (pm_card_visa).
+ * Card is pre-filled and read-only. Only rendered inside Elements provider.
  */
 function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubmit, screeningId, selectedSeats, sessionId }) {
     const stripe = useStripe()
-    const elements = useElements()
     const { accessToken } = useAuth()
 
     const [processing, setProcessing] = useState(false)
@@ -113,15 +136,16 @@ function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubm
                 return
             }
 
-            if (!stripe || !elements) {
+            if (!stripe) {
                 setError("Stripe hasn't loaded yet. Please try again.")
                 setProcessing(false)
                 return
             }
 
+            // Use Stripe's built-in test payment method — no user card input needed
             const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
                 result.client_secret,
-                { payment_method: { card: elements.getElement(CardElement) } }
+                { payment_method: 'pm_card_visa' }
             )
 
             if (stripeError) {
@@ -149,14 +173,7 @@ function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubm
                 <PricingDisplay pricingBreakdown={pricingBreakdown} totalPrice={totalPrice} />
 
                 {totalPrice > 0 ? (
-                    <div style={{
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        borderRadius: '8px',
-                        padding: '12px 14px',
-                        background: 'rgba(255,255,255,0.04)',
-                    }}>
-                        <CardElement options={CARD_ELEMENT_OPTIONS} />
-                    </div>
+                    <TestCardDisplay />
                 ) : (
                     <div className="p-4 bg-muted rounded-lg text-center">
                         <p className="text-sm text-white/60">No payment required — free tickets applied!</p>
@@ -165,7 +182,7 @@ function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubm
 
                 <p className="text-xs text-white/40 italic">
                     {totalPrice > 0
-                        ? "Stripe test mode — use card 4242 4242 4242 4242, any future date, any CVC."
+                        ? "Stripe test mode — no real money is charged."
                         : "Your subscription covers these tickets."}
                 </p>
 
