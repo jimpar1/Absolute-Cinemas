@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react"
 import { authAPI } from "@/api/auth"
+import { getSubscription, subscribeTier as apiSubscribeTier } from "@/api/subscription"
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext()
@@ -19,6 +20,7 @@ export function AuthProvider({ children }) {
     })
 
     const [isLoading, setIsLoading] = useState(false)
+    const [subscription, setSubscription] = useState(null)
 
     // Save user to localStorage
     useEffect(() => {
@@ -45,6 +47,27 @@ export function AuthProvider({ children }) {
             localStorage.removeItem('refreshToken')
         }
     }, [refreshToken])
+
+    const fetchSubscription = async (token) => {
+        try {
+            const data = await getSubscription(token)
+            if (data && !data.detail) setSubscription(data)
+        } catch {
+            // non-fatal, subscription stays null
+        }
+    }
+
+    // Fetch subscription on mount if already logged in
+    useEffect(() => {
+        const token = localStorage.getItem('accessToken')
+        if (token) fetchSubscription(token)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    // Keep body[data-tier] in sync so CSS variables reflect the active plan
+    useEffect(() => {
+        document.body.dataset.tier = subscription?.tier ?? 'free'
+    }, [subscription])
 
     const extractAccessToken = (data) => {
         return (
@@ -109,6 +132,8 @@ export function AuthProvider({ children }) {
             setAccessToken(newAccessToken)
             setRefreshToken(newRefreshToken)
 
+            if (newAccessToken) await fetchSubscription(newAccessToken)
+
             return userData
         } finally {
             setIsLoading(false)
@@ -124,12 +149,14 @@ export function AuthProvider({ children }) {
             setUser(null)
             setAccessToken(null)
             setRefreshToken(null)
+            setSubscription(null)
         } catch (error) {
             console.error('Logout error:', error)
             // Still logout even if API call fails
             setUser(null)
             setAccessToken(null)
             setRefreshToken(null)
+            setSubscription(null)
         } finally {
             setIsLoading(false)
             window.location.href = '/'
@@ -177,6 +204,14 @@ export function AuthProvider({ children }) {
         }
     }
 
+    const subscribeTier = async (tier) => {
+        const token = await getValidAccessToken()
+        if (!token) throw new Error('You must be logged in to subscribe')
+        const data = await apiSubscribeTier(token, tier)
+        if (data && !data.error) setSubscription(data)
+        return data
+    }
+
     const changePassword = async (oldPassword, newPassword, confirmPassword) => {
         setIsLoading(true)
         try {
@@ -194,11 +229,13 @@ export function AuthProvider({ children }) {
         accessToken,
         refreshToken,
         isLoading,
+        subscription,
         login,
         logout,
         register,
         updateProfile,
         changePassword,
+        subscribeTier,
         isAuthenticated: !!user && !!accessToken
     }
 
