@@ -17,6 +17,8 @@ import MovieDetails from "./pages/MovieDetails"
 import Booking from "./pages/Booking"
 import AboutUs from "./pages/AboutUs"
 import Profile from "./pages/Profile"
+import SubscriptionSuccess from "./pages/SubscriptionSuccess"
+import SubscriptionCancel from "./pages/SubscriptionCancel"
 import { ReservationProvider } from "./context/ReservationContext"
 import { AuthProvider } from "./context/AuthContext"
 import { useState, useEffect } from "react"
@@ -55,6 +57,8 @@ export default function App() {
                                 <Route path="/booking/:id" element={<Booking />} />
                                 <Route path="/about" element={<AboutUs />} />
                                 <Route path="/profile" element={<Profile />} />
+                                <Route path="/subscription/success" element={<SubscriptionSuccess />} />
+                                <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
                             </Routes>
                         </main>
                         <Footer />
