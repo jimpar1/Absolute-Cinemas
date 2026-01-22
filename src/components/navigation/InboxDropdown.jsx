@@ -1,5 +1,6 @@
 /**
  * InboxDropdown – Dropdown panel in the nav bar that shows:
+ *   • Upcoming confirmed tickets (future screenings)
  *   • Active seat reservations (with countdown timers)
  *   • Saved / watchlisted movies
  *
@@ -7,15 +8,39 @@
  */
 
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
-import { Inbox, X, Armchair, Bookmark, Film, Trash2 } from "lucide-react"
+import { Inbox, X, Armchair, Bookmark, Film, Trash2, Ticket } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useReservation } from "@/context/ReservationContext"
+import { useAuth } from "@/context/AuthContext"
+import { getUserBookings } from "@/api/bookings"
+import { Link } from "react-router-dom"
 import ReservationTimer from "./ReservationTimer"
+import TicketModal from "@/components/booking/TicketModal"
 
 export default function InboxDropdown() {
     const [inboxOpen, setInboxOpen] = useState(false)
+    const [upcomingBookings, setUpcomingBookings] = useState([])
+    const [ticketBooking, setTicketBooking] = useState(null)
+
     const { reservations, savedMovies, removeReservation, removeSavedMovie, getTimeRemaining, totalItems } = useReservation()
+    const { isAuthenticated, accessToken } = useAuth()
+
+    /* Fetch confirmed future bookings whenever the dropdown opens */
+    useEffect(() => {
+        if (!inboxOpen || !isAuthenticated || !accessToken) return
+        getUserBookings(accessToken)
+            .then(data => {
+                const all = Array.isArray(data) ? data : (data.results || [])
+                const now = new Date()
+                setUpcomingBookings(
+                    all.filter(b => {
+                        const t = b.screening_details?.start_time
+                        return t && new Date(t) > now && b.status !== "cancelled"
+                    })
+                )
+            })
+            .catch(() => {})
+    }, [inboxOpen, isAuthenticated, accessToken])
 
     /* Close when clicking outside */
     useEffect(() => {
@@ -28,6 +53,8 @@ export default function InboxDropdown() {
         return () => document.removeEventListener('click', handleClickOutside)
     }, [inboxOpen])
 
+    const totalCount = totalItems + upcomingBookings.length
+
     return (
         <div className="relative">
             {/* Trigger Button */}
@@ -39,9 +66,9 @@ export default function InboxDropdown() {
                 aria-label="Inbox"
             >
                 <Inbox className="h-5 w-5" />
-                {totalItems > 0 && (
+                {totalCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                        {totalItems}
+                        {totalCount}
                     </span>
                 )}
             </Button>
@@ -58,6 +85,55 @@ export default function InboxDropdown() {
                     </div>
 
                     <div className="overflow-y-auto flex-1">
+
+                        {/* ── Upcoming Tickets ── */}
+                        {upcomingBookings.length > 0 && (
+                            <div className="p-4 border-b">
+                                <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                                    <Ticket className="h-4 w-4" style={{ color: "var(--tier-solid)" }} />
+                                    Upcoming Tickets
+                                </h4>
+                                <div className="space-y-2">
+                                    {upcomingBookings.map(booking => {
+                                        const startTime = booking.screening_details?.start_time
+                                        const dateStr = startTime
+                                            ? new Date(startTime).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                                            : "—"
+                                        const timeStr = startTime
+                                            ? new Date(startTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+                                            : "—"
+                                        const seats = booking.seat_numbers
+                                            ? booking.seat_numbers.split(",").map(s => s.trim()).join(", ")
+                                            : "—"
+
+                                        return (
+                                            <button
+                                                key={booking.id}
+                                                onClick={() => { setTicketBooking(booking); setInboxOpen(false) }}
+                                                className="w-full text-left bg-muted/40 hover:bg-muted/70 rounded-lg p-3 transition-colors group"
+                                                style={{ border: "1px solid var(--tier-color, rgba(255,255,255,0.06))" }}
+                                            >
+                                                <p className="font-medium text-sm truncate">
+                                                    {booking.screening_details?.movie_title || "Movie"}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                    {dateStr} · {timeStr} · {booking.screening_details?.hall_name || "—"}
+                                                </p>
+                                                <div className="flex items-center justify-between mt-1.5">
+                                                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                                                        {seats}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        View tickets →
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
                         {/* ── Reservations ── */}
                         {reservations.length > 0 && (
                             <div className="p-4 border-b">
@@ -156,18 +232,25 @@ export default function InboxDropdown() {
                         )}
 
                         {/* ── Empty state ── */}
-                        {reservations.length === 0 && savedMovies.length === 0 && (
+                        {upcomingBookings.length === 0 && reservations.length === 0 && savedMovies.length === 0 && (
                             <div className="p-8 text-center">
                                 <Inbox className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
                                 <p className="text-muted-foreground">Your inbox is empty</p>
                                 <p className="text-sm text-muted-foreground/70 mt-1">
-                                    Reserved seats and saved movies will appear here
+                                    Upcoming tickets, reserved seats and saved movies will appear here
                                 </p>
                             </div>
                         )}
                     </div>
                 </div>
             )}
+
+            {/* Ticket modal */}
+            <TicketModal
+                booking={ticketBooking}
+                open={!!ticketBooking}
+                onClose={() => setTicketBooking(null)}
+            />
         </div>
     )
 }

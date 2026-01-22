@@ -9,7 +9,7 @@
 
 import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Menu, Film, Home, Info, LogOut, User, Play } from "lucide-react"
+import { Menu, LogOut, User, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
@@ -21,17 +21,16 @@ import VideoIntro from "./VideoIntro"
 
 /** Top-level navigation link definitions */
 const navItems = [
-    { name: "Home", path: "/", icon: Home },
-    { name: "Movies", path: "/movies", icon: Film },
-    { name: "About Us", path: "/about", icon: Info },
+    { name: "Home", path: "/" },
+    { name: "Movies", path: "/movies" },
+    { name: "About Us", path: "/about" },
 ]
 
 /**
- * NavLink – A single navigation item with an icon and label.
+ * NavLink – A single navigation item using Permanent Marker font.
  * Highlights when active. Can render in desktop or mobile mode.
  */
 function NavLink({ item, mobile = false, onNavigate }) {
-    const Icon = item.icon
     const location = useLocation()
     const isActive = location.pathname === item.path
 
@@ -40,15 +39,16 @@ function NavLink({ item, mobile = false, onNavigate }) {
             to={item.path}
             onClick={onNavigate}
             className={cn(
-                "flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-[120px]",
+                "flex items-center justify-center px-3 py-2 rounded-md transition-colors",
                 isActive
                     ? "bg-accent text-accent-foreground"
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                mobile && "text-base py-3 w-auto justify-start"
+                mobile && "py-3 justify-start"
             )}
         >
-            <Icon className="h-4 w-4" />
-            <span>{item.name}</span>
+            <span style={{ fontFamily: "'Permanent Marker', cursive", fontSize: mobile ? '1.1rem' : '1rem' }}>
+                {item.name}
+            </span>
         </Link>
     )
 }
@@ -69,7 +69,7 @@ export default function Navigation() {
     }
 
     return (
-        <nav className="sticky top-0 z-40 w-full bg-background/70 backdrop-blur">
+        <nav className="sticky top-0 z-40 w-full bg-background/70 backdrop-blur" style={{ borderBottom: '1px solid var(--tier-color)', transition: 'border-color 0.5s ease' }}>
             <div className="w-full h-16 px-4 lg:px-8 flex items-center justify-between lg:grid lg:grid-cols-3">
 
                 {/* ─── Left: Logo ─── */}
@@ -106,7 +106,7 @@ export default function Navigation() {
                         <div className="flex items-center gap-2">
                             <Link to="/profile">
                                 <Button variant="ghost" className="hidden sm:flex items-center gap-1 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground">
-                                    <User className="h-4 w-4" />
+                                    <User className="h-4 w-4" style={{ color: 'var(--tier-solid)', transition: 'color 0.5s ease' }} />
                                     <span className="text-xs">{user.name || user.username || user.email}</span>
                                 </Button>
                             </Link>

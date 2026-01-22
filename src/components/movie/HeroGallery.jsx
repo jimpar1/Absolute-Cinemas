@@ -97,19 +97,6 @@ export default function HeroGallery({ movie, backdropImages }) {
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-background" />
             )}
 
-            {/* Movie Poster and Title at Bottom */}
-            <div className="absolute bottom-6 left-0 right-0 z-10">
-                <div className="container flex flex-col md:flex-row items-end md:items-center gap-6">
-                    {movie.poster_url && (
-                        <img
-                            src={movie.poster_url}
-                            alt={movie.title}
-                            className="w-32 md:w-48 rounded-lg shadow-2xl border-2 border-white/20"
-                        />
-                    )}
-                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold drop-shadow-lg text-white flex-1 text-center md:text-left">{movie.title}</h1>
-                </div>
-            </div>
         </div>
     )
 }

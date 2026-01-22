@@ -32,7 +32,7 @@ export default function Booking() {
     const navigate = useNavigate()
     const { toast } = useToast()
     const { addReservation, clearMovieReservations, reservations } = useReservation()
-    const { user, isAuthenticated } = useAuth()
+    const { user, isAuthenticated, accessToken, subscription } = useAuth()
 
     const [screening, setScreening] = useState(null)
     const [screeningLoading, setScreeningLoading] = useState(true)
@@ -114,6 +114,7 @@ export default function Booking() {
                     date: formattedDate,
                     time: formattedTime,
                     hall: data?.hall_name || data?.hall || "Hall 1",
+                    hallImage: data?.hall_image_url || null,
                     movieId: data?.movie || data?.movie_id || null,
                     layout: data?.hall_layout || null,
                 })
@@ -156,7 +157,21 @@ export default function Booking() {
     }, [moviePrice, id, sessionId, fetchOccupiedData, screening])
 
     const pricePerSeat = hallLayout?.pricePerSeat ?? moviePrice ?? 0
-    const totalPrice = selectedSeats.length * pricePerSeat
+
+    const computeClientPrice = (sub, seatsCount, pricePerSeat) => {
+        const cfg = { free: [0, 0], pro: [2, 0.3], ultra: [4, 0.5] }[sub?.tier ?? 'free'] ?? [0, 0]
+        const [weeklyFree, discount] = cfg
+        const remaining = Math.max(0, weeklyFree - (sub?.free_tickets_used ?? 0))
+        const freeCount = Math.min(remaining, seatsCount)
+        const paidCount = seatsCount - freeCount
+        const total = paidCount * pricePerSeat * (1 - discount)
+        return { freeCount, paidCount, discountRate: discount, total: Math.round(total * 100) / 100 }
+    }
+
+    const seatsCount = selectedSeats.length
+    const pricing = computeClientPrice(subscription, seatsCount, pricePerSeat)
+    const effectivePrice = isAuthenticated ? pricing.total : seatsCount * pricePerSeat
+    const totalPrice = effectivePrice
 
     /* ─── Toggle a single seat (lock / unlock on server) ─── */
     const toggleSeat = async (seat) => {
@@ -210,8 +225,9 @@ export default function Booking() {
                 total_price: totalPrice,
                 status: 'confirmed'
             }
-            await createBooking(bookingData)
-            setBookingSummary({ seats: [...selectedSeats].sort(), total: totalPrice, email: formData.email })
+            await createBooking(bookingData, accessToken)
+            setBookingSummary({ seats: [...selectedSeats].sort(), total: effectivePrice, email: formData.email })
+            clearMovieReservations(screening.id, screening.date, screening.time)
             toast({ title: "Booking Confirmed!", description: `Seats ${selectedSeats.join(', ')} booked.` })
             setStep(4)
         } catch (error) {
@@ -240,8 +256,15 @@ export default function Booking() {
             <StepProgress currentStep={step} />
 
             {step === 1 && (
+                <>
+                {isAuthenticated && subscription && subscription.tier !== 'free' && (
+                    <div style={{ marginBottom: '12px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)' }}>
+                        🎟 {Math.max(0, (subscription.weekly_free_total ?? 0) - (subscription.free_tickets_used ?? 0))} free ticket(s) remaining this week
+                    </div>
+                )}
                 <SeatSelection
                     hallLayout={hallLayout}
+                    hallImage={screening.hallImage}
                     selectedSeats={selectedSeats}
                     totalPrice={totalPrice}
                     onToggleSeat={toggleSeat}
@@ -253,6 +276,7 @@ export default function Booking() {
                         }
                     }}
                 />
+                </>
             )}
 
             {step === 2 && (
@@ -269,6 +293,7 @@ export default function Booking() {
                     formData={formData}
                     onChange={setFormData}
                     totalPrice={totalPrice}
+                    pricingBreakdown={isAuthenticated && subscription && subscription.tier !== 'free' ? { ...pricing, tier: subscription.tier, pricePerSeat } : null}
                     onBack={() => {
                         if (isAuthenticated) {
                             setStep(1); // Go back to Seat Selection
