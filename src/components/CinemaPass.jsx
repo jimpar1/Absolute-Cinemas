@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useAuth } from '@/context/AuthContext'
+import { createSubscriptionCheckout } from '@/api/payments'
 import styles from './CinemaPass.module.css'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -63,7 +64,7 @@ export default function CinemaPass() {
     const [isAnnual, setIsAnnual] = useState(false)
     const [activatingTier, setActivatingTier] = useState(null)
 
-    const { isAuthenticated, subscription, subscribeTier } = useAuth()
+    const { isAuthenticated, subscription, subscribeTier, accessToken } = useAuth()
     const navigate = useNavigate()
 
     const sectionRef   = useRef(null)
@@ -210,7 +211,20 @@ export default function CinemaPass() {
                                     disabled={isActivating}
                                     onClick={async () => {
                                         setActivatingTier(tierKey)
-                                        try { await subscribeTier(tierKey) } catch { /* noop */ }
+                                        try {
+                                            if (tier.priceMonthly) {
+                                                // Paid tier — redirect to Stripe Checkout
+                                                const result = await createSubscriptionCheckout({
+                                                    tier: tierKey,
+                                                    billing_period: isAnnual ? 'annual' : 'monthly',
+                                                    frontend_url: window.location.origin,
+                                                }, accessToken)
+                                                window.location.href = result.checkout_url
+                                                return
+                                            }
+                                            // Free tier — direct downgrade
+                                            await subscribeTier(tierKey)
+                                        } catch { /* noop */ }
                                         setTimeout(() => setActivatingTier(null), 1000)
                                     }}
                                 >
