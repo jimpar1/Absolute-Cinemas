@@ -21,6 +21,7 @@ import { useAuth } from "@/context/AuthContext"
 import { getScreening } from "@/api/screenings"
 import { getScreeningBookings, createBooking, lockSeats, unlockSeats, getLockedSeats } from "@/api/bookings"
 
+import StripeProvider from "@/components/StripeProvider"
 import StepProgress from "@/components/booking/StepProgress"
 import SeatSelection from "@/components/booking/SeatSelection"
 import ContactForm from "@/components/booking/ContactForm"
@@ -150,7 +151,8 @@ export default function Booking() {
 
         const handleBeforeUnload = () => {
             const data = JSON.stringify({ session_id: sessionId })
-            navigator.sendBeacon(`http://127.0.0.1:8000/api/screenings/${id}/unlock_seats/`, new Blob([data], { type: 'application/json' }))
+            const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"
+            navigator.sendBeacon(`${apiUrl}/api/screenings/${id}/unlock_seats/`, new Blob([data], { type: 'application/json' }))
         }
         window.addEventListener('beforeunload', handleBeforeUnload)
         return () => window.removeEventListener('beforeunload', handleBeforeUnload)
@@ -214,18 +216,23 @@ export default function Booking() {
     /* ─── Submit final booking ─── */
     const handleSubmit = async () => {
         try {
-            const bookingData = {
-                screening: id,
-                customer_name: formData.name,
-                customer_email: formData.email,
-                customer_phone: formData.phone || "",
-                seats_booked: selectedSeats.length,
-                seat_numbers: selectedSeats.sort().join(','),
-                session_id: sessionId,
-                total_price: totalPrice,
-                status: 'confirmed'
+            if (totalPrice === 0) {
+                // Free booking — create directly (no Stripe involved)
+                const bookingData = {
+                    screening: id,
+                    customer_name: formData.name,
+                    customer_email: formData.email,
+                    customer_phone: formData.phone || "",
+                    seats_booked: selectedSeats.length,
+                    seat_numbers: selectedSeats.sort().join(','),
+                    session_id: sessionId,
+                    total_price: totalPrice,
+                    status: 'confirmed'
+                }
+                await createBooking(bookingData, accessToken)
             }
-            await createBooking(bookingData, accessToken)
+            // For paid bookings the backend webhook already created the booking
+            // after Stripe confirmed the payment in PaymentForm.
             setBookingSummary({ seats: [...selectedSeats].sort(), total: effectivePrice, email: formData.email })
             clearMovieReservations(screening.id, screening.date, screening.time)
             toast({ title: "Booking Confirmed!", description: `Seats ${selectedSeats.join(', ')} booked.` })
@@ -289,20 +296,24 @@ export default function Booking() {
             )}
 
             {step === 3 && (
+                <StripeProvider>
                 <PaymentForm
                     formData={formData}
-                    onChange={setFormData}
                     totalPrice={totalPrice}
                     pricingBreakdown={isAuthenticated && subscription && subscription.tier !== 'free' ? { ...pricing, tier: subscription.tier, pricePerSeat } : null}
+                    screeningId={id}
+                    selectedSeats={selectedSeats}
+                    sessionId={sessionId}
                     onBack={() => {
                         if (isAuthenticated) {
-                            setStep(1); // Go back to Seat Selection
+                            setStep(1);
                         } else {
-                            setStep(2); // Go back to Contact Form
+                            setStep(2);
                         }
                     }}
                     onSubmit={handleSubmit}
                 />
+                </StripeProvider>
             )}
 
             {step === 4 && bookingSummary && (

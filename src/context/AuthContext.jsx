@@ -224,6 +224,10 @@ export function AuthProvider({ children }) {
         }
     }
 
+    const refreshSubscription = async () => {
+        if (accessToken) await fetchSubscription(accessToken)
+    }
+
     const value = {
         user,
         accessToken,
@@ -236,6 +240,7 @@ export function AuthProvider({ children }) {
         updateProfile,
         changePassword,
         subscribeTier,
+        refreshSubscription,
         isAuthenticated: !!user && !!accessToken
     }
 
