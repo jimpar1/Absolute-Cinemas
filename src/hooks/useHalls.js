@@ -3,16 +3,14 @@ import { getHalls } from '../api/halls'
 
 // Metadata keyed by English hall name (for future use)
 const HALL_META = {
-    'Hall Alpha': { badge: 'IMAX',  tech: '4K Laser · Dolby Atmos'          },
-    'Hall Beta':  { badge: 'Dolby', tech: 'Premium Audio · Recliner Seating' },
-    'Hall Gamma': { badge: 'VIP',   tech: 'Private Lounge · Waiter Service'  },
+    'Hall Alpha': { badge: 'IMAX', tech: '4K Laser · Dolby Atmos'         },
+    'Hall Gamma': { badge: 'VIP',  tech: 'Private Lounge · Waiter Service' },
 }
 
 // Index-based fallback for halls with non-English names
 const FALLBACK_META = [
-    { badge: 'IMAX',  tech: '4K Laser · Dolby Atmos'          },
-    { badge: 'Dolby', tech: 'Premium Audio · Recliner Seating' },
-    { badge: 'VIP',   tech: 'Private Lounge · Waiter Service'  },
+    { badge: 'IMAX', tech: '4K Laser · Dolby Atmos'         },
+    { badge: 'VIP',  tech: 'Private Lounge · Waiter Service' },
 ]
 
 export function useHalls() {
