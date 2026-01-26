@@ -1,34 +1,68 @@
 /*
- * Home.module.css – Scoped styles for the Home page.
- * Covers the hero section, Swiper coverflow slider, and features section.
+ * Home.module.css – "The Projection Room" cinematic redesign.
+ * Covers: hero iris/letterbox overlay, cinema halls horizontal scroll,
+ * stats lightboard, spotlight heading, movie grid filter pills.
  */
 
-/* === HERO SECTION WITH FULL ORIGINAL IMAGE === */
+/* ─── Film grain overlay ─────────────────────────────────────── */
+.grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 200px 200px;
+}
+
+/* ─── HERO SECTION ───────────────────────────────────────────── */
 .heroSection {
     width: 100%;
-    min-height: 50vh;
-    height: auto;
+    min-height: 70vh;
     background-size: cover;
     background-repeat: no-repeat;
-    background-position: center center;
+    background-position: center 20%;
     position: relative;
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    padding: 2rem 1rem 3rem 1rem;
+    padding: 2rem 1rem 3rem;
+    overflow: hidden;
 }
 
-/* This holds the logo + text */
+/* Projector iris overlay — starts full black; GSAP shrinks it away */
+.irisOverlay {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* Letterbox bars */
+.letterboxTop,
+.letterboxBot {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 13%;
+    background: #000;
+    z-index: 9;
+    pointer-events: none;
+}
+.letterboxTop { top: 0; }
+.letterboxBot { bottom: 0; }
+
 .heroContent {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     gap: 1.5rem;
     z-index: 2;
     text-align: center;
     width: 100%;
-    max-width: 800px;
+    max-width: 820px;
     padding: 0 1rem;
 }
 
@@ -47,29 +81,285 @@
     align-items: center;
 }
 
-.heroText h1 {
+.heroHeading {
     font-size: 1.5rem;
     font-weight: 700;
     line-height: 1.2;
+    /* Characters animated individually */
+    overflow: hidden;
 }
 
-.heroText p {
+/* Each character wrapper produced by <SplitChars> */
+.char {
+    display: inline-block;
+}
+
+.heroSub {
     margin-top: 0.5rem;
     font-size: 0.95rem;
     opacity: 0.9;
 }
 
-/* === SLIDER SECTION === */
+/* ─── CINEMA HALLS SECTION ───────────────────────────────────── */
+.hallsSection {
+    background: #050505;
+    width: 100%;
+    position: relative;
+    padding: 3rem 0 2rem;
+    /* No overflow: hidden here — that would break the CSS scroll-snap */
+}
+
+.hallsLabel {
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 1.5rem;
+    padding: 0 1rem;
+}
+
+/* CSS scroll-snap container — horizontally scrollable, hides scrollbar */
+.hallsScroller {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    cursor: grab;
+    padding-bottom: 1rem; /* room for potential scrollbar on some browsers */
+}
+
+.hallsScroller:active {
+    cursor: grabbing;
+}
+
+.hallsScroller::-webkit-scrollbar {
+    display: none;
+}
+
+/* Horizontal flex track */
+.hallsTrack {
+    display: flex;
+    gap: 1.5rem;
+    padding: 0 2rem 1rem;
+    width: max-content;
+}
+
+/* Individual hall card */
+.hallCard {
+    scroll-snap-align: start;
+    position: relative;
+    flex-shrink: 0;
+    width: 85vw;
+    max-width: 560px;
+    height: 360px;
+    border-radius: 1rem;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.hallCard:hover .hallOverlay {
+    transform: translateY(0);
+}
+
+.hallCard:hover .hallImg {
+    transform: scale(1.06);
+}
+
+.hallImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.6s ease;
+}
+
+/* Ghost number behind the card */
+.hallGhost {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(6rem, 18vw, 12rem);
+    font-weight: 900;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255,255,255,0.08);
+    z-index: 1;
+    pointer-events: none;
+    user-select: none;
+    line-height: 1;
+}
+
+/* Info overlay — slides up from bottom on hover */
+.hallOverlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1.5rem 1.5rem 1.25rem;
+    background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.6) 60%, transparent 100%);
+    transform: translateY(30%);
+    transition: transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.hallBadge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 4px;
+    padding: 0.15rem 0.5rem;
+    color: #fff;
+    width: fit-content;
+    margin-bottom: 0.25rem;
+}
+
+.hallName {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+}
+
+.hallSeats {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.7);
+    margin: 0;
+}
+
+.hallTech {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    margin: 0;
+}
+
+/* Mobile: stack vertically */
+@media (max-width: 767px) {
+    .hallsScroller {
+        overflow-x: hidden;
+        cursor: default;
+    }
+    .hallsTrack {
+        flex-direction: column;
+        width: 100%;
+        padding: 0 1rem 1rem;
+    }
+    .hallCard {
+        width: 100%;
+        max-width: 100%;
+        height: 240px;
+        scroll-snap-align: unset;
+    }
+    .hallOverlay {
+        transform: translateY(0);
+    }
+}
+
+/* ─── STATS — CINEMA LIGHTBOARD ─────────────────────────────── */
+.statsSection {
+    background: #0a0a0a;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 2.5rem 1rem;
+    /* Subtle scan-line texture */
+    background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(255,255,255,0.012) 3px,
+        rgba(255,255,255,0.012) 4px
+    );
+}
+
+.statItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 clamp(0.75rem, 3vw, 2.5rem);
+    position: relative;
+}
+
+.statItem + .statItem::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10%;
+    bottom: 10%;
+    width: 1px;
+    background: rgba(255,255,255,0.1);
+}
+
+.statNum {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 900;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    font-family: ui-monospace, monospace;
+}
+
+.statLabel {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    margin-top: 0.4rem;
+}
+
+/* ─── SLIDER SECTION ─────────────────────────────────────────── */
 .sliderSection {
-    padding: 2rem 0;
+    padding: 3rem 0 2rem;
     background: #050505;
     width: 100%;
     overflow: hidden;
 }
 
-/* Fix Swiper slide sizing for coverflow effect */
+/* "Now Showing" spotlight heading */
+.spotlightHeading {
+    text-align: center;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+    --spotlight-x: -120%; /* initial value; animated by GSAP */
+    /* Spotlight sweep mask via CSS custom property animated by GSAP */
+    background: linear-gradient(
+        90deg,
+        rgba(255,255,255,0.08) 0%,
+        rgba(255,255,255,0.08) calc(var(--spotlight-x, -120%) - 15%),
+        rgba(255,255,255,0.9) calc(var(--spotlight-x, -120%)),
+        rgba(255,255,255,0.08) calc(var(--spotlight-x, -120%) + 15%),
+        rgba(255,255,255,0.08) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+.swiperWrap {
+    /* Initial opacity/transform set by GSAP */
+}
+
+/* Fix Swiper slide sizing */
 .sliderSection :global(.swiper) {
-    padding-bottom: 3rem; /* Space for pagination */
+    padding-bottom: 3rem;
     width: 100%;
 }
 
@@ -101,41 +391,69 @@
     font-size: 1.2rem;
 }
 
-/* === FEATURES SECTION === */
+/* ─── FEATURES / MOVIE GRID SECTION ─────────────────────────── */
 .featuresSection {
     background: #050505;
     width: 100%;
 }
 
-/* === BOTTOM BACKGROUND IMAGE === */
-.backgroundImageSection {
-    width: 100%;
-    margin-top: 2rem;
+/* Sliding pill switcher */
+.pillSwitcher {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 9999px;
+    padding: 5px;
+    gap: 0;
 }
 
-.fullBackgroundImage {
-    width: 100%;
-    height: auto;
-    display: block;
+/* The white sliding bg */
+.pillIndicator {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    height: calc(100% - 10px);
+    background: #ffffff;
+    border-radius: 9999px;
+    opacity: 0;
+    pointer-events: none;
+    will-change: transform, width, opacity;
 }
 
-/* === RESPONSIVE - Small screens (480px+) === */
+.pillItem {
+    position: relative;
+    z-index: 1;
+    padding: 0.55rem 1.6rem;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    white-space: nowrap;
+    transition: color 0.25s ease;
+}
+
+.pillItem:hover {
+    color: #0a0a0a;
+}
+
+/* Card wrapper — GSAP targets this for dealing animation */
+.cardWrap {
+    width: 100%;
+    transform-style: preserve-3d;
+}
+
+/* ─── RESPONSIVE ─────────────────────────────────────────────── */
 @media (min-width: 480px) {
     .heroSection {
-        min-height: 55vh;
+        min-height: 75vh;
     }
-
-    .heroLogo {
-        width: 140px;
-    }
-
-    .heroText h1 {
-        font-size: 1.8rem;
-    }
-
-    .heroText p {
-        font-size: 1rem;
-    }
+    .heroLogo { width: 140px; }
+    .heroHeading { font-size: 1.8rem; }
+    .heroSub { font-size: 1rem; }
 
     .sliderSection :global(.swiper-slide) {
         width: 170px !important;
@@ -143,72 +461,91 @@
     }
 }
 
-/* === RESPONSIVE - Medium screens (768px+) === */
 @media (min-width: 768px) {
     .heroSection {
-        min-height: 60vh;
-        padding: 2rem 2rem 4rem 2rem;
+        min-height: 80vh;
+        padding: 2rem 2rem 4rem;
     }
-
     .heroContent {
         flex-direction: row;
         text-align: left;
         gap: 2rem;
     }
-
-    .heroLogo {
-        width: 160px;
-    }
-
+    .heroLogo { width: 160px; }
     .heroText {
         text-align: left;
         align-items: flex-start;
     }
-
-    .heroText h1 {
-        font-size: 2.2rem;
-    }
-
-    .heroText p {
-        font-size: 1.1rem;
-    }
+    .heroHeading { font-size: 2.2rem; }
+    .heroSub { font-size: 1.1rem; }
 
     .sliderSection :global(.swiper-slide) {
         width: 200px !important;
         height: 300px !important;
     }
-
     .sliderSection :global(.swiper-button-next),
     .sliderSection :global(.swiper-button-prev) {
         display: flex;
     }
 }
 
-/* === RESPONSIVE - Large screens (1024px+) === */
 @media (min-width: 1024px) {
-    .heroSection {
-        min-height: 65vh;
-    }
-
-    .heroLogo {
-        width: 180px;
-    }
-
-    .heroText h1 {
-        font-size: 2.6rem;
-    }
-
-    .heroText p {
-        font-size: 1.2rem;
-    }
+    .heroSection { min-height: 85vh; }
+    .heroLogo { width: 180px; }
+    .heroHeading { font-size: 2.6rem; }
+    .heroSub { font-size: 1.2rem; }
 
     .sliderSection :global(.swiper-slide) {
         width: 220px !important;
         height: 330px !important;
     }
-
     .sliderSection :global(.swiper-button-next::after),
     .sliderSection :global(.swiper-button-prev::after) {
         font-size: 1.5rem;
+    }
+}
+
+@media (min-width: 1440px) {
+    .sliderSection :global(.swiper-slide) {
+        width: 260px !important;
+        height: 390px !important;
+    }
+    .heroHeading { font-size: 3rem; }
+}
+
+/* Stats: stack dividers vertically on small screens */
+@media (max-width: 479px) {
+    .statsSection {
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 2rem 1rem;
+    }
+    .statItem + .statItem::before {
+        display: none;
+    }
+    .statItem {
+        padding: 0;
+        width: 100%;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        padding-top: 1.5rem;
+    }
+    .statItem:first-child {
+        border-top: none;
+        padding-top: 0;
+    }
+}
+
+/* ─── Reduced motion fallback ────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .irisOverlay,
+    .letterboxTop,
+    .letterboxBot {
+        display: none !important;
+    }
+    .hallOverlay {
+        transform: translateY(0) !important;
+    }
+    .hallCard {
+        clip-path: none !important;
     }
 }

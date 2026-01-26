@@ -46,7 +46,7 @@ export default function Footer() {
                     <h3>Contact</h3>
                     <p>University of West Attica</p>
                     <p>Computer Science Department</p>
-                    <p className="footer-year">© 2025 Absolute Cinema</p>
+                    <p className="footer-year">© 2026 Absolute Cinema</p>
                 </div>
             </div>
         </footer>

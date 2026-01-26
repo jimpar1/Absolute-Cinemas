@@ -4,7 +4,7 @@
  * Also includes TMDB search/popular/details proxy endpoints.
  */
 
-const API = "http://127.0.0.1:8000/api/movies/";
+const API = `${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/api/movies/`;
 
 /** Fetch the paginated list of all movies. Returns { count, next, previous, results }. */
 export async function getMovies() {

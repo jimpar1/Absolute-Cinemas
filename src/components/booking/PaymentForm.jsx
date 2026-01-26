@@ -1,31 +1,281 @@
 /**
  * PaymentForm – Step 3 of the booking flow.
- * Collects card number, expiry, and CVV. Shows the total to pay.
+ * Shows a pre-filled test card (4242 4242 4242 4242) and processes
+ * payments through Stripe test mode. Card is read-only — no user input needed.
+ * Falls back to a free-only form when Stripe is unavailable.
  */
 
+import { useState } from "react"
+import { useStripe } from "@stripe/react-stripe-js"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { createBookingIntent } from "@/api/payments"
+import { useAuth } from "@/context/AuthContext"
+import { useStripeStatus } from "@/components/StripeProvider"
 
-export default function PaymentForm({ formData, onChange, totalPrice, onBack, onSubmit }) {
+const TEST_CARD = "4242  4242  4242  4242"
+const TEST_EXPIRY = "12/29"
+const TEST_CVC = "123"
+
+function PricingDisplay({ pricingBreakdown, totalPrice }) {
+    if (pricingBreakdown) {
+        return (
+            <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', padding: '12px 14px', background: 'rgba(255,255,255,0.04)', lineHeight: '1.7' }}>
+                <div style={{ fontWeight: 700, marginBottom: '6px', color: 'rgba(255,255,255,0.9)' }}>
+                    🎟 {pricingBreakdown.tier.charAt(0).toUpperCase() + pricingBreakdown.tier.slice(1)} Subscription Applied
+                </div>
+                {pricingBreakdown.freeCount > 0 && (
+                    <div style={{ color: 'rgba(255,255,255,0.65)', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>{pricingBreakdown.freeCount} × Free ({pricingBreakdown.tier.charAt(0).toUpperCase() + pricingBreakdown.tier.slice(1)})</span>
+                        <span>€0.00</span>
+                    </div>
+                )}
+                {pricingBreakdown.paidCount > 0 && (
+                    <div style={{ color: 'rgba(255,255,255,0.65)', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>{pricingBreakdown.paidCount} × Seat × €{pricingBreakdown.pricePerSeat} – {Math.round(pricingBreakdown.discountRate * 100)}%</span>
+                        <span>€{(pricingBreakdown.paidCount * pricingBreakdown.pricePerSeat * (1 - pricingBreakdown.discountRate)).toFixed(2)}</span>
+                    </div>
+                )}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', marginTop: '6px', paddingTop: '6px', display: 'flex', justifyContent: 'space-between', fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>
+                    <span>Total</span>
+                    <span>€{totalPrice}</span>
+                </div>
+            </div>
+        )
+    }
+    return (
+        <div className="p-4 bg-muted rounded-lg flex justify-between">
+            <span className="font-medium">Total to pay:</span>
+            <span className="font-bold text-primary">€{totalPrice}</span>
+        </div>
+    )
+}
+
+function SuccessDisplay({ totalPrice }) {
     return (
         <Card className="max-w-md mx-auto">
-            <CardHeader><CardTitle>Payment</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg flex justify-between">
-                    <span className="font-medium">Total to pay:</span>
-                    <span className="font-bold text-primary">${totalPrice}</span>
-                </div>
-                <Input placeholder="Card Number" value={formData.cardNumber} onChange={(e) => onChange({ ...formData, cardNumber: e.target.value })} />
-                <div className="grid grid-cols-2 gap-4">
-                    <Input placeholder="MM/YY" value={formData.expiry} onChange={(e) => onChange({ ...formData, expiry: e.target.value })} />
-                    <Input placeholder="CVV" value={formData.cvv} onChange={(e) => onChange({ ...formData, cvv: e.target.value })} />
-                </div>
-                <div className="flex gap-3 pt-4">
-                    <Button variant="outline" className="w-1/3" onClick={onBack}>Back</Button>
-                    <Button className="flex-1" onClick={onSubmit}>Pay & Finish</Button>
+            <CardContent className="pt-8 pb-8">
+                <div style={{ fontFamily: "monospace" }} className="space-y-5">
+                    <div className="flex items-center gap-3 text-white text-lg font-bold tracking-wide">
+                        <span>✅</span>
+                        <span>{totalPrice === 0 ? "BOOKING CONFIRMED" : "PAYMENT CONFIRMED"}</span>
+                    </div>
+                    <div className="border border-white/20 rounded p-3 space-y-1 text-sm">
+                        <div className="text-white font-bold tracking-widest">Amount: €{totalPrice}</div>
+                        <div className="text-white/50">
+                            {totalPrice === 0 ? "Free tickets applied — no charge." : "Payment processed via Stripe (test mode)."}
+                        </div>
+                    </div>
                 </div>
             </CardContent>
         </Card>
     )
+}
+
+/** Read-only test card display */
+function TestCardDisplay() {
+    return (
+        <div style={{
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: '8px',
+            padding: '14px 16px',
+            background: 'rgba(255,255,255,0.04)',
+            fontFamily: 'Cascadia Code, monospace',
+        }}>
+            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                Test Card (read-only)
+            </div>
+            <div style={{ fontSize: '1.1rem', color: '#fff', letterSpacing: '0.12em', marginBottom: '10px' }}>
+                {TEST_CARD}
+            </div>
+            <div style={{ display: 'flex', gap: '2rem', fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)' }}>
+                <div>
+                    <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', display: 'block', marginBottom: '2px' }}>EXPIRES</span>
+                    {TEST_EXPIRY}
+                </div>
+                <div>
+                    <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', display: 'block', marginBottom: '2px' }}>CVC</span>
+                    {TEST_CVC}
+                </div>
+            </div>
+        </div>
+    )
+}
+
+/**
+ * StripeCardForm – uses Stripe test payment method (pm_card_visa).
+ * Card is pre-filled and read-only. Only rendered inside Elements provider.
+ */
+function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubmit, screeningId, selectedSeats, sessionId }) {
+    const stripe = useStripe()
+    const { accessToken } = useAuth()
+
+    const [processing, setProcessing] = useState(false)
+    const [error, setError] = useState(null)
+    const [paymentSuccess, setPaymentSuccess] = useState(false)
+
+    const handlePay = async () => {
+        setProcessing(true)
+        setError(null)
+
+        try {
+            const intentData = {
+                screening_id: screeningId,
+                seats_booked: selectedSeats.length,
+                seat_numbers: selectedSeats.sort().join(','),
+                session_id: sessionId,
+                customer_name: formData.name,
+                customer_email: formData.email,
+                customer_phone: formData.phone || "",
+            }
+            const result = await createBookingIntent(intentData, accessToken)
+
+            if (result.free_booking) {
+                setPaymentSuccess(true)
+                setTimeout(() => onSubmit(), 1000)
+                return
+            }
+
+            if (!stripe) {
+                setError("Stripe hasn't loaded yet. Please try again.")
+                setProcessing(false)
+                return
+            }
+
+            // Use Stripe's built-in test payment method — no user card input needed
+            const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
+                result.client_secret,
+                { payment_method: 'pm_card_visa' }
+            )
+
+            if (stripeError) {
+                setError(stripeError.message)
+                setProcessing(false)
+                return
+            }
+
+            if (paymentIntent.status === 'succeeded') {
+                setPaymentSuccess(true)
+                setTimeout(() => onSubmit(), 1500)
+            }
+        } catch (err) {
+            setError(err.message || "Payment failed. Please try again.")
+            setProcessing(false)
+        }
+    }
+
+    if (paymentSuccess) return <SuccessDisplay totalPrice={totalPrice} />
+
+    return (
+        <Card className="max-w-md mx-auto">
+            <CardHeader><CardTitle>Payment</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                <PricingDisplay pricingBreakdown={pricingBreakdown} totalPrice={totalPrice} />
+
+                {totalPrice > 0 ? (
+                    <TestCardDisplay />
+                ) : (
+                    <div className="p-4 bg-muted rounded-lg text-center">
+                        <p className="text-sm text-white/60">No payment required — free tickets applied!</p>
+                    </div>
+                )}
+
+                <p className="text-xs text-white/40 italic">
+                    {totalPrice > 0
+                        ? "Stripe test mode — no real money is charged."
+                        : "Your subscription covers these tickets."}
+                </p>
+
+                {error && (
+                    <div className="p-3 bg-red-900/30 border border-red-500/30 rounded text-sm text-red-300">{error}</div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                    <Button variant="outline" className="w-1/3" onClick={onBack} disabled={processing}>Back</Button>
+                    <Button className="flex-1" onClick={handlePay} disabled={processing || (!stripe && totalPrice > 0)}>
+                        {processing ? "Processing…" : totalPrice > 0 ? "Pay & Finish" : "Confirm Booking"}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+/**
+ * FallbackForm – shown when Stripe is not available.
+ * Allows free bookings; blocks paid ones with an explanation.
+ */
+function FallbackForm({ formData, totalPrice, pricingBreakdown, onBack, onSubmit, screeningId, selectedSeats, sessionId, stripeError }) {
+    const { accessToken } = useAuth()
+    const [processing, setProcessing] = useState(false)
+    const [error, setError] = useState(null)
+    const [paymentSuccess, setPaymentSuccess] = useState(false)
+
+    const handleFreePay = async () => {
+        setProcessing(true)
+        setError(null)
+        try {
+            const intentData = {
+                screening_id: screeningId,
+                seats_booked: selectedSeats.length,
+                seat_numbers: selectedSeats.sort().join(','),
+                session_id: sessionId,
+                customer_name: formData.name,
+                customer_email: formData.email,
+                customer_phone: formData.phone || "",
+            }
+            const result = await createBookingIntent(intentData, accessToken)
+            if (result.free_booking) {
+                setPaymentSuccess(true)
+                setTimeout(() => onSubmit(), 1000)
+            } else {
+                setError("Card payments require Stripe to be configured on the server.")
+                setProcessing(false)
+            }
+        } catch (err) {
+            setError(err.message || "Booking failed. Please try again.")
+            setProcessing(false)
+        }
+    }
+
+    if (paymentSuccess) return <SuccessDisplay totalPrice={0} />
+
+    return (
+        <Card className="max-w-md mx-auto">
+            <CardHeader><CardTitle>Payment</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                <PricingDisplay pricingBreakdown={pricingBreakdown} totalPrice={totalPrice} />
+
+                <div className="p-4 rounded-lg border border-yellow-500/30 bg-yellow-900/15 text-sm text-yellow-200 space-y-1">
+                    <p className="font-semibold">⚠️ Card payments unavailable</p>
+                    <p className="text-yellow-200/60 text-xs">{stripeError || "Stripe is not configured."}</p>
+                    {totalPrice === 0 && (
+                        <p className="text-yellow-200/60 text-xs">Your tickets are free — you can still proceed!</p>
+                    )}
+                </div>
+
+                {error && (
+                    <div className="p-3 bg-red-900/30 border border-red-500/30 rounded text-sm text-red-300">{error}</div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                    <Button variant="outline" className="w-1/3" onClick={onBack} disabled={processing}>Back</Button>
+                    <Button className="flex-1" onClick={totalPrice === 0 ? handleFreePay : undefined} disabled={processing || totalPrice > 0}>
+                        {processing ? "Processing…" : totalPrice > 0 ? "Payments Unavailable" : "Confirm Free Booking"}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+/**
+ * PaymentForm – checks StripeStatus context and delegates to either
+ * the Stripe-powered form or the fallback form.
+ */
+export default function PaymentForm(props) {
+    const { ready, error } = useStripeStatus()
+
+    if (ready) return <StripeCardForm {...props} />
+    return <FallbackForm {...props} stripeError={error} />
 }

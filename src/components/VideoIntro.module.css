@@ -21,6 +21,13 @@
   pointer-events: none;
 }
 
+.videoContainer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+}
+
 .video {
   position: relative;
   z-index: 2;
@@ -65,10 +72,36 @@
   transform: scale(1.15);
 }
 
-.skipButton {
+.videoControls {
   position: absolute;
   bottom: 40px;
   right: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
+}
+
+.muteButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.5);
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+.muteButton:hover {
+  color: #fff;
+  border-color: rgba(255,255,255,0.5);
+}
+
+.skipButton {
   font-family: 'Syne', sans-serif;
   font-size: 12px;
   letter-spacing: 3px;
@@ -76,12 +109,27 @@
   background: transparent;
   border: 1px solid rgba(255,255,255,0.2);
   padding: 12px 24px;
-  cursor: pointer;
   transition: all 0.3s ease;
-  z-index: 10;
 }
 
 .skipButton:hover {
   color: #fff;
   border-color: rgba(255,255,255,0.5);
+}
+
+@media (max-width: 480px) {
+  .videoControls {
+    bottom: 20px;
+    right: 16px;
+    gap: 8px;
+  }
+  .muteButton {
+    width: 36px;
+    height: 36px;
+  }
+  .skipButton {
+    font-size: 10px;
+    padding: 8px 16px;
+    letter-spacing: 2px;
+  }
 }

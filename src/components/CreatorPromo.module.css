@@ -1,0 +1,99 @@
+.promoLink {
+    display: block;
+    text-decoration: none;
+    padding: 0 24px 24px;
+}
+
+.card {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transform-origin: center center;
+    transition: border-color 0.3s;
+    will-change: transform;
+}
+
+.card:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.label {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.35);
+    white-space: nowrap;
+    padding: 0 20px;
+    align-self: center;
+    flex-shrink: 0;
+}
+
+.avatars {
+    display: flex;
+    gap: 0;
+    flex: 1;
+    align-self: stretch;
+}
+
+.avatarItem {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    padding-bottom: 14px;
+}
+
+.avatarItem:not(:last-child) {
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.avatar {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 0;
+    border: none;
+    margin-bottom: 10px;
+}
+
+.name {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.tag {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 1px;
+    margin-top: 2px;
+}
+
+.arrow {
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.3);
+    transition: transform 0.3s, color 0.3s;
+    padding: 0 20px;
+    align-self: center;
+    flex-shrink: 0;
+}
+
+.card:hover .arrow {
+    transform: translateX(4px);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+@media (max-width: 640px) {
+    .tag   { display: none; }
+    .label { display: none; }
+}

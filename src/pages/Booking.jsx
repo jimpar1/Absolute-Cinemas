@@ -17,9 +17,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft, Ticket } from "lucide-react"
 import { useReservation } from "@/context/ReservationContext"
+import { useAuth } from "@/context/AuthContext"
 import { getScreening } from "@/api/screenings"
 import { getScreeningBookings, createBooking, lockSeats, unlockSeats, getLockedSeats } from "@/api/bookings"
 
+import StripeProvider from "@/components/StripeProvider"
 import StepProgress from "@/components/booking/StepProgress"
 import SeatSelection from "@/components/booking/SeatSelection"
 import ContactForm from "@/components/booking/ContactForm"
@@ -31,6 +33,7 @@ export default function Booking() {
     const navigate = useNavigate()
     const { toast } = useToast()
     const { addReservation, clearMovieReservations, reservations } = useReservation()
+    const { user, isAuthenticated, accessToken, subscription } = useAuth()
 
     const [screening, setScreening] = useState(null)
     const [screeningLoading, setScreeningLoading] = useState(true)
@@ -86,7 +89,9 @@ export default function Booking() {
     }, [id, sessionId])
 
     const [formData, setFormData] = useState({
-        name: "", email: "", phone: "",
+        name: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || "" : "",
+        email: user?.email || "",
+        phone: user?.profile?.phone || user?.phone || "",
         cardNumber: "", expiry: "", cvv: ""
     })
 
@@ -110,6 +115,7 @@ export default function Booking() {
                     date: formattedDate,
                     time: formattedTime,
                     hall: data?.hall_name || data?.hall || "Hall 1",
+                    hallImage: data?.hall_image_url || null,
                     movieId: data?.movie || data?.movie_id || null,
                     layout: data?.hall_layout || null,
                 })
@@ -145,14 +151,29 @@ export default function Booking() {
 
         const handleBeforeUnload = () => {
             const data = JSON.stringify({ session_id: sessionId })
-            navigator.sendBeacon(`http://127.0.0.1:8000/api/screenings/${id}/unlock_seats/`, new Blob([data], { type: 'application/json' }))
+            const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"
+            navigator.sendBeacon(`${apiUrl}/api/screenings/${id}/unlock_seats/`, new Blob([data], { type: 'application/json' }))
         }
         window.addEventListener('beforeunload', handleBeforeUnload)
         return () => window.removeEventListener('beforeunload', handleBeforeUnload)
     }, [moviePrice, id, sessionId, fetchOccupiedData, screening])
 
     const pricePerSeat = hallLayout?.pricePerSeat ?? moviePrice ?? 0
-    const totalPrice = selectedSeats.length * pricePerSeat
+
+    const computeClientPrice = (sub, seatsCount, pricePerSeat) => {
+        const cfg = { free: [0, 0], pro: [2, 0.3], ultra: [4, 0.5] }[sub?.tier ?? 'free'] ?? [0, 0]
+        const [weeklyFree, discount] = cfg
+        const remaining = Math.max(0, weeklyFree - (sub?.free_tickets_used ?? 0))
+        const freeCount = Math.min(remaining, seatsCount)
+        const paidCount = seatsCount - freeCount
+        const total = paidCount * pricePerSeat * (1 - discount)
+        return { freeCount, paidCount, discountRate: discount, total: Math.round(total * 100) / 100 }
+    }
+
+    const seatsCount = selectedSeats.length
+    const pricing = computeClientPrice(subscription, seatsCount, pricePerSeat)
+    const effectivePrice = isAuthenticated ? pricing.total : seatsCount * pricePerSeat
+    const totalPrice = effectivePrice
 
     /* ─── Toggle a single seat (lock / unlock on server) ─── */
     const toggleSeat = async (seat) => {
@@ -195,19 +216,25 @@ export default function Booking() {
     /* ─── Submit final booking ─── */
     const handleSubmit = async () => {
         try {
-            const bookingData = {
-                screening: id,
-                customer_name: formData.name,
-                customer_email: formData.email,
-                customer_phone: formData.phone || "",
-                seats_booked: selectedSeats.length,
-                seat_numbers: selectedSeats.sort().join(','),
-                session_id: sessionId,
-                total_price: totalPrice,
-                status: 'confirmed'
+            if (totalPrice === 0) {
+                // Free booking — create directly (no Stripe involved)
+                const bookingData = {
+                    screening: id,
+                    customer_name: formData.name,
+                    customer_email: formData.email,
+                    customer_phone: formData.phone || "",
+                    seats_booked: selectedSeats.length,
+                    seat_numbers: selectedSeats.sort().join(','),
+                    session_id: sessionId,
+                    total_price: totalPrice,
+                    status: 'confirmed'
+                }
+                await createBooking(bookingData, accessToken)
             }
-            await createBooking(bookingData)
-            setBookingSummary({ seats: [...selectedSeats].sort(), total: totalPrice, email: formData.email })
+            // For paid bookings the backend webhook already created the booking
+            // after Stripe confirmed the payment in PaymentForm.
+            setBookingSummary({ seats: [...selectedSeats].sort(), total: effectivePrice, email: formData.email })
+            clearMovieReservations(screening.id, screening.date, screening.time)
             toast({ title: "Booking Confirmed!", description: `Seats ${selectedSeats.join(', ')} booked.` })
             setStep(4)
         } catch (error) {
@@ -236,13 +263,27 @@ export default function Booking() {
             <StepProgress currentStep={step} />
 
             {step === 1 && (
+                <>
+                {isAuthenticated && subscription && subscription.tier !== 'free' && (
+                    <div style={{ marginBottom: '12px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)' }}>
+                        🎟 {Math.max(0, (subscription.weekly_free_total ?? 0) - (subscription.free_tickets_used ?? 0))} free ticket(s) remaining this week
+                    </div>
+                )}
                 <SeatSelection
                     hallLayout={hallLayout}
+                    hallImage={screening.hallImage}
                     selectedSeats={selectedSeats}
                     totalPrice={totalPrice}
                     onToggleSeat={toggleSeat}
-                    onConfirm={() => setStep(2)}
+                    onConfirm={() => {
+                        if (isAuthenticated) {
+                            setStep(3); // Skip ContactForm if signed in
+                        } else {
+                            setStep(2); // Ask for Contact info if guest
+                        }
+                    }}
                 />
+                </>
             )}
 
             {step === 2 && (
@@ -255,13 +296,24 @@ export default function Booking() {
             )}
 
             {step === 3 && (
+                <StripeProvider>
                 <PaymentForm
                     formData={formData}
-                    onChange={setFormData}
                     totalPrice={totalPrice}
-                    onBack={() => setStep(2)}
+                    pricingBreakdown={isAuthenticated && subscription && subscription.tier !== 'free' ? { ...pricing, tier: subscription.tier, pricePerSeat } : null}
+                    screeningId={id}
+                    selectedSeats={selectedSeats}
+                    sessionId={sessionId}
+                    onBack={() => {
+                        if (isAuthenticated) {
+                            setStep(1);
+                        } else {
+                            setStep(2);
+                        }
+                    }}
                     onSubmit={handleSubmit}
                 />
+                </StripeProvider>
             )}
 
             {step === 4 && bookingSummary && (
