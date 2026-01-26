@@ -1,0 +1,180 @@
+/*
+ * MovieDetails.module.css – cinematic animations for the /movies/:id page.
+ * Patterns: iris open, letterbox reveal, spotlight headings, scroll reveals.
+ */
+
+/* ─── Film grain overlay ─────────────────────────────────────── */
+.grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 200px 200px;
+}
+
+
+/* ─── Hero wrapper (relative container for title overlay) ─────── */
+.heroWrapper {
+    position: relative;
+}
+
+/* Title + meta overlay, sits on top of HeroGallery backdrop */
+.heroTitleOverlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    pointer-events: none;
+    padding: 40px 48px;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.92) 0%,
+        rgba(0, 0, 0, 0.45) 55%,
+        transparent 100%
+    );
+}
+
+/* Flex row: poster on left, title+meta on right */
+.heroTitleContent {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+}
+
+.heroPoster {
+    flex-shrink: 0;
+    width: 100px;
+    border-radius: 6px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+@media (min-width: 640px) {
+    .heroPoster {
+        width: 148px;
+    }
+}
+
+.heroTextBlock {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Movie title */
+.movieTitle {
+    font-family: 'Syne', sans-serif;
+    font-weight: 900;
+    color: #fff;
+    font-size: clamp(1.8rem, 4.5vw, 4rem);
+    line-height: 1.1;
+    margin: 0;
+    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.8);
+}
+
+/* Character span from <SplitChars> */
+.char {
+    display: inline-block;
+}
+
+/* ─── Rating + genre meta row ────────────────────────────────── */
+.metaRow {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.ratingBadge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.ratingNum {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.6rem;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    min-width: 2.5ch;
+    line-height: 1;
+}
+
+.genreBadges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.genreBadge {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 4px 14px;
+}
+
+/* ─── Section headings — spotlight sweep ────────────────────── */
+.spotlightHeading {
+    --spotlight-x: -120%; /* initial value; animated by GSAP */
+    font-family: 'Syne', sans-serif;
+    font-weight: 900;
+    font-size: clamp(1.4rem, 3vw, 2.2rem);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.08) 0%,
+        rgba(255, 255, 255, 0.08) calc(var(--spotlight-x, -120%) - 15%),
+        rgba(255, 255, 255, 0.9) calc(var(--spotlight-x, -120%)),
+        rgba(255, 255, 255, 0.08) calc(var(--spotlight-x, -120%) + 15%),
+        rgba(255, 255, 255, 0.08) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+/* ─── Scroll-reveal target classes (initial states set by GSAP) ─ */
+.overviewReveal {
+    /* GSAP handles from/to — no initial CSS needed */
+}
+
+.trailerReveal {
+    overflow: hidden;
+    border-radius: 0.5rem;
+}
+
+.sidebarReveal {
+    /* GSAP handles from/to — no initial CSS needed */
+}
+
+/* ─── Mobile adjustments ─────────────────────────────────────── */
+@media (max-width: 640px) {
+    .heroTitleOverlay {
+        padding: 24px 20px;
+    }
+    .movieTitle {
+        font-size: clamp(1.4rem, 6vw, 2rem);
+    }
+    .ratingNum {
+        font-size: 1.2rem;
+    }
+}
+
+/* ─── Reduced motion fallback ────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .grain {
+        display: none;
+    }
+}

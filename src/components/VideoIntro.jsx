@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Volume2, VolumeX } from 'lucide-react'
 import styles from './VideoIntro.module.css'
 
 const videoTexts = [
@@ -14,10 +15,12 @@ const videoTexts = [
   { time: 14500, text: "ABSOLUTE CINEMAS", duration: 3000 },
 ]
 
-export default function VideoIntro({ onComplete }) {
+export default function VideoIntro({ onComplete, preloadedVideoEl }) {
   const [videoText, setVideoText] = useState('')
   const [videoZoom, setVideoZoom] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
+  const [isMuted, setIsMuted] = useState(false)
+  const videoContainerRef = useRef(null)
   const videoRef = useRef(null)
   const onCompleteRef = useRef(onComplete)
 
@@ -30,8 +33,27 @@ export default function VideoIntro({ onComplete }) {
   }, [])
 
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
+    const container = videoContainerRef.current
+    if (!container) return
+
+    // Reuse the already-buffered element, or fall back to a fresh one
+    const video = preloadedVideoEl ?? (() => {
+      const el = document.createElement('video')
+      el.src = '/intro.mp4'
+      el.preload = 'auto'
+      return el
+    })()
+
+    // eslint-disable-next-line react-hooks/immutability
+    video.className = styles.video
+    video.playsInline = true
+    videoRef.current = video
+    container.appendChild(video)
+
+    video.onended = () => {
+      setIsVisible(false)
+      setTimeout(() => onCompleteRef.current?.(), 500)
+    }
 
     const updateText = () => {
       const currentTime = video.currentTime * 1000
@@ -43,65 +65,34 @@ export default function VideoIntro({ onComplete }) {
         }
       }
     }
-
-    const handleError = () => {
-      console.warn('Video failed to load, skipping to page')
-      if (onCompleteRef.current) {
-        onCompleteRef.current()
-      }
-    }
-
     video.addEventListener('timeupdate', updateText)
-    video.addEventListener('error', handleError)
-    video.play().catch(() => {
-      if (onCompleteRef.current) {
-        onCompleteRef.current()
-      }
-    })
+
+    // Try unmuted play first; browsers may block it — fall back to muted.
+    // Ignore AbortError: React Strict Mode fires the effect twice and the first
+    // play() gets aborted by the cleanup — that is not a real failure.
+    video.muted = false
+    video.play()
+      .then(() => setIsMuted(false))
+      .catch(() => {
+        video.muted = true
+        setIsMuted(true)
+        video.play().catch((e) => {
+          if (e?.name !== 'AbortError') onCompleteRef.current?.()
+        })
+      })
 
     return () => {
       video.removeEventListener('timeupdate', updateText)
-      video.removeEventListener('error', handleError)
+      video.onended = null
+      if (container.contains(video)) container.removeChild(video)
     }
-  }, [])
+  }, [preloadedVideoEl])
 
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-
-    const updateText = () => {
-      const currentTime = video.currentTime * 1000
-      for (let i = videoTexts.length - 1; i >= 0; i--) {
-        if (currentTime >= videoTexts[i].time) {
-          setVideoText(videoTexts[i].text)
-          setVideoZoom(videoTexts[i].zoom || false)
-          break
-        }
-      }
+  const handleMuteToggle = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted
+      setIsMuted(videoRef.current.muted)
     }
-
-    const handleError = () => {
-      console.warn('Video failed to load, skipping to page')
-      onComplete()
-    }
-
-    video.addEventListener('timeupdate', updateText)
-    video.addEventListener('error', handleError)
-    video.play().catch(() => {
-      onComplete()
-    })
-
-    return () => {
-      video.removeEventListener('timeupdate', updateText)
-      video.removeEventListener('error', handleError)
-    }
-  }, [])
-
-  const handleEnded = () => {
-    setIsVisible(false)
-    setTimeout(() => {
-      onComplete()
-    }, 500)
   }
 
   const handleSkip = () => {
@@ -117,24 +108,18 @@ export default function VideoIntro({ onComplete }) {
   return (
     <div className={`${styles.videoIntro} ${!isVisible ? styles.hidden : ''}`}>
       <div className={styles.videoBackground} />
-      <video
-        ref={videoRef}
-        className={styles.video}
-        muted
-        playsInline
-        onEnded={handleEnded}
-        preload="auto"
-      >
-        <source src="/intro.mp4" type="video/mp4" />
-      </video>
+      <div ref={videoContainerRef} className={styles.videoContainer} />
       <div className={styles.videoOverlay}>
         <div className={`${styles.videoText} ${videoText ? styles.visible : ''} ${videoZoom ? styles.zoom : ''}`}>
           {videoText}
         </div>
       </div>
-      <button className={styles.skipButton} onClick={handleSkip}>
-        SKIP
-      </button>
+      <div className={styles.videoControls}>
+        <button className={styles.muteButton} onClick={handleMuteToggle} title={isMuted ? 'Unmute' : 'Mute'}>
+          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        </button>
+        <button className={styles.skipButton} onClick={handleSkip}>SKIP</button>
+      </div>
     </div>
   )
 }

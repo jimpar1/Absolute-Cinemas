@@ -1,0 +1,56 @@
+.panel {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    will-change: transform;
+}
+
+/* Curved trailing edge — sweeps out with an elliptical bottom */
+.curve {
+    position: absolute;
+    bottom: -55px;
+    left: -5%;
+    width: 110%;
+    height: 110px;
+    background: #000;
+    border-radius: 0 0 50% 50%;
+    pointer-events: none;
+}
+
+/* Tube: all 4 lines stack on top of each other via absolute positioning */
+.tube {
+    position: relative;
+    width: 100%;
+    height: clamp(60px, 15vw, 180px);
+    overflow: visible;
+}
+
+.line {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Syne', sans-serif;
+    font-weight: 900;
+    font-size: clamp(28px, 9vw, 110px);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    text-align: center;
+    color: #fff;
+    margin: 0;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+/* SplitText wraps each char in a div — hide backfaces so reversed chars are invisible */
+.line :global(div) {
+    backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .panel { animation: none; }
+}
