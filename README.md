@@ -40,9 +40,9 @@ npm install
 
 ## Ρύθμιση περιβάλλοντος
 
-```bash
-cp .env.example .env
-```
+| | Windows | Linux / macOS |
+|---|---------|---------------|
+| Αντιγραφή .env | `copy .env.example .env` | `cp .env.example .env` |
 
 Επεξεργαστείτε το `.env`:
 
