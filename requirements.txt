@@ -1,0 +1,7 @@
+# Απαιτήσεις για το Cinema Django Backend
+# Requirements for Cinema Django Backend
+
+Django>=5.0,<6.0
+djangorestframework>=3.14.0
+django-cors-headers>=4.3.0
+django-filter>=23.0
