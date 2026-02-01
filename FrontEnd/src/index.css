@@ -1,0 +1,122 @@
+/*
+Αυτό το αρχείο CSS περιέχει τους παγκόσμιους στυλ της εφαρμογής, συμπεριλαμβανομένων των εισαγωγών Tailwind και γραμματοσειρών, καθώς και τις μεταβλητές θέματος για το σκούρο θέμα.
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@400;700&family=Permanent+Marker&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0a0a0a;
+  --color-foreground: #fafafa;
+  --color-card: #1c1c1c;
+  --color-card-foreground: #fafafa;
+  --color-popover: #1c1c1c;
+  --color-popover-foreground: #fafafa;
+  --color-primary: #fafafa;
+  --color-primary-foreground: #171717;
+  --color-secondary: #2e2e2e;
+  --color-secondary-foreground: #fafafa;
+  --color-muted: #2e2e2e;
+  --color-muted-foreground: #c8c8c8;
+  --color-accent: #2e2e2e;
+  --color-accent-foreground: #fafafa;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #fafafa;
+  --color-border: #2e2e2e;
+  --color-input: #2e2e2e;
+  --color-ring: #ffffff;
+  --radius: 0.5rem;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+/* Hide native cursor on pointer devices — custom cursor handles it */
+@media (hover: hover) {
+  *, *::before, *::after {
+    cursor: none !important;
+  }
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-feature-settings: "rlig" 1, "calt" 1;
+  min-height: 100vh;
+  font-family: 'Cascadia Code', monospace;
+}
+
+/* Custom scrollbar for horizontal sliders */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ─── Subscription tier accent system ───────────────────────────
+   --tier-color      : a semi-transparent hue used for borders / lines
+   --tier-solid      : full-opacity version used for icons / text
+   Both default to "invisible" so free / logged-out users see no change.
+──────────────────────────────────────────────────────────────── */
+body {
+  --tier-color: transparent;
+  --tier-solid: currentColor;
+  --tier-faint: transparent;
+}
+
+body[data-tier="pro"] {
+  --tier-color: rgba(59, 130, 246, 0.50);
+  --tier-solid: #60a5fa;
+  --tier-faint: rgba(59, 130, 246, 0.12);
+}
+
+body[data-tier="ultra"] {
+  --tier-color: rgba(168, 85, 247, 0.50);
+  --tier-solid: #c084fc;
+  --tier-faint: rgba(168, 85, 247, 0.12);
+}
+
+/* Selected seat inherits tier colour */
+.seat-selected {
+  background: linear-gradient(to bottom, #4ade80, #16a34a);
+  color: #fff;
+}
+body[data-tier="pro"]   .seat-selected { background: linear-gradient(to bottom, #60a5fa, #2563eb); }
+body[data-tier="ultra"] .seat-selected { background: linear-gradient(to bottom, #c084fc, #7c3aed); }
+
+/* Active booking step inherits tier colour */
+.step-active {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+body[data-tier="pro"]   .step-active { background: #3b82f6; color: #fff; }
+body[data-tier="ultra"] .step-active { background: #a855f7; color: #fff; }
+
+/* Hide scrollbar completely */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+
