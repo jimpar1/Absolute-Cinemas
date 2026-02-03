@@ -32,7 +32,7 @@ class MovieAdmin(admin.ModelAdmin):
     """
     Ρυθμίσεις για το Movie model στο admin panel
     """
-    list_display = ['title', 'director', 'genre', 'release_year', 'rating', 'duration']
+    list_display = ['title', 'director', 'genre', 'release_year', 'rating', 'status', 'duration']
     list_filter = ['genre', 'release_year']
     search_fields = ['title', 'director', 'genre']
     ordering = ['-created_at']
@@ -70,6 +70,7 @@ class MovieAdmin(admin.ModelAdmin):
                         'director': self._get_director_from_credits(movie_details.get('credits', {})),
                         'release_year': int(movie_details.get('release_date', '0000-00-00')[:4]) if movie_details.get('release_date') else 0,
                         'rating': Decimal(str(round(movie_details.get('vote_average', 0), 1))),
+                        'status': 'upcoming' if (movie_details.get('release_date') and int(movie_details.get('release_date')[:4]) >= 2025) else 'now_playing',
                         'poster_url': f"https://image.tmdb.org/t/p/w500{movie_details.get('poster_path', '')}" if movie_details.get('poster_path') else None,
                     }
                     if not movie_data['title']:
