@@ -40,6 +40,7 @@ class MovieSerializer(serializers.ModelSerializer):
             'director',
             'release_year',
             'rating',
+            'status',
             'poster_url',
             'created_at',
             'updated_at'
