@@ -18,9 +18,17 @@ Cinema-Django-Backend/
 │
 ├── STRUCTURE.md                  # Αυτό το αρχείο - Περιγραφή δομής project
 │
+├── BRANCH_INFO.md                # Πληροφορίες για τα branches του project
+│
+├── IMPLEMENTATION_SUMMARY.md     # Περίληψη υλοποίησης και χαρακτηριστικών
+│
+├── ΟΔΗΓΙΕΣ_ΕΚΤΕΛΕΣΗΣ.md          # Απλές οδηγίες εκτέλεσης στα ελληνικά
+│
 ├── ΟΔΗΓΟΣ                        # Οδηγίες για Git workflow (από το original repo)
 │
 ├── requirements.txt              # Python dependencies για το project
+│
+├── test_api.py                   # Script για δοκιμή των API endpoints
 │
 ├── manage.py                     # Django management script
 │

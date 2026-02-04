@@ -130,6 +130,8 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+APPEND_SLASH = False
+
 # Ρυθμίσεις CORS για επικοινωνία με Angular frontend
 # CORS settings for communication with Angular frontend
 CORS_ALLOW_ALL_ORIGINS = True  # Για development - επιτρέπει όλα τα origins
@@ -144,4 +146,3 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10  # Αριθμός αποτελεσμάτων ανά σελίδα
 }
-

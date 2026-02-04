@@ -75,6 +75,8 @@ class BookingSerializer(serializers.ModelSerializer):
     screening_details = ScreeningSerializer(source='screening', read_only=True)  # Πλήρεις πληροφορίες προβολής
     movie_title = serializers.CharField(source='screening.movie.title', read_only=True)  # Τίτλος ταινίας
     
+    seats_booked = serializers.IntegerField(min_value=1)
+
     class Meta:
         model = Booking
         fields = [
@@ -106,8 +108,22 @@ class BookingSerializer(serializers.ModelSerializer):
         if screening and seats_booked:
             if seats_booked > screening.available_seats:
                 raise serializers.ValidationError(
-                    f"Δεν υπάρχουν αρκετές διαθέσιμες θέσεις. Διαθέσιμες: {screening.available_seats}"
+                    {'seats_booked': f"Δεν υπάρχουν αρκετές διαθέσιμες θέσεις. Διαθέσιμες: {screening.available_seats}"}
                 )
         
         return data
 
+    def validate_seats_booked(self, value):
+        """
+        Custom validation for seats_booked to handle if it's sent as list
+        """
+        if isinstance(value, list):
+            if len(value) == 1:
+                value = value[0]
+            else:
+                value = len(value)  # or sum, but probably len
+        try:
+            value = int(value)
+        except (ValueError, TypeError):
+            raise serializers.ValidationError("Enter a valid integer.")
+        return value
