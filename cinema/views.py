@@ -20,8 +20,19 @@ from rest_framework import viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Movie, Screening, Booking
-from .serializers import MovieSerializer, ScreeningSerializer, BookingSerializer
+from decimal import Decimal
+from .models import Movie, Screening, Booking, MovieHall
+from .serializers import MovieSerializer, ScreeningSerializer, BookingSerializer, MovieHallSerializer
+from .tmdb_service import search_movies, get_popular_movies, get_movie_details  # Assuming these functions are defined in tmdb.py
+
+
+class MovieHallViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for the MovieHall model
+    Provides CRUD operations for movie halls
+    """
+    queryset = MovieHall.objects.all()
+    serializer_class = MovieHallSerializer
 
 
 class MovieViewSet(viewsets.ModelViewSet):
@@ -55,6 +66,197 @@ class MovieViewSet(viewsets.ModelViewSet):
         serializer = ScreeningSerializer(screenings, many=True)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['get'])
+    def search_tmdb(self, request):
+        """
+        Custom action για αναζήτηση ταινιών στο TMDB
+        GET /api/movies/search_tmdb/?query=<query>&page=<page>
+        """
+        query = request.query_params.get('query', '')
+        page = int(request.query_params.get('page', 1))
+        if not query:
+            return Response({'error': 'Query parameter is required'}, status=400)
+        results = search_movies(query, page)
+        # Convert results to a serializable format
+        if isinstance(results, dict):
+            return Response(results)
+        elif hasattr(results, '__dict__'):
+            return Response(results.__dict__)
+        else:
+            return Response({'page': page, 'results': list(results) if results else []})
+
+    @action(detail=False, methods=['get'])
+    def popular_tmdb(self, request):
+        """
+        Custom action για δημοφιλείς ταινίες από TMDB
+        GET /api/movies/popular_tmdb/?page=<page>
+        """
+        page = int(request.query_params.get('page', 1))
+        results = get_popular_movies(page)
+        # Convert results to a serializable format
+        if isinstance(results, dict):
+            return Response(results)
+        elif hasattr(results, '__dict__'):
+            return Response(results.__dict__)
+        else:
+            return Response({'page': page, 'results': list(results) if results else []})
+
+    @action(detail=False, methods=['get'])
+    def tmdb_details(self, request):
+        """
+        Custom action για λεπτομέρειες ταινίας από TMDB
+        GET /api/movies/tmdb_details/?movie_id=<id>
+        """
+        movie_id = request.query_params.get('movie_id', '')
+        if not movie_id:
+            return Response({'error': 'movie_id parameter is required'}, status=400)
+        details = get_movie_details(int(movie_id))
+        if details:
+            # Convert details to a serializable format
+            if isinstance(details, dict):
+                return Response(details)
+            elif hasattr(details, '__dict__'):
+                return Response(details.__dict__)
+            else:
+                return Response({'error': 'Invalid response format'}, status=500)
+        return Response({'error': 'Movie not found'}, status=404)
+
+    @action(detail=False, methods=['post'])
+    def create_from_tmdb(self, request):
+        """
+        Custom action για δημιουργία ταινίας από TMDB
+        POST /api/movies/create_from_tmdb/
+        Body: {"tmdb_id": 12345}
+        """
+        tmdb_id = request.data.get('tmdb_id')
+        if not tmdb_id:
+            return Response({'error': 'tmdb_id is required'}, status=400)
+
+        try:
+            tmdb_id = int(tmdb_id)
+        except ValueError:
+            return Response({'error': 'tmdb_id must be a valid integer'}, status=400)
+
+        # Get movie details from TMDB
+        movie_details = get_movie_details(tmdb_id)
+        if not movie_details:
+            return Response({'error': 'Movie not found in TMDB'}, status=404)
+
+        # Extract data from TMDB response
+        movie_data = {
+            'title': movie_details.get('title', ''),
+            'description': movie_details.get('overview', ''),
+            'duration': movie_details.get('runtime', 0),
+            'genre': ', '.join([genre['name'] for genre in movie_details.get('genres', [])]),
+            'director': self._get_director_from_credits(movie_details.get('credits', {})),
+            'release_year': int(movie_details.get('release_date', '0000-00-00')[:4]) if movie_details.get('release_date') else 0,
+            'rating': Decimal(str(round(movie_details.get('vote_average', 0), 1))),
+            'poster_url': f"https://image.tmdb.org/t/p/w500{movie_details.get('poster_path', '')}" if movie_details.get('poster_path') else None,
+        }
+
+        # Validate required fields
+        if not movie_data['title']:
+            return Response({'error': 'Movie title is required'}, status=400)
+        if movie_data['duration'] <= 0:
+            return Response({'error': 'Movie duration must be greater than 0'}, status=400)
+        if not movie_data['genre']:
+            movie_data['genre'] = 'Unknown'
+        if not movie_data['director']:
+            movie_data['director'] = 'Unknown'
+
+        # Create the movie
+        serializer = self.get_serializer(data=movie_data)
+        if serializer.is_valid():
+            movie = serializer.save()
+            return Response(serializer.data, status=201)
+        else:
+            return Response(serializer.errors, status=400)
+
+    @action(detail=False, methods=['post'])
+    def create_from_search(self, request):
+        """
+        Custom action για δημιουργία ταινίας από αναζήτηση στο TMDB
+        POST /api/movies/create_from_search/
+        Body: {"query": "Inception"}
+        """
+        query = request.data.get('query')
+        if not query:
+            return Response({'error': 'query is required'}, status=400)
+
+        # Search TMDB for the query
+        search_results = search_movies(query, page=1)
+        if not search_results or 'results' not in search_results or not search_results['results']:
+            return Response({'error': 'No movies found for the given query'}, status=404)
+
+        # Take the first result
+        first_movie = search_results['results'][0]
+        tmdb_id = first_movie['id']
+
+        # Now create from TMDB ID
+        return self._create_movie_from_tmdb_id(tmdb_id)
+
+    def _create_movie_from_tmdb_id(self, tmdb_id):
+        """
+        Helper method to create a movie from TMDB ID
+        """
+        # Get movie details from TMDB
+        movie_details = get_movie_details(tmdb_id)
+        if not movie_details:
+            return Response({'error': 'Movie not found in TMDB'}, status=404)
+
+        # Extract data from TMDB response
+        movie_data = {
+            'title': movie_details.get('title', ''),
+            'description': movie_details.get('overview', ''),
+            'duration': movie_details.get('runtime', 0),
+            'genre': ', '.join([genre['name'] for genre in movie_details.get('genres', [])]),
+            'director': self._get_director_from_credits(movie_details.get('credits', {})),
+            'release_year': int(movie_details.get('release_date', '0000-00-00')[:4]) if movie_details.get('release_date') else 0,
+            'rating': Decimal(str(round(movie_details.get('vote_average', 0), 1))),
+            'poster_url': f"https://image.tmdb.org/t/p/w500{movie_details.get('poster_path', '')}" if movie_details.get('poster_path') else None,
+        }
+
+        # Validate required fields
+        if not movie_data['title']:
+            return Response({'error': 'Movie title is required'}, status=400)
+        if movie_data['duration'] <= 0:
+            return Response({'error': 'Movie duration must be greater than 0'}, status=400)
+        if not movie_data['genre']:
+            movie_data['genre'] = 'Unknown'
+        if not movie_data['director']:
+            movie_data['director'] = 'Unknown'
+
+        # Create the movie
+        serializer = self.get_serializer(data=movie_data)
+        if serializer.is_valid():
+            movie = serializer.save()
+            return Response(serializer.data, status=201)
+        else:
+            return Response(serializer.errors, status=400)
+
+    def _get_director_from_credits(self, credits):
+        """
+        Helper method to extract director name from TMDB credits
+        """
+        if not credits or 'crew' not in credits:
+            return 'Unknown'
+
+        for crew_member in credits['crew']:
+            if crew_member.get('job') == 'Director':
+                return crew_member.get('name', 'Unknown')
+
+        return 'Unknown'
+
+    def create(self, request, *args, **kwargs):
+        """
+        Override create to disable manual movie creation.
+        Movies can only be added via TMDB endpoints.
+        """
+        return Response(
+            {'error': 'Manual movie creation is disabled. Use /api/movies/create_from_tmdb/ or /api/movies/create_from_search/ to add movies from TMDB.'},
+            status=405
+        )
+
 
 class ScreeningViewSet(viewsets.ModelViewSet):
     """
@@ -72,8 +274,8 @@ class ScreeningViewSet(viewsets.ModelViewSet):
     queryset = Screening.objects.all()
     serializer_class = ScreeningSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['movie', 'screen_number']  # Φιλτράρισμα με βάση ταινία και αίθουσα
-    ordering_fields = ['start_time', 'price', 'available_seats']  # Πεδία ταξινόμησης
+    filterset_fields = ['movie', 'hall']  # Φιλτράρισμα με βάση ταινία και αίθουσα
+    ordering_fields = ['start_time', 'available_seats']  # Πεδία ταξινόμησης
     ordering = ['start_time']  # Προεπιλεγμένη ταξινόμηση
 
     @action(detail=True, methods=['get'])
@@ -108,4 +310,3 @@ class BookingViewSet(viewsets.ModelViewSet):
     search_fields = ['customer_name', 'customer_email']  # Αναζήτηση με βάση όνομα και email πελάτη
     ordering_fields = ['booking_date', 'total_price']  # Πεδία ταξινόμησης
     ordering = ['-booking_date']  # Προεπιλεγμένη ταξινόμηση
-

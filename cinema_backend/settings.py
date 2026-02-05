@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-qk*=#z9=ln-mxqp=t9cxn=g+ao=%z0fh+%g&o3-gx8e8q7$44@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
 
 
 # Ορισμός εγκατεστημένων εφαρμογών
@@ -130,7 +130,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-APPEND_SLASH = False
+APPEND_SLASH = True
 
 # Ρυθμίσεις CORS για επικοινωνία με Angular frontend
 # CORS settings for communication with Angular frontend
@@ -146,3 +146,6 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10  # Αριθμός αποτελεσμάτων ανά σελίδα
 }
+
+# TMDB API Key
+TMDB_API_KEY = '18324c6e6eb5ceed0ea8c49c26fcf8b8'

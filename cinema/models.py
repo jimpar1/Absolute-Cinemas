@@ -10,6 +10,25 @@ Models file - Definition of cinema application models
 
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
+from datetime import timedelta
+
+
+class MovieHall(models.Model):
+    """
+    Μοντέλο MovieHall (Αίθουσα Κινηματογράφου)
+    Αποθηκεύει πληροφορίες για κάθε αίθουσα προβολής.
+    """
+    name = models.CharField(max_length=100, unique=True, verbose_name="Όνομα Αίθουσας")
+    capacity = models.IntegerField(validators=[MinValueValidator(1)], verbose_name="Χωρητικότητα")
+
+    class Meta:
+        verbose_name = "Αίθουσα Κινηματογράφου"
+        verbose_name_plural = "Αίθουσες Κινηματογράφου"
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} ({self.capacity} seats)"
 
 
 class Movie(models.Model):
@@ -83,55 +102,65 @@ class Screening(models.Model):
         related_name='screenings',
         verbose_name="Ταινία"
     )
-    screen_number = models.IntegerField(
-        verbose_name="Αριθμός Αίθουσας",
-        validators=[MinValueValidator(1)]
+    hall = models.ForeignKey(
+        MovieHall,
+        on_delete=models.CASCADE,
+        related_name='screenings',
+        verbose_name="Αίθουσα"
     )
     start_time = models.DateTimeField(
         verbose_name="Ώρα Έναρξης"
-    )
-    end_time = models.DateTimeField(
-        verbose_name="Ώρα Λήξης"
-    )
-    available_seats = models.IntegerField(
-        verbose_name="Διαθέσιμες Θέσεις",
-        validators=[MinValueValidator(0)]
-    )
-    total_seats = models.IntegerField(
-        verbose_name="Συνολικές Θέσεις",
-        validators=[MinValueValidator(1)]
     )
     price = models.DecimalField(
         max_digits=6,
         decimal_places=2,
         verbose_name="Τιμή Εισιτηρίου",
+        validators=[MinValueValidator(0)],
+        default=0
+    )
+    available_seats = models.IntegerField(
+        verbose_name="Διαθέσιμες Θέσεις",
         validators=[MinValueValidator(0)]
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Ημερομηνία Δημιουργίας"
-    )
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name="Ημερομηνία Ενημέρωσης"
-    )
+
+    @property
+    def end_time(self):
+        return self.start_time + timedelta(minutes=self.movie.duration)
+
+    @property
+    def total_seats(self):
+        return self.hall.capacity
+
+    def clean(self):
+        # Validate start time (must be on the hour or half hour)
+        if self.start_time.minute not in [0, 30]:
+            raise ValidationError("Η ώρα έναρξης πρέπει να είναι στην αρχή ή στη μέση της ώρας (XX:00 or XX:30).")
+
+        # Validate for overlapping screenings in the same hall
+        end_time = self.end_time
+        overlapping_screenings = Screening.objects.filter(
+            hall=self.hall,
+            start_time__lt=end_time,
+        ).exclude(pk=self.pk)
+
+        for screening in overlapping_screenings:
+            if screening.end_time > self.start_time:
+                raise ValidationError(
+                    f"Υπάρχει ήδη προβολή στην αίθουσα {self.hall.name} που συμπίπτει με αυτήν την ώρα."
+                )
+
+    def save(self, *args, **kwargs):
+        if self.pk is None:  # Set available_seats only on creation
+            self.available_seats = self.hall.capacity
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Προβολή"
         verbose_name_plural = "Προβολές"
-        ordering = ['start_time']  # Ταξινόμηση με βάση την ώρα έναρξης
+        ordering = ['start_time']
 
     def __str__(self):
-        return f"{self.movie.title} - Αίθουσα {self.screen_number} - {self.start_time.strftime('%d/%m/%Y %H:%M')}"
-
-    def save(self, *args, **kwargs):
-        """
-        Override της save μεθόδου για να βεβαιωθούμε ότι οι διαθέσιμες θέσεις
-        δεν ξεπερνούν τις συνολικές θέσεις.
-        """
-        if self.available_seats > self.total_seats:
-            self.available_seats = self.total_seats
-        super().save(*args, **kwargs)
+        return f"{self.movie.title} at {self.hall.name} on {self.start_time.strftime('%Y-%m-%d %H:%M')}"
 
 
 class Booking(models.Model):
@@ -204,9 +233,9 @@ class Booking(models.Model):
         και να ενημερώσουμε τις διαθέσιμες θέσεις της προβολής.
         """
         # Υπολογισμός συνολικής τιμής
-        if not self.total_price or self.total_price == 0:
+        if not self.pk:  # Calculate price only on creation
             self.total_price = self.screening.price * self.seats_booked
-        
+
         # Έλεγχος αν υπάρχουν διαθέσιμες θέσεις (μόνο για νέες κρατήσεις)
         if not self.pk:  # Νέα κράτηση
             if self.seats_booked > self.screening.available_seats:
@@ -214,6 +243,5 @@ class Booking(models.Model):
             # Μείωση διαθέσιμων θέσεων
             self.screening.available_seats -= self.seats_booked
             self.screening.save()
-        
-        super().save(*args, **kwargs)
 
+        super().save(*args, **kwargs)

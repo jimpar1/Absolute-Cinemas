@@ -12,7 +12,16 @@ Serializers file - Definition of serializers for REST API
 """
 
 from rest_framework import serializers
-from .models import Movie, Screening, Booking
+from .models import Movie, Screening, Booking, MovieHall
+
+
+class MovieHallSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the MovieHall model
+    """
+    class Meta:
+        model = MovieHall
+        fields = ['id', 'name', 'capacity']
 
 
 class MovieSerializer(serializers.ModelSerializer):
@@ -41,12 +50,17 @@ class MovieSerializer(serializers.ModelSerializer):
 class ScreeningSerializer(serializers.ModelSerializer):
     """
     Serializer για το Screening model
-    Μετατρέπει τα Screening objects σε JSON και αντίστροφα
-    Περιλαμβάνει πληροφορίες για την ταινία που προβάλλεται
+    Μετατρέπει τις ιδιότητες σε JSON-συμβατές τιμές για το API
     """
-    movie_title = serializers.CharField(source='movie.title', read_only=True)  # Προσθήκη τίτλου ταινίας
-    movie_details = MovieSerializer(source='movie', read_only=True)  # Πλήρεις πληροφορίες ταινίας
-    
+    movie_title = serializers.CharField(source='movie.title', read_only=True)
+    movie_details = MovieSerializer(source='movie', read_only=True)
+    # Keep 'hall' as the writable FK (default behavior of ModelSerializer) and add a read-only hall_name
+    hall_name = serializers.CharField(source='hall.name', read_only=True)
+
+    # Serialize computed properties explicitly to JSON-friendly types (no redundant `source`)
+    end_time = serializers.DateTimeField(read_only=True)
+    total_seats = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Screening
         fields = [
@@ -54,16 +68,14 @@ class ScreeningSerializer(serializers.ModelSerializer):
             'movie',
             'movie_title',
             'movie_details',
-            'screen_number',
+            'hall',
+            'hall_name',
             'start_time',
             'end_time',
             'available_seats',
             'total_seats',
-            'price',
-            'created_at',
-            'updated_at'
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['end_time', 'total_seats', 'available_seats']
 
 
 class BookingSerializer(serializers.ModelSerializer):

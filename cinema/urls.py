@@ -13,7 +13,7 @@ URLs file for cinema application
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import MovieViewSet, ScreeningViewSet, BookingViewSet
+from .views import MovieViewSet, ScreeningViewSet, BookingViewSet, MovieHallViewSet
 
 # Δημιουργία router για αυτόματη δημιουργία URLs
 # Create router for automatic URL generation
@@ -24,6 +24,7 @@ router = DefaultRouter()
 router.register(r'movies', MovieViewSet, basename='movie')
 router.register(r'screenings', ScreeningViewSet, basename='screening')
 router.register(r'bookings', BookingViewSet, basename='booking')
+router.register(r'moviehalls', MovieHallViewSet, basename='moviehall')
 
 # URL patterns
 urlpatterns = [

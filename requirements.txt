@@ -5,3 +5,4 @@ Django>=5.0,<6.0
 djangorestframework>=3.14.0
 django-cors-headers>=4.3.0
 django-filter>=23.0
+tmdbv3api>=1.9.0
