@@ -125,6 +125,8 @@ class Screening(models.Model):
 
     @property
     def end_time(self):
+        if self.start_time is None:
+            return None
         return self.start_time + timedelta(minutes=self.movie.duration)
 
     @property
@@ -132,9 +134,14 @@ class Screening(models.Model):
         return self.hall.capacity
 
     def clean(self):
-        # Validate start time (must be on the hour or half hour)
+        if not self.start_time:
+            raise ValidationError({"start_time": "Start time is required."})
+        if not self.end_time:
+            raise ValidationError({"end_time": "End time is required."})
         if self.start_time.minute not in [0, 30]:
-            raise ValidationError("Η ώρα έναρξης πρέπει να είναι στην αρχή ή στη μέση της ώρας (XX:00 or XX:30).")
+            raise ValidationError({"start_time": "Start time must be on the hour or half-hour."})
+        if self.end_time <= self.start_time:
+            raise ValidationError({"end_time": "End time must be after start time."})
 
         # Validate for overlapping screenings in the same hall
         end_time = self.end_time
@@ -146,7 +153,7 @@ class Screening(models.Model):
         for screening in overlapping_screenings:
             if screening.end_time > self.start_time:
                 raise ValidationError(
-                    f"Υπάρχει ήδη προβολή στην αίθουσα {self.hall.name} που συμπίπτει με αυτήν την ώρα."
+                    f"There is already a screening in hall {self.hall.name} that overlaps with this time."
                 )
 
     def save(self, *args, **kwargs):

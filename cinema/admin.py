@@ -127,6 +127,11 @@ class ScreeningAdminForm(forms.ModelForm):
         model = Screening
         fields = '__all__'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make the time part of start_time required
+        self.fields['start_time'].widget.widgets[1].attrs['required'] = True
+
     def clean(self):
         cleaned_data = super().clean()
         # The model's clean method will be called automatically

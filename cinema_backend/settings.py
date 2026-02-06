@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     # Εφαρμογές τρίτων (Third-party apps)
     'rest_framework',  # Django REST Framework για API
     'corsheaders',  # CORS headers για επικοινωνία με Angular frontend
+    'django_filters',  # Django filters for DRF
     # Δικές μας εφαρμογές (Our apps)
     'cinema',  # Η εφαρμογή cinema με τα models μας
 ]
@@ -143,6 +144,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',  # Επιτρέπει πρόσβαση χωρίς authentication (για development)
     ],
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10  # Αριθμός αποτελεσμάτων ανά σελίδα
 }

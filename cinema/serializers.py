@@ -72,6 +72,7 @@ class ScreeningSerializer(serializers.ModelSerializer):
             'hall_name',
             'start_time',
             'end_time',
+            'price',
             'available_seats',
             'total_seats',
         ]
