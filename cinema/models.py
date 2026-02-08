@@ -68,6 +68,15 @@ class Movie(models.Model):
         blank=True,
         validators=[MinValueValidator(0), MaxValueValidator(10)]
     )
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('upcoming', 'Upcoming'),
+            ('now_playing', 'Now Playing'),
+        ],
+        default='upcoming',
+        verbose_name="Status"
+    )
     poster_url = models.URLField(
         verbose_name="URL Αφίσας",
         blank=True,
