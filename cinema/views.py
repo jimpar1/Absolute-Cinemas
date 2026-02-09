@@ -20,10 +20,12 @@ from rest_framework import viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.permissions import IsAuthenticated
 
 from dependency_injector.wiring import Provide, inject
 
 from .container import Container
+from .permissions import IsStaffOrReadOnly
 from .serializers import MovieSerializer, ScreeningSerializer, BookingSerializer, MovieHallSerializer
 from .services import MovieService, ScreeningService, BookingService, MovieHallService, ServiceError
 
@@ -34,6 +36,7 @@ class MovieHallViewSet(viewsets.ModelViewSet):
     Provides CRUD operations for movie halls
     """
     serializer_class = MovieHallSerializer
+    permission_classes = [IsStaffOrReadOnly]
 
     @inject
     def get_queryset(self, service: MovieHallService = Provide[Container.movie_hall_service]):
@@ -54,6 +57,7 @@ class MovieViewSet(viewsets.ModelViewSet):
     - DELETE /api/movies/{id}/ - Διαγραφή ταινίας
     """
     serializer_class = MovieSerializer
+    permission_classes = [IsStaffOrReadOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title', 'director', 'genre']  # Αναζήτηση με βάση τον τίτλο, σκηνοθέτη, είδος
     ordering_fields = ['title', 'release_year', 'rating', 'created_at']  # Πεδία ταξινόμησης
@@ -245,6 +249,7 @@ class ScreeningViewSet(viewsets.ModelViewSet):
     - DELETE /api/screenings/{id}/ - Διαγραφή προβολής
     """
     serializer_class = ScreeningSerializer
+    permission_classes = [IsStaffOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['movie', 'hall']  # Φιλτράρισμα με βάση ταινία και αίθουσα
     ordering_fields = ['start_time', 'available_seats']  # Πεδία ταξινόμησης
@@ -280,6 +285,7 @@ class BookingViewSet(viewsets.ModelViewSet):
     - DELETE /api/bookings/{id}/ - Διαγραφή κράτησης
     """
     serializer_class = BookingSerializer
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_fields = ['screening', 'status']  # Φιλτράρισμα με βάση προβολή και κατάσταση
     search_fields = ['customer_name', 'customer_email']  # Αναζήτηση με βάση όνομα και email πελάτη
@@ -288,4 +294,4 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @inject
     def get_queryset(self, service: BookingService = Provide[Container.booking_service]):
-        return service.list_bookings()
+        return service.queryset_for_user(self.request.user)

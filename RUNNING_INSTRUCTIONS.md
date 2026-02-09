@@ -99,5 +99,23 @@ This document provides instructions on how to set up and run the Cinema-Django-B
 
 Δείτε το [API_DOCS.md](API_DOCS.md) για πλήρη λίστα endpoints.
 
+## Running Tests (integration)
+
+Τα tests χρησιμοποιούν τη βάση που έχεις ρυθμίσει (MariaDB). Για να τρέξουν, ο χρήστης της βάσης πρέπει να έχει δικαίωμα να δημιουργήσει test database (π.χ. `test_cinema_db`).
+
+1) Βάλε τα `DB_*` env vars στο ίδιο PowerShell:
+```powershell
+$env:DB_HOST="127.0.0.1"
+$env:DB_PORT="3306"
+$env:DB_NAME="cinema_db"
+$env:DB_USER="root"
+$env:DB_PASSWORD="<το_root_password_σου>"
+```
+
+2) Τρέξε tests:
+```bash
+python manage.py test
+```
+
 
 

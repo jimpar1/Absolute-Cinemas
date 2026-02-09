@@ -43,6 +43,13 @@ class BookingService:
     def list_bookings(self):
         return self.repo.list()
 
+    def queryset_for_user(self, user):
+        if not getattr(user, 'is_authenticated', False):
+            return self.repo.list().none()
+        if getattr(user, 'is_staff', False):
+            return self.repo.list()
+        return self.repo.for_user(user)
+
     def my_bookings(self, user):
         return self.repo.for_user(user).order_by('-booking_date')
 

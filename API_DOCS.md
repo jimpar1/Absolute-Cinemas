@@ -32,6 +32,23 @@
 
 The base URL for all API endpoints is `/api/`.
 
+## Authentication (JWT)
+
+Το backend υλοποιεί βασικό authentication με **username/password** και προτείνεται η χρήση **JWT**.
+
+Endpoints:
+
+- `POST /api/auth/register/` (δημιουργία λογαριασμού)
+- `POST /api/auth/login/` (λήψη `access` + `refresh` token)
+- `POST /api/auth/logout/` (blacklist refresh token)
+- `GET/PUT /api/auth/profile/` (προβολή/ενημέρωση προφίλ)
+- `GET /api/auth/my-bookings/` (κρατήσεις του χρήστη)
+- `POST /api/auth/token/refresh/` (νέο access token)
+
+Χρήση access token σε προστατευμένα endpoints:
+
+- Header: `Authorization: Bearer <access_token>`
+
 ## Endpoints
 
 ### Movies
