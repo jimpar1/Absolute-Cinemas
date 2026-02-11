@@ -52,10 +52,13 @@ except MySQLdb.Error as e:
 # STEP 2: Setup Django & Run Migrations
 # =============================================================================
 
-# Force pymysql as MySQLdb — the installed mysqlclient 1.4.6 is too old for Django 5
-import pymysql
-pymysql.install_as_MySQLdb()
-pymysql.version_info = (2, 2, 1, "final", 0)
+# Use pymysql as MySQLdb shim ONLY if mysqlclient is not installed (e.g. on Windows)
+try:
+    import MySQLdb  # noqa: F811 — test if mysqlclient is available
+except ModuleNotFoundError:
+    import pymysql
+    pymysql.install_as_MySQLdb()
+    pymysql.version_info = (2, 2, 1, "final", 0)
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cinema_backend.settings')
 
