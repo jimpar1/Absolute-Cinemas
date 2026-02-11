@@ -43,14 +43,38 @@ This document provides instructions on how to set up and run the Cinema-Django-B
          ```
          (Αυτά χρησιμοποιούνται τόσο από το Django όσο και από το `create_db.py`.)
 
-4. **Create database**
-    ```bash
-    python create_db.py
-    ```
+## Quick Bootstrap (recommended)
 
-5. **Install dependencies:**
+Μετά το `pip install -r requirements.txt`, μπορείς να κάνεις bootstrap τη βάση + migrations + dev accounts με μία εντολή.
+
+1) Βάλε τα `DB_*` env vars (Windows PowerShell):
+```powershell
+$env:DB_HOST="127.0.0.1"
+$env:DB_PORT="3306"
+$env:DB_NAME="cinema_db"
+$env:DB_USER="root"
+$env:DB_PASSWORD="<το_root_password_σου>"
+```
+
+2) (Optional) Βάλε passwords για τα dev accounts ως env vars:
+```powershell
+$env:ADMIN_PASSWORD="Admin123!"
+$env:STAFF_PASSWORD="Staff123!"
+```
+
+3) Τρέξε bootstrap:
+```bash
+python bootstrap_dev.py
+```
+
+4. **Install dependencies:**
     ```bash
     pip install -r requirements.txt
+    ```
+
+5. **Create database**
+    ```bash
+    python create_db.py
     ```
 
 6. **Run database migrations:**
@@ -58,11 +82,11 @@ This document provides instructions on how to set up and run the Cinema-Django-B
     python manage.py migrate
     ```
 
-7. **Create a superuser:**
+7. **Create accounts (admin + staff):**
     ```bash
-    python manage.py createsuperuser
+    python manage.py bootstrap_accounts
     ```
-    Follow the prompts to create an administrator account.
+    (Αν δεν δώσεις `ADMIN_PASSWORD`/`STAFF_PASSWORD`, θα χρησιμοποιηθούν defaults.)
 
 8. **(Optional) Load sample data:**
     ```bash
