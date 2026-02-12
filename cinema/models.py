@@ -82,6 +82,21 @@ class Movie(models.Model):
         blank=True,
         null=True
     )
+    trailer_url = models.URLField(
+        verbose_name="URL Trailer",
+        blank=True,
+        null=True
+    )
+    shots = models.JSONField(
+        verbose_name="Φωτογραφίες Ταινίας",
+        blank=True,
+        null=True
+    )
+    actors = models.JSONField(
+        verbose_name="Ηθοποιοί",
+        blank=True,
+        null=True
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Ημερομηνία Δημιουργίας"

@@ -73,6 +73,27 @@ class MovieAdmin(admin.ModelAdmin):
                         'status': 'upcoming' if (movie_details.get('release_date') and int(movie_details.get('release_date')[:4]) >= 2025) else 'now_playing',
                         'poster_url': f"https://image.tmdb.org/t/p/w500{movie_details.get('poster_path', '')}" if movie_details.get('poster_path') else None,
                     }
+
+                    # Extract trailer URL
+                    videos = movie_details.get('videos', {}).get('results', [])
+                    trailer_url = None
+                    for video in videos:
+                        if video.get('type') == 'Trailer' and video.get('site') == 'YouTube':
+                            trailer_url = f"https://www.youtube.com/watch?v={video['key']}"
+                            break
+                    movie_data['trailer_url'] = trailer_url
+
+                    # Extract shots (use original quality for best resolution)
+                    images = movie_details.get('images', {}).get('backdrops', [])
+                    shots = [f"https://image.tmdb.org/t/p/original{img['file_path']}" for img in images[:5]]
+                    movie_data['shots'] = shots if shots else None
+
+                    # Extract actors
+                    credits = movie_details.get('credits', {})
+                    cast = credits.get('cast', [])
+                    actors = [{'name': actor['name'], 'character': actor.get('character', ''), 'profile_path': f"https://image.tmdb.org/t/p/w500{actor['profile_path']}" if actor.get('profile_path') else None} for actor in cast[:10]]
+                    movie_data['actors'] = actors if actors else None
+
                     if not movie_data['title']:
                         self.message_user(request, 'Movie title is required.')
                     elif movie_data['duration'] <= 0:

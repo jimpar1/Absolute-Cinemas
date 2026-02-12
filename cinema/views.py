@@ -121,6 +121,56 @@ class MovieViewSet(viewsets.ModelViewSet):
                 return Response({'error': 'Invalid response format'}, status=500)
         return Response({'error': 'Movie not found'}, status=404)
 
+    @action(detail=True, methods=['post'])
+    def refresh_from_tmdb(self, request, pk=None):
+        """
+        Custom action για ανανέωση δεδομένων ταινίας από TMDB
+        POST /api/movies/{id}/refresh_from_tmdb/
+        """
+        movie = self.get_object()
+
+        # Search TMDB by title to find the movie
+        search_results = search_movies(movie.title, page=1)
+        if not search_results or 'results' not in search_results or not search_results['results']:
+            return Response({'error': 'Movie not found on TMDB'}, status=404)
+
+        # Take the first result
+        tmdb_movie = search_results['results'][0]
+        tmdb_id = tmdb_movie['id']
+
+        # Get detailed TMDB data
+        tmdb_details = get_movie_details(tmdb_id)
+        if not tmdb_details:
+            return Response({'error': 'Could not fetch TMDB details'}, status=404)
+
+        # Extract trailer URL
+        videos = tmdb_details.get('videos', {}).get('results', [])
+        trailer_url = None
+        for video in videos:
+            if video.get('type') == 'Trailer' and video.get('site') == 'YouTube':
+                trailer_url = f"https://www.youtube.com/watch?v={video['key']}"
+                break
+
+        # Extract shots
+        images = tmdb_details.get('images', {}).get('backdrops', [])
+        shots = [f"https://image.tmdb.org/t/p/original{img['file_path']}" for img in images[:5]]
+        shots = shots if shots else None
+
+        # Extract actors
+        credits = tmdb_details.get('credits', {})
+        cast = credits.get('cast', [])
+        actors = [{'name': actor['name'], 'character': actor.get('character', ''), 'profile_path': f"https://image.tmdb.org/t/p/w500{actor['profile_path']}" if actor.get('profile_path') else None} for actor in cast[:10]]
+        actors = actors if actors else None
+
+        # Update the movie
+        movie.trailer_url = trailer_url
+        movie.shots = shots
+        movie.actors = actors
+        movie.save()
+
+        serializer = self.get_serializer(movie)
+        return Response(serializer.data)
+
     @action(detail=False, methods=['post'])
     def create_from_tmdb(self, request):
         """
@@ -153,6 +203,26 @@ class MovieViewSet(viewsets.ModelViewSet):
             'rating': Decimal(str(round(movie_details.get('vote_average', 0), 1))),
             'poster_url': f"https://image.tmdb.org/t/p/w500{movie_details.get('poster_path', '')}" if movie_details.get('poster_path') else None,
         }
+
+        # Extract trailer URL
+        videos = movie_details.get('videos', {}).get('results', [])
+        trailer_url = None
+        for video in videos:
+            if video.get('type') == 'Trailer' and video.get('site') == 'YouTube':
+                trailer_url = f"https://www.youtube.com/watch?v={video['key']}"
+                break
+        movie_data['trailer_url'] = trailer_url
+
+        # Extract shots (use original quality for best resolution)
+        images = movie_details.get('images', {}).get('backdrops', [])
+        shots = [f"https://image.tmdb.org/t/p/original{img['file_path']}" for img in images[:5]]
+        movie_data['shots'] = shots if shots else None
+
+        # Extract actors
+        credits = movie_details.get('credits', {})
+        cast = credits.get('cast', [])
+        actors = [{'name': actor['name'], 'character': actor.get('character', ''), 'profile_path': f"https://image.tmdb.org/t/p/w500{actor['profile_path']}" if actor.get('profile_path') else None} for actor in cast[:10]]
+        movie_data['actors'] = actors if actors else None
 
         # Validate required fields
         if not movie_data['title']:
@@ -215,6 +285,26 @@ class MovieViewSet(viewsets.ModelViewSet):
             'rating': Decimal(str(round(movie_details.get('vote_average', 0), 1))),
             'poster_url': f"https://image.tmdb.org/t/p/w500{movie_details.get('poster_path', '')}" if movie_details.get('poster_path') else None,
         }
+
+        # Extract trailer URL
+        videos = movie_details.get('videos', {}).get('results', [])
+        trailer_url = None
+        for video in videos:
+            if video.get('type') == 'Trailer' and video.get('site') == 'YouTube':
+                trailer_url = f"https://www.youtube.com/watch?v={video['key']}"
+                break
+        movie_data['trailer_url'] = trailer_url
+
+        # Extract shots (use original quality for best resolution)
+        images = movie_details.get('images', {}).get('backdrops', [])
+        shots = [f"https://image.tmdb.org/t/p/original{img['file_path']}" for img in images[:5]]
+        movie_data['shots'] = shots if shots else None
+
+        # Extract actors
+        credits = movie_details.get('credits', {})
+        cast = credits.get('cast', [])
+        actors = [{'name': actor['name'], 'character': actor.get('character', ''), 'profile_path': f"https://image.tmdb.org/t/p/w500{actor['profile_path']}" if actor.get('profile_path') else None} for actor in cast[:10]]
+        movie_data['actors'] = actors if actors else None
 
         # Validate required fields
         if not movie_data['title']:
