@@ -25,6 +25,10 @@ from .serializers import (
     BookingSerializer
 )
 
+from dependency_injector.wiring import Provide, inject
+from .container import Container
+from .services import BookingService
+
 
 class RegisterView(generics.CreateAPIView):
     """
@@ -191,5 +195,6 @@ class MyBookingsView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = BookingSerializer
 
-    def get_queryset(self):
-        return Booking.objects.filter(user=self.request.user).order_by('-booking_date')
+    @inject
+    def get_queryset(self, booking_service: BookingService = Provide[Container.booking_service]):
+        return booking_service.my_bookings(self.request.user)
