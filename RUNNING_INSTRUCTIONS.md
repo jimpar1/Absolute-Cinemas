@@ -39,7 +39,7 @@ This document provides instructions on how to set up and run the Cinema-Django-B
          $env:DB_PORT="3306"
          $env:DB_NAME="cinema_db"
          $env:DB_USER="root"
-         $env:DB_PASSWORD="<το_root_password_σου>"
+         $env:DB_PASSWORD="<το_root_password_σου στο MARIADB>"
          ```
          (Αυτά χρησιμοποιούνται τόσο από το Django όσο και από το `create_db.py`.)
 

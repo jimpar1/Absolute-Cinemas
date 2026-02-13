@@ -1,12 +1,18 @@
 import os
 
-import MySQLdb
+try:
+    import MySQLdb  # type: ignore[import-not-found]  # Provided by mysqlclient
+except ModuleNotFoundError:
+    import pymysql
+
+    pymysql.install_as_MySQLdb()
+    import MySQLdb  # type: ignore[import-not-found]
 
 
 # Database connection parameters (can be overridden with env vars)
 # Use the same variables as Django settings:
 # DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
-DB_HOST = os.environ.get('DB_HOST', '127.0.0.1')
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
 DB_USER = os.environ.get('DB_USER', 'root')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
 DB_PORT = int(os.environ.get('DB_PORT', '3306'))

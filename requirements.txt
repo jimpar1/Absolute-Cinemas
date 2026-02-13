@@ -7,5 +7,6 @@ djangorestframework-simplejwt>=5.3.0
 django-cors-headers>=4.3.0
 django-filter>=23.0
 tmdbv3api>=1.9.0
-mysqlclient>=2.2.0
+mysqlclient>=2.2.0; platform_system != "Windows"
+PyMySQL>=1.1.0; platform_system == "Windows"
 dependency-injector>=4.41.0
