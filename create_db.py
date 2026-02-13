@@ -11,15 +11,21 @@ import sys
 import time
 
 # =============================================================================
-# STEP 1: Create MySQL Database
+# MySQL Driver Setup
+# Use mysqlclient (C extension) if available, otherwise fall back to PyMySQL.
 # =============================================================================
 
 try:
-    import MySQLdb  # type: ignore[import-not-found]
+    import MySQLdb  # type: ignore[import-not-found]  — mysqlclient (Ubuntu/Linux)
 except ModuleNotFoundError:
     import pymysql
     pymysql.install_as_MySQLdb()
+    pymysql.version_info = (2, 2, 1, "final", 0)  # Satisfy Django 5 version check
     import MySQLdb  # type: ignore[import-not-found]
+
+# =============================================================================
+# STEP 1: Create MySQL Database
+# =============================================================================
 
 DB_HOST = os.environ.get('DB_HOST', 'localhost')
 DB_USER = os.environ.get('DB_USER', 'root')
@@ -51,11 +57,6 @@ except MySQLdb.Error as e:
 # =============================================================================
 # STEP 2: Setup Django & Run Migrations
 # =============================================================================
-
-# Force pymysql as MySQLdb — the installed mysqlclient 1.4.6 is too old for Django 5
-import pymysql
-pymysql.install_as_MySQLdb()
-pymysql.version_info = (2, 2, 1, "final", 0)
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cinema_backend.settings')
 
