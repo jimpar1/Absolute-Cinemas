@@ -6,6 +6,11 @@
 - **MariaDB 10.5+** — μπορείς να το κατεβάσεις από [εδώ](https://mariadb.org/download/)
 - Ο **TMDB API Key** είναι ήδη ενσωματωμένος στο project, δεν χρειάζεται δικός σου
 
+> ⚠️ **Linux users:** Χρειάζεστε τα dev packages για mysqlclient:
+> ```bash
+> sudo apt install python3-dev default-libmysqlclient-dev build-essential pkg-config
+> ```
+
 ---
 
 ## Πρώτη φορά; Ξεκίνα εδώ
@@ -31,12 +36,17 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+> Τα σωστά MySQL packages εγκαθίστανται αυτόματα ανάλογα με το λειτουργικό σου:
+> - **Windows** → `PyMySQL` (pure Python)
+> - **Linux/macOS** → `mysqlclient` (C extension)
+
 ### Ρύθμισε τη σύνδεση με τη βάση
 
 Αν η MariaDB τρέχει τοπικά με τις default ρυθμίσεις (user `root`, χωρίς password, πόρτα `3306`), δεν χρειάζεται να κάνεις τίποτα παραπάνω.
 
 Αν έχεις password ή διαφορετικές ρυθμίσεις, πέρασέ τα πριν τρέξεις οτιδήποτε:
 
+**Windows (PowerShell):**
 ```powershell
 $env:DB_HOST="127.0.0.1"
 $env:DB_PORT="3306"
@@ -45,10 +55,25 @@ $env:DB_USER="root"
 $env:DB_PASSWORD="βάλε_εδώ_το_password_σου"
 ```
 
+**Linux/macOS (Bash):**
+```bash
+export DB_HOST="127.0.0.1"
+export DB_PORT="3306"
+export DB_NAME="cinema_db"
+export DB_USER="root"
+export DB_PASSWORD="βάλε_εδώ_το_password_σου"
+```
+
 ### Στήσε τη βάση — μία εντολή, τα κάνει όλα
 
+**Τρέξε το script που αντιστοιχεί στο λειτουργικό σου:**
+
 ```bash
-python create_db.py
+# Windows
+python create_db_windows.py
+
+# Linux / macOS
+python create_db_linux.py
 ```
 
 Αυτό το script κάνει τα εξής αυτόματα:

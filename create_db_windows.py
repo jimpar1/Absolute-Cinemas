@@ -1,9 +1,9 @@
 """
-Cinema Database Setup Script
-Δημιουργεί τη βάση δεδομένων, τις αίθουσες και εισάγει ταινίες από το TMDB.
+Cinema Database Setup Script — Windows
+Uses PyMySQL as the MySQL driver.
 
-Εκτέλεση / Run:
-    python create_db.py
+Run:
+    python create_db_windows.py
 """
 
 import os
@@ -11,17 +11,13 @@ import sys
 import time
 
 # =============================================================================
-# MySQL Driver Setup
-# Use mysqlclient (C extension) if available, otherwise fall back to PyMySQL.
+# MySQL Driver: PyMySQL (pure Python, works on Windows without C compiler)
 # =============================================================================
 
-try:
-    import MySQLdb  # type: ignore[import-not-found]  — mysqlclient (Ubuntu/Linux)
-except ModuleNotFoundError:
-    import pymysql
-    pymysql.install_as_MySQLdb()
-    pymysql.version_info = (2, 2, 1, "final", 0)  # Satisfy Django 5 version check
-    import MySQLdb  # type: ignore[import-not-found]
+import pymysql
+pymysql.install_as_MySQLdb()
+pymysql.version_info = (2, 2, 1, "final", 0)  # Satisfy Django 5 version check
+import MySQLdb  # type: ignore[import-not-found]
 
 # =============================================================================
 # STEP 1: Create MySQL Database
@@ -34,7 +30,7 @@ DB_PORT = int(os.environ.get('DB_PORT', '3306'))
 DB_NAME = os.environ.get('DB_NAME', 'cinema_db')
 
 print("=" * 60)
-print("🎬 ABSOLUTE CINEMA — Database Setup")
+print("🎬 ABSOLUTE CINEMA — Database Setup (Windows)")
 print("=" * 60)
 
 try:
