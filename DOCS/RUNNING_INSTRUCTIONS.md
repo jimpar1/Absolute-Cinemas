@@ -6,6 +6,8 @@ This document provides instructions on how to set up and run the Cinema-Django-B
 
 -   Python 3.x
 -   pip
+-   **MariaDB 10.5+** (download: https://mariadb.org/download/)
+-   *(Optional)* **HeidiSQL** GUI (download: https://www.heidisql.com/download.php)
 
 ## Setup
 
@@ -29,16 +31,46 @@ This document provides instructions on how to set up and run the Cinema-Django-B
     pip install -r requirements.txt
     ```
 
-4.  **Run database migrations:**
+4.  **Setup MariaDB Database:**
+    
+    a. Κατέβασε και εγκατέστησε **MariaDB** από το επίσημο site: https://mariadb.org/download/
+       - Σε Windows, επίλεξε MSI installer και άφησε την προεπιλεγμένη πόρτα 3306.
+    
+    b. *(Προαιρετικό)* Εγκατέστησε **HeidiSQL** για GUI: https://www.heidisql.com/download.php
+       - Σύνδεση: Host `127.0.0.1`, User `root`, Password (ό,τι έβαλες), Port `3306`.
+    
+    c. Δημιούργησε τη βάση:
+    ```sql
+    CREATE DATABASE cinema_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    ```
+    
+    d. Ενημέρωσε το `cinema_backend/settings.py` με τα credentials σου:
+    ```python
+    DATABASES = {
+        'default': {
+            'USER': 'root',
+            'PASSWORD': 'your_password_here',  # βάλε τον κωδικό σου
+            'HOST': '127.0.0.1',
+            'PORT': '3306',
+        }
+    }
+    ```
+
+5.  **Run database migrations:**
     ```bash
     python manage.py migrate
     ```
 
-5.  **Create a superuser:**
+6.  **Create a superuser:**
     ```bash
     python manage.py createsuperuser
     ```
     Follow the prompts to create an administrator account.
+
+7.  **(Optional) Load sample data:**
+    ```bash
+    python sample_data_script.py
+    ```
 
 ## Running the Application
 

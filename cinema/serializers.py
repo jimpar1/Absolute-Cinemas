@@ -6,13 +6,103 @@ Serializers file - Definition of serializers for REST API
 Χρησιμοποιούνται από το Django REST Framework για να δημιουργήσουν API endpoints.
 
 Περιέχει serializers για:
+- Customer (Πελάτης)
 - Movie (Ταινία)
 - Screening (Προβολή)
 - Booking (Κράτηση)
 """
 
 from rest_framework import serializers
-from .models import Movie, Screening, Booking, MovieHall
+from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from .models import Movie, Screening, Booking, MovieHall, Customer
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    """
+    Serializer για το Customer Profile model
+    """
+    email = serializers.EmailField(source='user.email', read_only=True)
+    full_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = Customer
+        fields = ['id', 'username', 'email', 'full_name', 'phone', 'created_at']
+
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializer για εγγραφή νέου χρήστη
+    """
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True, required=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
+
+    class Meta:
+        model = User
+        fields = ['username', 'password', 'password2', 'email', 'first_name', 'last_name', 'phone']
+        extra_kwargs = {
+            'first_name': {'required': True},
+            'last_name': {'required': True},
+            'email': {'required': True}
+        }
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({"password": "Οι κωδικοί δεν ταιριάζουν"})
+        
+        if User.objects.filter(email=attrs['email']).exists():
+            raise serializers.ValidationError({"email": "Αυτό το email χρησιμοποιείται ήδη"})
+        
+        return attrs
+
+    def create(self, validated_data):
+        phone = validated_data.pop('phone', '')
+        validated_data.pop('password2')
+        
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', '')
+        )
+        
+        # Δημιουργία Customer profile
+        Customer.objects.create(user=user, phone=phone)
+        
+        return user
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer για προβολή και ενημέρωση προφίλ χρήστη
+    """
+    phone = serializers.CharField(source='customer_profile.phone', required=False, allow_blank=True)
+    
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone']
+        read_only_fields = ['username']
+
+    def update(self, instance, validated_data):
+        customer_data = validated_data.pop('customer_profile', {})
+        
+        # Ενημέρωση User fields
+        instance.email = validated_data.get('email', instance.email)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.save()
+        
+        # Ενημέρωση Customer profile
+        if hasattr(instance, 'customer_profile'):
+            instance.customer_profile.phone = customer_data.get('phone', instance.customer_profile.phone)
+            instance.customer_profile.save()
+        else:
+            Customer.objects.create(user=instance, phone=customer_data.get('phone', ''))
+        
+        return instance
 
 
 class MovieHallSerializer(serializers.ModelSerializer):
@@ -91,6 +181,7 @@ class BookingSerializer(serializers.ModelSerializer):
     """
     screening_details = ScreeningSerializer(source='screening', read_only=True)  # Πλήρεις πληροφορίες προβολής
     movie_title = serializers.CharField(source='screening.movie.title', read_only=True)  # Τίτλος ταινίας
+    user_username = serializers.CharField(source='user.username', read_only=True)
     
     seats_booked = serializers.IntegerField(min_value=1)
 
@@ -98,6 +189,8 @@ class BookingSerializer(serializers.ModelSerializer):
         model = Booking
         fields = [
             'id',
+            'user',
+            'user_username',
             'screening',
             'screening_details',
             'movie_title',
@@ -105,13 +198,31 @@ class BookingSerializer(serializers.ModelSerializer):
             'customer_email',
             'customer_phone',
             'seats_booked',
+            'seat_numbers',
             'total_price',
             'booking_date',
             'status',
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['booking_date', 'total_price', 'created_at', 'updated_at']  # total_price υπολογίζεται αυτόματα
+        read_only_fields = ['user', 'booking_date', 'total_price', 'created_at', 'updated_at']  # total_price υπολογίζεται αυτόματα
+    
+    def create(self, validated_data):
+        """
+        Αυτόματη σύνδεση με τον authenticated user αν υπάρχει
+        """
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            validated_data['user'] = request.user
+            # Αυτόματη συμπλήρωση από το user profile αν δεν δίνονται
+            if not validated_data.get('customer_name'):
+                validated_data['customer_name'] = request.user.get_full_name() or request.user.username
+            if not validated_data.get('customer_email'):
+                validated_data['customer_email'] = request.user.email
+            if not validated_data.get('customer_phone') and hasattr(request.user, 'customer_profile'):
+                validated_data['customer_phone'] = request.user.customer_profile.phone
+        
+        return super().create(validated_data)
     
     def validate(self, data):
         """

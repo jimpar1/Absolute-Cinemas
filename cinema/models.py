@@ -3,15 +3,59 @@
 Models file - Definition of cinema application models
 
 Περιέχει τα μοντέλα:
+- Customer (Profile): Προφίλ πελάτη (επέκταση Django User)
 - Movie (Ταινία): Αποθηκεύει πληροφορίες για τις ταινίες
 - Screening (Προβολή): Αποθηκεύει πληροφορίες για τις προβολές ταινιών
 - Booking (Κράτηση): Αποθηκεύει πληροφορίες για τις κρατήσεις θέσεων
 """
 
 from django.db import models
+from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from datetime import timedelta
+
+
+class Customer(models.Model):
+    """
+    Μοντέλο Customer (Προφίλ Πελάτη)
+    Επέκταση του Django User model με επιπλέον πληροφορίες πελάτη.
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='customer_profile',
+        verbose_name="Χρήστης"
+    )
+    phone = models.CharField(
+        max_length=20,
+        verbose_name="Τηλέφωνο",
+        blank=True
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Ημερομηνία Δημιουργίας"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Ημερομηνία Ενημέρωσης"
+    )
+
+    class Meta:
+        verbose_name = "Πελάτης"
+        verbose_name_plural = "Πελάτες"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.get_full_name() or self.user.username}"
+
+    @property
+    def email(self):
+        return self.user.email
+
+    @property
+    def full_name(self):
+        return self.user.get_full_name() or self.user.username
 
 
 class MovieHall(models.Model):
@@ -199,6 +243,15 @@ class Booking(models.Model):
     Μοντέλο Booking (Κράτηση)
     Αποθηκεύει πληροφορίες για τις κρατήσεις θέσεων από τους πελάτες.
     """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name='bookings',
+        verbose_name="Χρήστης",
+        null=True,
+        blank=True,
+        help_text="Ο συνδεδεμένος χρήστης που έκανε την κράτηση (προαιρετικό για guest bookings)"
+    )
     screening = models.ForeignKey(
         Screening,
         on_delete=models.CASCADE,
@@ -220,6 +273,12 @@ class Booking(models.Model):
     seats_booked = models.IntegerField(
         verbose_name="Αριθμός Θέσεων",
         validators=[MinValueValidator(1)]
+    )
+    seat_numbers = models.CharField(
+        max_length=500,
+        verbose_name="Αριθμοί Θέσεων",
+        blank=True,
+        help_text="Οι αριθμοί των θέσεων που κρατήθηκαν (π.χ. A1, A2, B5)"
     )
     total_price = models.DecimalField(
         max_digits=8,

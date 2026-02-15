@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Εφαρμογές τρίτων (Third-party apps)
     'rest_framework',  # Django REST Framework για API
+    'rest_framework_simplejwt.token_blacklist',  # JWT token blacklisting
     'corsheaders',  # CORS headers για επικοινωνία με Angular frontend
     'django_filters',  # Django filters for DRF
     # Δικές μας εφαρμογές (Our apps)
@@ -82,12 +83,23 @@ WSGI_APPLICATION = 'cinema_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Ρυθμίσεις για MySQL Database
+# MySQL Database Configuration
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'cinema_db',
+        'USER': 'cinema_user',
+        'PASSWORD': 'strongpassword123',
+        'HOST': 'localhost',
+        'PORT': '3306',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
+
+
 
 
 # Password validation
@@ -144,9 +156,27 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',  # Επιτρέπει πρόσβαση χωρίς authentication (για development)
     ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # JWT Authentication
+        'rest_framework.authentication.SessionAuthentication',  # Session Authentication για admin
+    ],
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10  # Αριθμός αποτελεσμάτων ανά σελίδα
+}
+
+# JWT Settings
+# Ρυθμίσεις για JSON Web Tokens
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),  # Access token διαρκεί 1 ώρα
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Refresh token διαρκεί 7 ημέρες
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'ALGORITHM': 'HS256',
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 # TMDB API Key

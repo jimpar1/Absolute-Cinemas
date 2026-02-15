@@ -11,7 +11,22 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django import forms
 from decimal import Decimal
-from .models import Movie, Screening, Booking, MovieHall
+from .models import Movie, Screening, Booking, MovieHall, Customer
+
+
+@admin.register(Customer)
+class CustomerAdmin(admin.ModelAdmin):
+    """
+    Ρυθμίσεις για το Customer model στο admin panel
+    """
+    list_display = ('user', 'email', 'phone', 'created_at')
+    search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name', 'phone')
+    list_filter = ('created_at',)
+    readonly_fields = ('created_at', 'updated_at')
+    
+    def email(self, obj):
+        return obj.user.email
+    email.short_description = 'Email'
 
 
 @admin.register(MovieHall)
@@ -179,7 +194,12 @@ class BookingAdmin(admin.ModelAdmin):
     """
     Ρυθμίσεις για το Booking model στο admin panel
     """
-    list_display = ['id', 'customer_name', 'screening', 'seats_booked', 'total_price', 'status', 'booking_date']
+    list_display = ['id', 'user_username', 'customer_name', 'screening', 'seats_booked', 'seat_numbers', 'total_price', 'status', 'booking_date']
     list_filter = ['status', 'booking_date']
-    search_fields = ['customer_name', 'customer_email', 'screening__movie__title']
+    search_fields = ['user__username', 'customer_name', 'customer_email', 'screening__movie__title']
     ordering = ['-booking_date']
+    readonly_fields = ['total_price', 'booking_date']
+    
+    def user_username(self, obj):
+        return obj.user.username if obj.user else 'Guest'
+    user_username.short_description = 'User'
