@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .models import Booking, Movie, MovieHall, Screening
+from .models import Booking, Movie, MovieHall, Screening, SeatLock
 
 
 @dataclass(frozen=True)
@@ -42,3 +42,12 @@ class MovieHallRepository:
 
     def get(self, hall_id: int) -> MovieHall:
         return MovieHall.objects.get(pk=hall_id)
+
+@dataclass(frozen=True)
+class SeatLockRepository:
+    def list(self):
+        return SeatLock.objects.all()
+
+    def for_screening(self, screening: Screening):
+        return SeatLock.objects.filter(screening=screening)
+

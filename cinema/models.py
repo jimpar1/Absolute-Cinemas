@@ -13,6 +13,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from datetime import timedelta
 
 
@@ -335,3 +336,40 @@ class Booking(models.Model):
             self.screening.save()
 
         super().save(*args, **kwargs)
+
+class SeatLock(models.Model):
+    """
+    Μοντέλο SeatLock (Προσωρινή Δέσμευση)
+    Αποθηκεύει προσωρινά τις θέσεις που έχουν επιλεγεί από ένα χρήστη.
+    """
+    screening = models.ForeignKey(
+        Screening,
+        on_delete=models.CASCADE,
+        related_name='seat_locks',
+        verbose_name="Προβολή"
+    )
+    seat_number = models.CharField(
+        max_length=10,
+        verbose_name="Αριθμός Θέσης"
+    )
+    session_id = models.CharField(
+        max_length=100,
+        verbose_name="Session ID"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Ημερομηνία Δημιουργίας"
+    )
+
+    class Meta:
+        verbose_name = "Προσωρινή Δέσμευση"
+        verbose_name_plural = "Προσωρινές Δεσμεύσεις"
+        unique_together = ['screening', 'seat_number']
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.created_at + timedelta(minutes=10)
+
+    def __str__(self):
+        return f"Lock: {self.seat_number} for {self.screening.movie.title} (Session: {self.session_id})"
+

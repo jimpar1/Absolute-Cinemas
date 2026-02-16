@@ -140,6 +140,3 @@ $env:DB_PASSWORD="<το_root_password_σου>"
 ```bash
 python manage.py test
 ```
-
-
-

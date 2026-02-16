@@ -3,8 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Dict, Optional
+from django.utils import timezone
+from datetime import timedelta
 
-from .repositories import BookingRepository, MovieRepository, MovieHallRepository, ScreeningRepository
+from .repositories import BookingRepository, MovieRepository, MovieHallRepository, ScreeningRepository, SeatLockRepository
 from .tmdb_service import get_movie_details, get_popular_movies, search_movies
 
 
@@ -175,3 +177,45 @@ class MovieService:
             if crew_member.get('job') == 'Director':
                 return crew_member.get('name', 'Unknown')
         return 'Unknown'
+
+@dataclass(frozen=True)
+class SeatLockService:
+    repo: SeatLockRepository
+
+    def lock_seat(self, screening, seat_number: str, session_id: str):
+        # Create or update lock
+        lock, created = self.repo.list().get_or_create(
+            screening=screening,
+            seat_number=seat_number,
+            defaults={'session_id': session_id}
+        )
+        if not created:
+            if lock.session_id != session_id:
+                if lock.is_expired:
+                    # Take over the expired lock
+                    lock.session_id = session_id
+                    lock.created_at = timezone.now()
+                    lock.save()
+                else:
+                    raise ServiceError("Seat already locked by another user")
+            else:
+                # Refresh our own lock
+                lock.created_at = timezone.now()
+                lock.save()
+        return lock
+
+    def unlock_seat(self, screening, seat_number: str, session_id: str):
+        self.repo.list().filter(
+            screening=screening,
+            seat_number=seat_number,
+            session_id=session_id
+        ).delete()
+        
+    def get_locked_seats(self, screening):
+        # We only return locks that are NOT expired (within last 10 minutes)
+        active_locks = self.repo.list().filter(
+            screening=screening,
+            created_at__gte=timezone.now() - timedelta(minutes=10)
+        )
+        return active_locks
+
