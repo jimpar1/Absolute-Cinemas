@@ -42,6 +42,7 @@ Endpoints:
 - `POST /api/auth/login/` (λήψη `access` + `refresh` token)
 - `POST /api/auth/logout/` (blacklist refresh token)
 - `GET/PUT /api/auth/profile/` (προβολή/ενημέρωση προφίλ)
+- `POST /api/auth/change-password/` (αλλαγή κωδικού για τον logged-in χρήστη)
 - `GET /api/auth/my-bookings/` (κρατήσεις του χρήστη)
 - `POST /api/auth/token/refresh/` (νέο access token)
 

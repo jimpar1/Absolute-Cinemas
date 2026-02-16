@@ -5,6 +5,7 @@ Re-exports everything at the package level for backwards compatibility.
 
 from .auth_serializers import (          # noqa: F401
     CustomerSerializer,
+    ChangePasswordSerializer,
     UserRegistrationSerializer,
     UserProfileSerializer,
 )

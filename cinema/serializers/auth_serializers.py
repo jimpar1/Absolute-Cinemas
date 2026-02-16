@@ -8,6 +8,35 @@ from django.contrib.auth.password_validation import validate_password
 from ..models import Customer
 
 
+class ChangePasswordSerializer(serializers.Serializer):
+    """Change password for the authenticated user."""
+
+    old_password = serializers.CharField(write_only=True, required=True)
+    new_password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    new_password2 = serializers.CharField(write_only=True, required=True)
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated:
+            raise serializers.ValidationError({"detail": "Authentication required"})
+
+        if not user.check_password(attrs["old_password"]):
+            raise serializers.ValidationError({"old_password": "Old password is incorrect"})
+
+        if attrs["new_password"] != attrs["new_password2"]:
+            raise serializers.ValidationError({"new_password": "Passwords do not match"})
+
+        return attrs
+
+    def save(self, **kwargs):
+        request = self.context["request"]
+        user = request.user
+        user.set_password(self.validated_data["new_password"])
+        user.save(update_fields=["password"])
+        return user
+
+
 class CustomerSerializer(serializers.ModelSerializer):
     """Read-only serializer for an existing Customer profile."""
     email = serializers.EmailField(source='user.email', read_only=True)

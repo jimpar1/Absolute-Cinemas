@@ -19,6 +19,7 @@ from .models import Customer
 from .serializers import (
     UserRegistrationSerializer,
     UserProfileSerializer,
+    ChangePasswordSerializer,
     BookingSerializer
 )
 
@@ -139,3 +140,15 @@ class MyBookingsView(generics.ListAPIView):
     @inject
     def get_queryset(self, booking_service: BookingService = Provide[Container.booking_service]):
         return booking_service.my_bookings(self.request.user)
+
+
+class ChangePasswordView(APIView):
+    """Change password for the authenticated user."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
