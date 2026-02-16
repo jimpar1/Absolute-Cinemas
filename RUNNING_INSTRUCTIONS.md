@@ -26,48 +26,34 @@ This document provides instructions on how to set up and run the Cinema-Django-B
     source .venv/bin/activate
     ```
 
-3.  **Install dependencies:**
+3.  **Setup MariaDB Database:**
+    
+    a. Κατέβασε και εγκατέστησε **MariaDB** από το επίσημο site: https://mariadb.org/download/
+       - Σε Windows, επίλεξε MSI installer και άφησε την προεπιλεγμένη πόρτα 3306.
+       - Σύνδεση: Host `127.0.0.1`, User `root`, Password '' , Port `3306`.
+
+4. **Create database**
+    ```bash
+    python create_db.py
+    ```
+
+5. **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  **Setup MariaDB Database:**
-    
-    a. Κατέβασε και εγκατέστησε **MariaDB** από το επίσημο site: https://mariadb.org/download/
-       - Σε Windows, επίλεξε MSI installer και άφησε την προεπιλεγμένη πόρτα 3306.
-    
-    b. *(Προαιρετικό)* Εγκατέστησε **HeidiSQL** για GUI: https://www.heidisql.com/download.php
-       - Σύνδεση: Host `127.0.0.1`, User `root`, Password (ό,τι έβαλες), Port `3306`.
-    
-    c. Δημιούργησε τη βάση:
-    ```sql
-    CREATE DATABASE cinema_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-    ```
-    
-    d. Ενημέρωσε το `cinema_backend/settings.py` με τα credentials σου:
-    ```python
-    DATABASES = {
-        'default': {
-            'USER': 'root',
-            'PASSWORD': 'your_password_here',  # βάλε τον κωδικό σου
-            'HOST': '127.0.0.1',
-            'PORT': '3306',
-        }
-    }
-    ```
-
-5.  **Run database migrations:**
+6. **Run database migrations:**
     ```bash
     python manage.py migrate
     ```
 
-6.  **Create a superuser:**
+7. **Create a superuser:**
     ```bash
     python manage.py createsuperuser
     ```
     Follow the prompts to create an administrator account.
 
-7.  **(Optional) Load sample data:**
+8. **(Optional) Load sample data:**
     ```bash
     python sample_data_script.py
     ```
