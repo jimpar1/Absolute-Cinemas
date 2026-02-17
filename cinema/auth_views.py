@@ -1,25 +1,22 @@
 """
-Authentication Views - Χειρισμός εγγραφής, login και profile
-Authentication Views - Handling registration, login and profile management
+Authentication views — registration, login, logout, profile, and user bookings.
 
 Endpoints:
-- POST /api/auth/register/ - Εγγραφή νέου χρήστη
-- POST /api/auth/login/ - Login και λήψη JWT tokens
-- POST /api/auth/logout/ - Logout
-- GET/PUT /api/auth/profile/ - Προβολή/ενημέρωση προφίλ
-- GET /api/auth/my-bookings/ - Οι κρατήσεις του χρήστη
+  - POST /api/auth/register/    → Create a new user + customer profile
+  - POST /api/auth/login/       → Authenticate and receive JWT tokens
+  - POST /api/auth/logout/      → Blacklist the refresh token
+  - GET/PUT /api/auth/profile/  → View / update the authenticated user's profile
+  - GET /api/auth/my-bookings/  → List the authenticated user's bookings
 """
 
 from rest_framework import status, generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-from .models import Customer, Booking
+from .models import Customer
 from .serializers import (
-    CustomerSerializer, 
     UserRegistrationSerializer,
     UserProfileSerializer,
     BookingSerializer
@@ -32,19 +29,8 @@ from .services import BookingService
 
 class RegisterView(generics.CreateAPIView):
     """
-    Endpoint για εγγραφή νέου χρήστη
-    Register new customer account
-    
-    POST /api/auth/register/
-    {
-        "username": "john_doe",
-        "email": "john@example.com",
-        "password": "securepass123",
-        "password2": "securepass123",
-        "first_name": "John",
-        "last_name": "Doe",
-        "phone": "6912345678"
-    }
+    Register a new user account.
+    Returns the created user info and JWT tokens.
     """
     queryset = User.objects.all()
     permission_classes = [permissions.AllowAny]
@@ -54,36 +40,26 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        
-        # Δημιουργία JWT tokens
+
         refresh = RefreshToken.for_user(user)
-        
         return Response({
             'user': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'first_name': user.first_name,
+                'id': user.id, 'username': user.username,
+                'email': user.email, 'first_name': user.first_name,
                 'last_name': user.last_name,
             },
             'tokens': {
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             },
-            'message': 'Η εγγραφή ολοκληρώθηκε επιτυχώς!'
+            'message': 'Registration successful!'
         }, status=status.HTTP_201_CREATED)
 
 
 class LoginView(APIView):
     """
-    Endpoint για login χρήστη
-    User login endpoint
-    
-    POST /api/auth/login/
-    {
-        "username": "john_doe",
-        "password": "securepass123"
-    }
+    Authenticate a user and return JWT tokens.
+    Returns user info including the customer profile if it exists.
     """
     permission_classes = [permissions.AllowAny]
 
@@ -92,35 +68,30 @@ class LoginView(APIView):
         password = request.data.get('password')
 
         if not username or not password:
-            return Response({
-                'error': 'Παρακαλώ δώστε username και password'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': 'Username and password are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         user = authenticate(username=username, password=password)
-
         if user is None:
-            return Response({
-                'error': 'Λάθος username ή password'
-            }, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {'error': 'Invalid username or password'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
-        # Δημιουργία JWT tokens
         refresh = RefreshToken.for_user(user)
-        
-        # Λήψη customer profile αν υπάρχει
+
         customer_profile = None
         try:
-            customer_profile = {
-                'phone': user.customer_profile.phone,
-            }
+            customer_profile = {'phone': user.customer_profile.phone}
         except Customer.DoesNotExist:
             pass
 
         return Response({
             'user': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'first_name': user.first_name,
+                'id': user.id, 'username': user.username,
+                'email': user.email, 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'customer_profile': customer_profile
             },
@@ -128,56 +99,31 @@ class LoginView(APIView):
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             },
-            'message': f'Καλώς ήρθες, {user.first_name or user.username}!'
+            'message': f'Welcome, {user.first_name or user.username}!'
         }, status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):
-    """
-    Endpoint για logout χρήστη (blacklist του refresh token)
-    User logout endpoint
-    
-    POST /api/auth/logout/
-    {
-        "refresh": "refresh_token_here"
-    }
-    """
+    """Blacklist the refresh token to log the user out."""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         try:
             refresh_token = request.data.get("refresh")
             if not refresh_token:
-                return Response({
-                    'error': 'Το refresh token είναι απαραίτητο'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
+                return Response(
+                    {'error': 'Refresh token is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             token = RefreshToken(refresh_token)
             token.blacklist()
-            
-            return Response({
-                'message': 'Επιτυχής αποσύνδεση!'
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                'error': 'Μη έγκυρο token'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'Logged out successfully!'}, status=status.HTTP_200_OK)
+        except Exception:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
-    """
-    Endpoint για προβολή και ενημέρωση προφίλ χρήστη
-    View and update user profile
-    
-    GET /api/auth/profile/
-    PUT /api/auth/profile/
-    {
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john@example.com",
-        "phone": "6912345678"
-    }
-    """
+    """View and update the authenticated user's profile."""
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserProfileSerializer
 
@@ -186,12 +132,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 
 
 class MyBookingsView(generics.ListAPIView):
-    """
-    Endpoint για προβολή των κρατήσεων του συνδεδεμένου χρήστη
-    View authenticated user's bookings
-    
-    GET /api/auth/my-bookings/
-    """
+    """List the authenticated user's bookings, newest first."""
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = BookingSerializer
 

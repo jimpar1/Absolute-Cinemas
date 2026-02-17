@@ -1,83 +1,54 @@
-from __future__ import annotations
+"""
+MovieService — movie listing and TMDB integration.
+Handles search, popular, details, building movie data from TMDB,
+and refreshing existing movies with TMDB data.
+"""
 
+from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Dict, Optional
-from django.utils import timezone
-from datetime import timedelta
+from typing import Any, Dict
 
-from .repositories import BookingRepository, MovieRepository, MovieHallRepository, ScreeningRepository, SeatLockRepository
-from .tmdb_service import get_movie_details, get_popular_movies, search_movies
-
-
-class ServiceError(Exception):
-    def __init__(self, message: str, status_code: int = 400):
-        super().__init__(message)
-        self.status_code = status_code
-        self.message = message
-
-
-@dataclass(frozen=True)
-class MovieHallService:
-    repo: MovieHallRepository
-
-    def list_halls(self):
-        return self.repo.list()
-
-
-@dataclass(frozen=True)
-class ScreeningService:
-    repo: ScreeningRepository
-    booking_repo: BookingRepository
-
-    def list_screenings(self):
-        return self.repo.list()
-
-    def bookings_for_screening(self, screening_id: int):
-        screening = self.repo.get(screening_id)
-        return self.booking_repo.for_screening(screening)
-
-
-@dataclass(frozen=True)
-class BookingService:
-    repo: BookingRepository
-
-    def list_bookings(self):
-        return self.repo.list()
-
-    def queryset_for_user(self, user):
-        if not getattr(user, 'is_authenticated', False):
-            return self.repo.list().none()
-        if getattr(user, 'is_staff', False):
-            return self.repo.list()
-        return self.repo.for_user(user)
-
-    def my_bookings(self, user):
-        return self.repo.for_user(user).order_by('-booking_date')
+from ..repositories import MovieRepository
+from ..tmdb_service import get_movie_details, get_popular_movies, search_movies
+from .errors import ServiceError
 
 
 @dataclass(frozen=True)
 class MovieService:
+    """Business logic for movies and TMDB proxy operations."""
     repo: MovieRepository
 
     def list_movies(self):
+        """Return all movies in the catalogue."""
         return self.repo.list()
 
+    # ── TMDB proxy methods ──
+
     def search_tmdb(self, query: str, page: int = 1):
+        """Search TMDB by title. Raises ServiceError if query is empty."""
         if not query:
             raise ServiceError('Query parameter is required', status_code=400)
         return search_movies(query, page)
 
     def popular_tmdb(self, page: int = 1):
+        """Return popular movies from TMDB."""
         return get_popular_movies(page)
 
     def tmdb_details(self, movie_id: int):
+        """Fetch detailed TMDB info by movie ID."""
         details = get_movie_details(int(movie_id))
         if not details:
             raise ServiceError('Movie not found', status_code=404)
         return details
 
+    # ── Movie construction from TMDB ──
+
     def build_movie_data_from_tmdb_id(self, tmdb_id: int) -> Dict[str, Any]:
+        """
+        Fetch full TMDB details and return a dict ready for MovieSerializer.
+        Includes poster, trailer, shots, and cast.
+        """
         movie_details = get_movie_details(tmdb_id)
         if not movie_details:
             raise ServiceError('Movie not found in TMDB', status_code=404)
@@ -89,13 +60,14 @@ class MovieService:
             'title': movie_details.get('title', ''),
             'description': movie_details.get('overview', ''),
             'duration': movie_details.get('runtime', 0),
-            'genre': ', '.join([genre['name'] for genre in movie_details.get('genres', [])]),
+            'genre': ', '.join([g['name'] for g in movie_details.get('genres', [])]),
             'director': self._get_director_from_credits(movie_details.get('credits', {})),
             'release_year': release_year,
             'rating': Decimal(str(round(movie_details.get('vote_average', 0), 1))),
             'poster_url': f"https://image.tmdb.org/t/p/w500{movie_details.get('poster_path', '')}" if movie_details.get('poster_path') else None,
         }
 
+        # Trailer
         videos = movie_details.get('videos', {}).get('results', [])
         trailer_url = None
         for video in videos:
@@ -104,12 +76,13 @@ class MovieService:
                 break
         movie_data['trailer_url'] = trailer_url
 
+        # Scene shots
         images = movie_details.get('images', {}).get('backdrops', [])
         shots = [f"https://image.tmdb.org/t/p/original{img['file_path']}" for img in images[:5]]
         movie_data['shots'] = shots if shots else None
 
-        credits = movie_details.get('credits', {})
-        cast = credits.get('cast', [])
+        # Cast
+        cast = movie_details.get('credits', {}).get('cast', [])
         actors = [
             {
                 'name': actor['name'],
@@ -120,6 +93,7 @@ class MovieService:
         ]
         movie_data['actors'] = actors if actors else None
 
+        # Validation
         if not movie_data['title']:
             raise ServiceError('Movie title is required', status_code=400)
         if movie_data['duration'] <= 0:
@@ -132,12 +106,15 @@ class MovieService:
         return movie_data
 
     def refresh_movie_from_tmdb(self, movie_title: str) -> Dict[str, Any]:
+        """
+        Search TMDB by title, take the first result, and return
+        a dict of {trailer_url, shots, actors} for updating.
+        """
         search_results = search_movies(movie_title, page=1)
         if not search_results or 'results' not in search_results or not search_results['results']:
             raise ServiceError('Movie not found on TMDB', status_code=404)
 
-        tmdb_movie = search_results['results'][0]
-        tmdb_id = tmdb_movie['id']
+        tmdb_id = search_results['results'][0]['id']
         tmdb_details = get_movie_details(tmdb_id)
         if not tmdb_details:
             raise ServiceError('Could not fetch TMDB details', status_code=404)
@@ -152,8 +129,7 @@ class MovieService:
         images = tmdb_details.get('images', {}).get('backdrops', [])
         shots = [f"https://image.tmdb.org/t/p/original{img['file_path']}" for img in images[:5]]
 
-        credits = tmdb_details.get('credits', {})
-        cast = credits.get('cast', [])
+        cast = tmdb_details.get('credits', {}).get('cast', [])
         actors = [
             {
                 'name': actor['name'],
@@ -169,53 +145,15 @@ class MovieService:
             'actors': actors if actors else None,
         }
 
-    def _get_director_from_credits(self, credits: Dict[str, Any]) -> str:
+    # ── Private helpers ──
+
+    @staticmethod
+    def _get_director_from_credits(credits: Dict[str, Any]) -> str:
+        """Extract the director's name from TMDB credits."""
         crew = (credits or {}).get('crew')
         if not crew:
             return 'Unknown'
-        for crew_member in crew:
-            if crew_member.get('job') == 'Director':
-                return crew_member.get('name', 'Unknown')
+        for member in crew:
+            if member.get('job') == 'Director':
+                return member.get('name', 'Unknown')
         return 'Unknown'
-
-@dataclass(frozen=True)
-class SeatLockService:
-    repo: SeatLockRepository
-
-    def lock_seat(self, screening, seat_number: str, session_id: str):
-        # Create or update lock
-        lock, created = self.repo.list().get_or_create(
-            screening=screening,
-            seat_number=seat_number,
-            defaults={'session_id': session_id}
-        )
-        if not created:
-            if lock.session_id != session_id:
-                if lock.is_expired:
-                    # Take over the expired lock
-                    lock.session_id = session_id
-                    lock.created_at = timezone.now()
-                    lock.save()
-                else:
-                    raise ServiceError("Seat already locked by another user")
-            else:
-                # Refresh our own lock
-                lock.created_at = timezone.now()
-                lock.save()
-        return lock
-
-    def unlock_seat(self, screening, seat_number: str, session_id: str):
-        self.repo.list().filter(
-            screening=screening,
-            seat_number=seat_number,
-            session_id=session_id
-        ).delete()
-        
-    def get_locked_seats(self, screening):
-        # We only return locks that are NOT expired (within last 10 minutes)
-        active_locks = self.repo.list().filter(
-            screening=screening,
-            created_at__gte=timezone.now() - timedelta(minutes=10)
-        )
-        return active_locks
-
