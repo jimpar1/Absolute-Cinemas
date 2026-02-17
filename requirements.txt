@@ -9,6 +9,10 @@ django-filter>=23.0
 tmdbv3api>=1.9.0
 dependency-injector>=4.41.0
 
+# Testing
+pytest>=8.0
+pytest-django>=4.8
+
 # MySQL Driver — install the one for your platform:
 #   Windows:  pip install PyMySQL
 #   Linux:    pip install mysqlclient (requires libmysqlclient-dev)
