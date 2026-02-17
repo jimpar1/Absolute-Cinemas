@@ -182,6 +182,7 @@ class BookingSerializer(serializers.ModelSerializer):
     screening_details = ScreeningSerializer(source='screening', read_only=True)  # Πλήρεις πληροφορίες προβολής
     movie_title = serializers.CharField(source='screening.movie.title', read_only=True)  # Τίτλος ταινίας
     user_username = serializers.CharField(source='user.username', read_only=True)
+    session_id = serializers.CharField(write_only=True, required=False)
     
     seats_booked = serializers.IntegerField(min_value=1)
 
@@ -199,6 +200,7 @@ class BookingSerializer(serializers.ModelSerializer):
             'customer_phone',
             'seats_booked',
             'seat_numbers',
+            'session_id',
             'total_price',
             'booking_date',
             'status',
@@ -222,7 +224,19 @@ class BookingSerializer(serializers.ModelSerializer):
             if not validated_data.get('customer_phone') and hasattr(request.user, 'customer_profile'):
                 validated_data['customer_phone'] = request.user.customer_profile.phone
         
-        return super().create(validated_data)
+        session_id = validated_data.pop('session_id', None)
+        booking = super().create(validated_data)
+        
+        if session_id and booking.seat_numbers:
+            from .models import SeatLock
+            seats = [s.strip() for s in booking.seat_numbers.split(',') if s.strip()]
+            SeatLock.objects.filter(
+                screening=booking.screening,
+                seat_number__in=seats,
+                session_id=session_id
+            ).delete()
+            
+        return booking
     
     def validate(self, data):
         """
@@ -231,6 +245,8 @@ class BookingSerializer(serializers.ModelSerializer):
         """
         screening = data.get('screening')
         seats_booked = data.get('seats_booked')
+        seat_numbers_str = data.get('seat_numbers', '')
+        session_id = data.get('session_id')
         
         # Έλεγχος αν υπάρχουν αρκετές διαθέσιμες θέσεις
         if screening and seats_booked:
@@ -238,6 +254,38 @@ class BookingSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {'seats_booked': f"Δεν υπάρχουν αρκετές διαθέσιμες θέσεις. Διαθέσιμες: {screening.available_seats}"}
                 )
+                
+            if seat_numbers_str:
+                requested_seats = [s.strip() for s in seat_numbers_str.split(',') if s.strip()]
+                
+                # Έλεγχος υπάρχοντων κρατήσεων
+                from .models import Booking
+                booked_qs = Booking.objects.filter(screening=screening)
+                all_booked = []
+                for b in booked_qs:
+                    if b.seat_numbers:
+                        all_booked.extend([s.strip() for s in b.seat_numbers.split(',') if s.strip()])
+                
+                for seat in requested_seats:
+                    if seat in all_booked:
+                        raise serializers.ValidationError({'seat_numbers': f"Η θέση {seat} έχει ήδη κρατηθεί."})
+
+                # Έλεγχος locks
+                from .models import SeatLock
+                from django.utils import timezone
+                from datetime import timedelta
+                
+                active_locks = SeatLock.objects.filter(
+                    screening=screening,
+                    seat_number__in=requested_seats,
+                    created_at__gte=timezone.now() - timedelta(minutes=10)
+                )
+                
+                for lock in active_locks:
+                    if lock.session_id != session_id:
+                        raise serializers.ValidationError(
+                            {'seat_numbers': f"Η θέση {lock.seat_number} επεξεργάζεται από άλλον χρήστη."}
+                        )
         
         return data
 
