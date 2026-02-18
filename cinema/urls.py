@@ -1,15 +1,12 @@
 """
-Αρχείο urls.py για την εφαρμογή cinema
-URLs file for cinema application
+cinema.urls — URL configuration for the cinema REST API.
 
-Ορίζει τα URL patterns για τα API endpoints.
-Χρησιμοποιεί το Django REST Framework Router για αυτόματη δημιουργία URLs.
-
-Τα endpoints που δημιουργούνται:
-- /api/movies/ - Movies CRUD operations
-- /api/screenings/ - Screenings CRUD operations  
-- /api/bookings/ - Bookings CRUD operations
-- /api/auth/ - Authentication endpoints (register, login, profile)
+Uses DRF's DefaultRouter for automatic endpoint generation:
+  - /api/movies/      → MovieViewSet
+  - /api/screenings/  → ScreeningViewSet
+  - /api/bookings/    → BookingViewSet
+  - /api/moviehalls/  → MovieHallViewSet
+  - /api/auth/        → Authentication endpoints (register, login, logout, profile, bookings)
 """
 
 from django.urls import path, include
@@ -18,18 +15,14 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import MovieViewSet, ScreeningViewSet, BookingViewSet, MovieHallViewSet
 from .auth_views import RegisterView, LoginView, LogoutView, ProfileView, MyBookingsView
 
-# Δημιουργία router για αυτόματη δημιουργία URLs
-# Create router for automatic URL generation
+# Router auto-generates list / detail / custom-action URLs
 router = DefaultRouter()
-
-# Καταχώρηση των ViewSets στο router
-# Register ViewSets with the router
 router.register(r'movies', MovieViewSet, basename='movie')
 router.register(r'screenings', ScreeningViewSet, basename='screening')
 router.register(r'bookings', BookingViewSet, basename='booking')
 router.register(r'moviehalls', MovieHallViewSet, basename='moviehall')
 
-# Authentication URLs
+# Auth endpoints (non-router)
 auth_patterns = [
     path('register/', RegisterView.as_view(), name='auth-register'),
     path('login/', LoginView.as_view(), name='auth-login'),
@@ -39,7 +32,6 @@ auth_patterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
 ]
 
-# URL patterns
 urlpatterns = [
     path('', include(router.urls)),
     path('auth/', include(auth_patterns)),
