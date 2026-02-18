@@ -65,12 +65,184 @@ class MovieHall(models.Model):
     Αποθηκεύει πληροφορίες για κάθε αίθουσα προβολής.
     """
     name = models.CharField(max_length=100, unique=True, verbose_name="Όνομα Αίθουσας")
-    capacity = models.IntegerField(validators=[MinValueValidator(1)], verbose_name="Χωρητικότητα")
+    capacity = models.IntegerField(validators=[MinValueValidator(1)], verbose_name="Συνολική Χωρητικότητα (Υπολογίζεται αυτόματα)", blank=True, default=1)
+    left_section_capacity = models.IntegerField(validators=[MinValueValidator(0)], default=0, verbose_name="Χωρητικότητα Αριστερού Τμήματος (Πλατεία)")
+    middle_section_capacity = models.IntegerField(validators=[MinValueValidator(0)], default=0, verbose_name="Χωρητικότητα Μεσαίου Τμήματος (Πλατεία)")
+    right_section_capacity = models.IntegerField(validators=[MinValueValidator(0)], default=0, verbose_name="Χωρητικότητα Δεξιού Τμήματος (Πλατεία)")
+    balcony_left_capacity = models.IntegerField(validators=[MinValueValidator(0)], default=0, verbose_name="Χωρητικότητα Αριστερού Τμήματος (Εξώστης)")
+    balcony_middle_capacity = models.IntegerField(validators=[MinValueValidator(0)], default=0, verbose_name="Χωρητικότητα Μεσαίου Τμήματος (Εξώστης)")
+    balcony_right_capacity = models.IntegerField(validators=[MinValueValidator(0)], default=0, verbose_name="Χωρητικότητα Δεξιού Τμήματος (Εξώστης)")
+    # Seats per row overrides (0 = auto-calculate)
+    left_seats_per_row = models.IntegerField(validators=[MinValueValidator(0)], default=0, verbose_name="Θέσεις/Σειρά Αριστερά (Πλατεία)", help_text="0 = αυτόματος υπολογισμός")
+    middle_seats_per_row = models.IntegerField(validators=[MinValueValidator(0)], default=0, verbose_name="Θέσεις/Σειρά Μεσαία (Πλατεία)", help_text="0 = αυτόματος υπολογισμός")
+    right_seats_per_row = models.IntegerField(validators=[MinValueValidator(0)], default=0, verbose_name="Θέσεις/Σειρά Δεξιά (Πλατεία)", help_text="0 = αυτόματος υπολογισμός")
+    balcony_left_seats_per_row = models.IntegerField(validators=[MinValueValidator(0)], default=0, verbose_name="Θέσεις/Σειρά Αριστερά (Εξώστης)", help_text="0 = αυτόματος υπολογισμός")
+    balcony_middle_seats_per_row = models.IntegerField(validators=[MinValueValidator(0)], default=0, verbose_name="Θέσεις/Σειρά Μεσαία (Εξώστης)", help_text="0 = αυτόματος υπολογισμός")
+    balcony_right_seats_per_row = models.IntegerField(validators=[MinValueValidator(0)], default=0, verbose_name="Θέσεις/Σειρά Δεξιά (Εξώστης)", help_text="0 = αυτόματος υπολογισμός")
+    layout = models.JSONField(
+        verbose_name="Διάταξη Αίθουσας",
+        blank=True,
+        null=True,
+        help_text="JSON με τη διάταξη των θέσεων. Αν δεν δοθεί, δημιουργείται αυτόματα."
+    )
 
     class Meta:
         verbose_name = "Αίθουσα Κινηματογράφου"
         verbose_name_plural = "Αίθουσες Κινηματογράφου"
         ordering = ['name']
+
+    def save(self, *args, **kwargs):
+        regenerate = False
+        if self.pk:
+            old_self = MovieHall.objects.filter(pk=self.pk).first()
+            if old_self:
+                if (old_self.left_section_capacity != self.left_section_capacity or
+                    old_self.middle_section_capacity != self.middle_section_capacity or
+                    old_self.right_section_capacity != self.right_section_capacity or
+                    old_self.balcony_left_capacity != self.balcony_left_capacity or
+                    old_self.balcony_middle_capacity != self.balcony_middle_capacity or
+                    old_self.balcony_right_capacity != self.balcony_right_capacity or
+                    old_self.left_seats_per_row != self.left_seats_per_row or
+                    old_self.middle_seats_per_row != self.middle_seats_per_row or
+                    old_self.right_seats_per_row != self.right_seats_per_row or
+                    old_self.balcony_left_seats_per_row != self.balcony_left_seats_per_row or
+                    old_self.balcony_middle_seats_per_row != self.balcony_middle_seats_per_row or
+                    old_self.balcony_right_seats_per_row != self.balcony_right_seats_per_row):
+                    regenerate = True
+
+        # Fallback for old records that had capacity but no sections
+        if self.capacity > 0 and self.left_section_capacity == 0 and self.middle_section_capacity == 0 and self.right_section_capacity == 0 and self.balcony_left_capacity == 0 and self.balcony_middle_capacity == 0 and self.balcony_right_capacity == 0:
+            self.middle_section_capacity = self.capacity
+
+        self.capacity = (
+            self.left_section_capacity + self.middle_section_capacity + self.right_section_capacity +
+            self.balcony_left_capacity + self.balcony_middle_capacity + self.balcony_right_capacity
+        )
+        if self.capacity == 0:
+            self.capacity = 1 # Avoid validation errors if someone enters 0 everywhere
+            
+        if (not self.layout or regenerate) and self.capacity > 0:
+            import math
+            from string import ascii_uppercase
+            
+            target_ratio = 1.5
+            tiers_data = []
+            
+            # --- Main Tier ---
+            # Left Section
+            left_seats_per_row = self.left_seats_per_row  # admin override
+            if self.left_section_capacity > 0 and left_seats_per_row == 0:
+                left_seats_per_row = max(2, int(math.sqrt(self.left_section_capacity * target_ratio)))
+            left_rows = math.ceil(self.left_section_capacity / left_seats_per_row) if left_seats_per_row > 0 else 0
+            
+            # Middle Section
+            middle_seats_per_row = self.middle_seats_per_row  # admin override
+            if self.middle_section_capacity > 0 and middle_seats_per_row == 0:
+                middle_seats_per_row = max(3, int(math.sqrt(self.middle_section_capacity * target_ratio)))
+            middle_rows = math.ceil(self.middle_section_capacity / middle_seats_per_row) if middle_seats_per_row > 0 else 0
+            
+            # Right Section
+            right_seats_per_row = self.right_seats_per_row  # admin override
+            if self.right_section_capacity > 0 and right_seats_per_row == 0:
+                right_seats_per_row = max(2, int(math.sqrt(self.right_section_capacity * target_ratio)))
+            right_rows = math.ceil(self.right_section_capacity / right_seats_per_row) if right_seats_per_row > 0 else 0
+            
+            main_num_rows = max(left_rows, middle_rows, right_rows)
+            
+            main_rows = []
+            for i in range(main_num_rows):
+                if i < 26:
+                    main_rows.append(ascii_uppercase[i])
+                else:
+                    main_rows.append(f"{ascii_uppercase[i//26 - 1]}{ascii_uppercase[i%26]}")
+            
+            main_middle_start = left_seats_per_row + 1
+            main_right_start = main_middle_start + middle_seats_per_row
+
+            tiers_data.append({
+                "name": "Main",
+                "rows": main_rows,
+                "sections": {
+                    "left": {
+                        "enabled": self.left_section_capacity > 0, 
+                        "seatsPerRow": left_seats_per_row, 
+                        "startSeat": 1,
+                        "maxSeats": self.left_section_capacity
+                    },
+                    "middle": {
+                        "enabled": self.middle_section_capacity > 0, 
+                        "seatsPerRow": middle_seats_per_row, 
+                        "startSeat": main_middle_start,
+                        "maxSeats": self.middle_section_capacity
+                    },
+                    "right": {
+                        "enabled": self.right_section_capacity > 0, 
+                        "seatsPerRow": right_seats_per_row, 
+                        "startSeat": main_right_start,
+                        "maxSeats": self.right_section_capacity
+                    }
+                }
+            })
+            
+            # --- Balcony Tier ---
+            b_left_seats = self.balcony_left_seats_per_row  # admin override
+            if self.balcony_left_capacity > 0 and b_left_seats == 0:
+                b_left_seats = max(2, int(math.sqrt(self.balcony_left_capacity * target_ratio)))
+            b_left_rows = math.ceil(self.balcony_left_capacity / b_left_seats) if b_left_seats > 0 else 0
+            
+            b_mid_seats = self.balcony_middle_seats_per_row  # admin override
+            if self.balcony_middle_capacity > 0 and b_mid_seats == 0:
+                b_mid_seats = max(3, int(math.sqrt(self.balcony_middle_capacity * target_ratio)))
+            b_mid_rows = math.ceil(self.balcony_middle_capacity / b_mid_seats) if b_mid_seats > 0 else 0
+            
+            b_right_seats = self.balcony_right_seats_per_row  # admin override
+            if self.balcony_right_capacity > 0 and b_right_seats == 0:
+                b_right_seats = max(2, int(math.sqrt(self.balcony_right_capacity * target_ratio)))
+            b_right_rows = math.ceil(self.balcony_right_capacity / b_right_seats) if b_right_seats > 0 else 0
+            
+            b_num_rows = max(b_left_rows, b_mid_rows, b_right_rows)
+            
+            if b_num_rows > 0:
+                b_rows = []
+                for i in range(main_num_rows, main_num_rows + b_num_rows):
+                    if i < 26:
+                        b_rows.append(ascii_uppercase[i])
+                    else:
+                        b_rows.append(f"{ascii_uppercase[i//26 - 1]}{ascii_uppercase[i%26]}")
+                
+                b_middle_start = b_left_seats + 1
+                b_right_start = b_middle_start + b_mid_seats
+
+                tiers_data.append({
+                    "name": "Balcony",
+                    "rows": b_rows,
+                    "sections": {
+                        "left": {
+                            "enabled": self.balcony_left_capacity > 0, 
+                            "seatsPerRow": b_left_seats, 
+                            "startSeat": 1,
+                            "maxSeats": self.balcony_left_capacity
+                        },
+                        "middle": {
+                            "enabled": self.balcony_middle_capacity > 0, 
+                            "seatsPerRow": b_mid_seats, 
+                            "startSeat": b_middle_start,
+                            "maxSeats": self.balcony_middle_capacity
+                        },
+                        "right": {
+                            "enabled": self.balcony_right_capacity > 0, 
+                            "seatsPerRow": b_right_seats, 
+                            "startSeat": b_right_start,
+                            "maxSeats": self.balcony_right_capacity
+                        }
+                    }
+                })
+
+            self.layout = {
+                "hallName": self.name,
+                "tiers": tiers_data
+            }
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} ({self.capacity} seats)"

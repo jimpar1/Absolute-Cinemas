@@ -34,8 +34,29 @@ class MovieHallAdmin(admin.ModelAdmin):
     """
     Ρυθμίσεις για το MovieHall model στο admin panel
     """
-    list_display = ('name', 'capacity')
+    list_display = ('name', 'capacity', 'left_section_capacity', 'middle_section_capacity', 'right_section_capacity')
     search_fields = ('name',)
+    readonly_fields = ('capacity',)
+    fieldsets = (
+        ('Γενικά', {
+            'fields': ('name', 'capacity'),
+        }),
+        ('Πλατεία – Χωρητικότητα', {
+            'fields': ('left_section_capacity', 'middle_section_capacity', 'right_section_capacity'),
+        }),
+        ('Πλατεία – Θέσεις ανά Σειρά (0 = αυτόματα)', {
+            'fields': ('left_seats_per_row', 'middle_seats_per_row', 'right_seats_per_row'),
+            'classes': ('collapse',),
+        }),
+        ('Εξώστης – Χωρητικότητα', {
+            'fields': ('balcony_left_capacity', 'balcony_middle_capacity', 'balcony_right_capacity'),
+            'classes': ('collapse',),
+        }),
+        ('Εξώστης – Θέσεις ανά Σειρά (0 = αυτόματα)', {
+            'fields': ('balcony_left_seats_per_row', 'balcony_middle_seats_per_row', 'balcony_right_seats_per_row'),
+            'classes': ('collapse',),
+        }),
+    )
 
 
 class TMDBSearchForm(forms.Form):
