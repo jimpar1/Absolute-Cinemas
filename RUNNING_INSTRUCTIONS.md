@@ -112,6 +112,7 @@ python manage.py runserver
 | Ρόλος | Username | Password |
 |-------|----------|----------|
 | Διαχειριστής | `admin` | `admin` |
+| Staff (περιορισμένη πρόσβαση) | `staff` | `staff` |
 | Απλός χρήστης | `user` | `user` |
 
 ---
