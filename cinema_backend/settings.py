@@ -1,15 +1,11 @@
-"""
-Ρυθμίσεις Django για το cinema_backend project.
-Django settings for cinema_backend project.
+"""cinema_backend Django settings.
 
-Αυτό το αρχείο περιέχει όλες τις ρυθμίσεις για το Django project.
-This file contains all the settings for the Django project.
+Το project είναι σχεδιασμένο ως 3-tier εφαρμογή:
+1) Front-end: επικοινωνεί αποκλειστικά μέσω REST API
+2) Business logic: Python/Django (αντικειμενοστρεφής γλώσσα)
+3) Database: σχεσιακή (MySQL/MariaDB)
 
-Περιλαμβάνει ρυθμίσεις για:
-- Εγκατεστημένες εφαρμογές (Django apps)
-- Middleware για CORS και άλλες λειτουργίες
-- Ρυθμίσεις βάσης δεδομένων (SQLite)
-- REST Framework configuration
+Το business logic επικοινωνεί με τη βάση μέσω Django ORM (models/querysets), όχι με raw SQL.
 """
 
 from pathlib import Path
@@ -80,11 +76,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'cinema_backend.wsgi.application'
 
 
-# Database
+# Database (Relational DB: MySQL/MariaDB)
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# Ρυθμίσεις για MySQL Database
-# MySQL Database Configuration
+# Ρυθμίσεις για MySQL/MariaDB Database
+# MySQL/MariaDB Database Configuration
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
