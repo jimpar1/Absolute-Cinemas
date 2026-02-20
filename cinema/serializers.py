@@ -119,6 +119,9 @@ class MovieSerializer(serializers.ModelSerializer):
     Serializer για το Movie model
     Μετατρέπει τα Movie objects σε JSON και αντίστροφα
     """
+    # Override status to use the computed property (auto-determine based on screenings this week)
+    status = serializers.SerializerMethodField()
+
     class Meta:
         model = Movie
         fields = [
@@ -139,6 +142,9 @@ class MovieSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']  # Αυτά τα πεδία δεν μπορούν να τροποποιηθούν από το API
+
+    def get_status(self, obj):
+        return obj.computed_status
 
 
 class ScreeningSerializer(serializers.ModelSerializer):

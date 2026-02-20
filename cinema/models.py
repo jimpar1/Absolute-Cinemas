@@ -323,6 +323,26 @@ class Movie(models.Model):
         verbose_name="Ημερομηνία Ενημέρωσης"
     )
 
+    @property
+    def computed_status(self):
+        """
+        Automatically compute status based on screenings.
+        If the movie has any screening within the current week (Mon-Sun) → 'now_playing'
+        Otherwise → 'upcoming'
+        """
+        now = timezone.now()
+        # Monday of current week at midnight
+        week_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+        # Sunday end of current week
+        week_end = week_start + timedelta(days=7)
+
+        has_screening_this_week = self.screenings.filter(
+            start_time__gte=week_start,
+            start_time__lt=week_end
+        ).exists()
+
+        return 'now_playing' if has_screening_this_week else 'upcoming'
+
     class Meta:
         verbose_name = "Ταινία"
         verbose_name_plural = "Ταινίες"
