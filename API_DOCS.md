@@ -1,3 +1,27 @@
+# Cinema Backend – API & 3‑Tier Architecture
+
+## 3‑Tier αρχιτεκτονική (απαιτήσεις εργασίας)
+
+Η εφαρμογή ακολουθεί 3 επίπεδα:
+
+1. **Front‑end (Presentation layer)**
+	- Είναι ανεξάρτητο (π.χ. Angular/React/Vue ή mobile app).
+	- Επικοινωνεί με το backend **μόνο μέσω RESTful web services** (HTTP + JSON) στα endpoints κάτω από `/api/`.
+	- Δεν έχει άμεση πρόσβαση στη βάση.
+
+2. **Business logic (Application layer)**
+	- Υλοποιείται σε **Python/Django** (αντικειμενοστρεφής γλώσσα).
+	- Τα REST endpoints υλοποιούνται με **Django REST Framework** (ViewSets/Serializers).
+	- Η επιχειρησιακή λογική και οι κανόνες επικύρωσης/υπολογισμών βρίσκονται στα models/serializers/views/services.
+
+3. **Database (Data layer)**
+	- Χρησιμοποιείται **σχεσιακή βάση** (MySQL/MariaDB).
+	- Η επικοινωνία από το business logic προς τη βάση γίνεται μέσω **ORM (Django ORM)**.
+
+## Base URL
+
+The base URL for all API endpoints is `/api/`.
+
 ## Endpoints
 
 ### Movies

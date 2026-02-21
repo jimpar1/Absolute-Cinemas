@@ -68,13 +68,18 @@ This document provides instructions on how to set up and run the Cinema-Django-B
 2.  **Access the application:**
     -   **API:** The API is available at `http://127.0.0.1:8000/api/`.
     -   **Admin Panel:** The Django admin panel is available at `http://127.0.0.1:8000/admin/`. Log in with the superuser credentials you created.
-# API Documentation
 
-This document outlines the available API endpoints for the Cinema-Django-Backend application.
+## 3‑Tier Architecture (εργασία)
 
-## Base URL
+- **Front‑end:** ξεχωριστή εφαρμογή (π.χ. Angular/React) που καλεί το backend μόνο μέσω REST (JSON) στο `/api/`.
+- **Business logic:** Django + Django REST Framework (Python, OOP).
+- **Database:** MySQL/MariaDB (σχεσιακή). Πρόσβαση γίνεται μέσω Django ORM (models/querysets).
 
-The base URL for all API endpoints is `/api/`.
+Σημείωση: Για τοπική ανάπτυξη, το CORS είναι ενεργό στο backend ώστε ένα front‑end σε άλλο origin/port να μπορεί να καλέσει το API.
+
+## API Documentation
+
+Δείτε το [API_DOCS.md](API_DOCS.md) για πλήρη λίστα endpoints.
 
 
 
