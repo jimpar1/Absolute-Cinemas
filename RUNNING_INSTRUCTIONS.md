@@ -1,142 +1,119 @@
-# Running Instructions
+# 🎬 Absolute Cinema — Οδηγίες Εγκατάστασης & Εκτέλεσης
 
-This document provides instructions on how to set up and run the Cinema-Django-Backend application.
+## Τι χρειάζεσαι πριν ξεκινήσεις
 
-## Prerequisites
+- **Python 3.10+** εγκατεστημένο στο σύστημά σου
+- **MariaDB 10.5+** — μπορείς να το κατεβάσεις από [εδώ](https://mariadb.org/download/)
+- Ο **TMDB API Key** είναι ήδη ενσωματωμένος στο project, δεν χρειάζεται δικός σου
 
--   Python 3.x
--   pip
--   **MariaDB 10.5+** (download: https://mariadb.org/download/)
--   *(Optional)* **HeidiSQL** GUI (download: https://www.heidisql.com/download.php)
+---
 
-## Setup
+## Πρώτη φορά; Ξεκίνα εδώ
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url>
-    cd Cinema-Django-Backend
-    ```
+### Κατέβασε τον κώδικα και φτιάξε virtual environment
 
-2.  **Create and activate a virtual environment:**
-    ```bash
-    python -m venv .venv
-    # On Windows
-    .venv\Scripts\activate
-    # On macOS/Linux
-    source .venv/bin/activate
-    ```
+```bash
+git clone <repository-url>
+cd Cinema-Django-Backend
 
-3.  **Setup MariaDB Database:**
-    
-    a. Κατέβασε και εγκατέστησε **MariaDB** από το επίσημο site: https://mariadb.org/download/
-       - Σε Windows, επίλεξε MSI installer και άφησε την προεπιλεγμένη πόρτα 3306.
-         - Σύνδεση: Host `127.0.0.1`, User `root`, Port `3306`.
-         - Αν ο `root` έχει password (σύνηθες), θα χρειαστεί να το περάσεις ως environment variable (βλ. παρακάτω).
+python -m venv .venv
 
-     b. **Ρύθμιση credentials μέσω environment variables (Windows PowerShell):**
-         ```powershell
-         $env:DB_HOST="127.0.0.1"
-         $env:DB_PORT="3306"
-         $env:DB_NAME="cinema_db"
-         $env:DB_USER="root"
-         $env:DB_PASSWORD="<το_root_password_σου στο MARIADB>"
-         ```
-         (Αυτά χρησιμοποιούνται τόσο από το Django όσο και από το `create_db.py`.)
+# Windows
+.venv\Scripts\activate
 
-## Quick Bootstrap (recommended)
+# macOS/Linux
+source .venv/bin/activate
+```
 
-Μετά το `pip install -r requirements.txt`, μπορείς να κάνεις bootstrap τη βάση + migrations + dev accounts με μία εντολή.
+### Εγκατέστησε τα dependencies
 
-1) Βάλε τα `DB_*` env vars (Windows PowerShell):
+```bash
+pip install -r requirements.txt
+```
+
+### Ρύθμισε τη σύνδεση με τη βάση
+
+Αν η MariaDB τρέχει τοπικά με τις default ρυθμίσεις (user `root`, χωρίς password, πόρτα `3306`), δεν χρειάζεται να κάνεις τίποτα παραπάνω.
+
+Αν έχεις password ή διαφορετικές ρυθμίσεις, πέρασέ τα πριν τρέξεις οτιδήποτε:
+
 ```powershell
 $env:DB_HOST="127.0.0.1"
 $env:DB_PORT="3306"
 $env:DB_NAME="cinema_db"
 $env:DB_USER="root"
-$env:DB_PASSWORD="<το_root_password_σου>"
+$env:DB_PASSWORD="βάλε_εδώ_το_password_σου"
 ```
 
-2) (Optional) Βάλε passwords για τα dev accounts ως env vars:
-```powershell
-$env:ADMIN_PASSWORD="Admin123!"
-$env:STAFF_PASSWORD="Staff123!"
-```
+### Στήσε τη βάση — μία εντολή, τα κάνει όλα
 
-3) Τρέξε bootstrap:
 ```bash
-python bootstrap_dev.py
+python create_db.py
 ```
 
-4. **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+Αυτό το script κάνει τα εξής αυτόματα:
+1. Διαγράφει την παλιά βάση (αν υπάρχει) και φτιάχνει καινούρια
+2. Τρέχει τα Django migrations
+3. Δημιουργεί τους χρήστες (admin + απλός user)
+4. Φτιάχνει 3 αίθουσες κινηματογράφου με custom διατάξεις
+5. Κατεβάζει 10 θρυλικές ταινίες από το TMDB (αφίσες, trailers, φωτογραφίες, ηθοποιούς)
 
-5. **Create database**
-    ```bash
-    python create_db.py
-    ```
+> 💡 Μπορείς να το ξανατρέξεις ανά πάσα στιγμή αν θες clean reset — ξαναφτιάχνει τα πάντα από το μηδέν.
 
-6. **Run database migrations:**
-    ```bash
-    python manage.py migrate
-    ```
+### Αν αλλάξεις κάτι στα models
 
-7. **Create accounts (admin + staff):**
-    ```bash
-    python manage.py bootstrap_accounts
-    ```
-    (Αν δεν δώσεις `ADMIN_PASSWORD`/`STAFF_PASSWORD`, θα χρησιμοποιηθούν defaults.)
+Κάθε φορά που κάνεις αλλαγές στα Django models, πρέπει να δημιουργήσεις και να εφαρμόσεις τα migrations ξεχωριστά:
 
-8. **(Optional) Load sample data:**
-    ```bash
-    python sample_data_script.py
-    ```
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
 
-## Running the Application
+---
 
-1.  **Start the development server:**
-    ```bash
-    python manage.py runserver
-    ```
+## Εκτέλεση
 
-2.  **Access the application:**
-    -   **API:** The API is available at `http://127.0.0.1:8000/api/`.
-    -   **Admin Panel:** The Django admin panel is available at `http://127.0.0.1:8000/admin/`. Log in with the superuser credentials you created.
+```bash
+python manage.py runserver
+```
 
-## 3‑Tier Architecture (εργασία)
+Μετά ανοίγεις τον browser σου:
 
-- **Front‑end:** ξεχωριστή εφαρμογή (π.χ. Angular/React) που καλεί το backend μόνο μέσω REST (JSON) στο `/api/`.
-- **Business logic:** Django + Django REST Framework (Python, OOP).
-- **Database:** MySQL/MariaDB (σχεσιακή). Πρόσβαση γίνεται μέσω Django ORM (models/querysets).
+- **REST API** → http://127.0.0.1:8000/api/
+- **Django Admin** → http://127.0.0.1:8000/admin/
 
-## Controllers / Business / Data + Dependency Injection (μάθημα)
+### Credentials για login
 
-- **Controllers:** DRF views (endpoints)
-- **Business logic:** `cinema/services.py`
-- **Data layer:** `cinema/repositories.py` (Django ORM)
-- **DI:** `dependency-injector` container wired στο startup (Cinema AppConfig `ready()`).
+| Ρόλος | Username | Password |
+|-------|----------|----------|
+| Διαχειριστής | `admin` | `admin` |
+| Απλός χρήστης | `user` | `user` |
 
-Σημείωση: Για τοπική ανάπτυξη, το CORS είναι ενεργό στο backend ώστε ένα front‑end σε άλλο origin/port να μπορεί να καλέσει το API.
+---
+
+## Πώς είναι δομημένο το project
+
+```
+Frontend (React)  ←—  REST/JSON  —→  Django Backend  ←—  ORM  —→  MariaDB
+```
+
+- **Views/Controllers** → DRF endpoints (`cinema/views.py`)
+- **Business Logic** → `cinema/services.py`
+- **Data Access** → `cinema/repositories.py` μέσω Django ORM
+- **Dependency Injection** → `dependency-injector`, ρυθμίζεται αυτόματα στο startup
+
+Το CORS είναι ενεργοποιημένο ώστε το React frontend (που τρέχει σε άλλο port) να μπορεί να επικοινωνεί με το API κανονικά.
+
+---
 
 ## API Documentation
 
-Δείτε το [API_DOCS.md](API_DOCS.md) για πλήρη λίστα endpoints.
+Για τα διαθέσιμα endpoints, δες το [API_DOCS.md](API_DOCS.md).
 
-## Running Tests (integration)
+## Tests
 
-Τα tests χρησιμοποιούν τη βάση που έχεις ρυθμίσει (MariaDB). Για να τρέξουν, ο χρήστης της βάσης πρέπει να έχει δικαίωμα να δημιουργήσει test database (π.χ. `test_cinema_db`).
-
-1) Βάλε τα `DB_*` env vars στο ίδιο PowerShell:
-```powershell
-$env:DB_HOST="127.0.0.1"
-$env:DB_PORT="3306"
-$env:DB_NAME="cinema_db"
-$env:DB_USER="root"
-$env:DB_PASSWORD="<το_root_password_σου>"
-```
-
-2) Τρέξε tests:
 ```bash
 python manage.py test
 ```
+
+Τα tests δημιουργούν δική τους test database, οπότε φρόντισε ο DB user να έχει δικαίωμα δημιουργίας βάσεων.

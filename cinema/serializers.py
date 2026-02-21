@@ -111,7 +111,7 @@ class MovieHallSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = MovieHall
-        fields = ['id', 'name', 'capacity']
+        fields = ['id', 'name', 'capacity', 'layout']
 
 
 class MovieSerializer(serializers.ModelSerializer):
@@ -119,6 +119,9 @@ class MovieSerializer(serializers.ModelSerializer):
     Serializer για το Movie model
     Μετατρέπει τα Movie objects σε JSON και αντίστροφα
     """
+    # Override status to use the computed property (auto-determine based on screenings this week)
+    status = serializers.SerializerMethodField()
+
     class Meta:
         model = Movie
         fields = [
@@ -140,6 +143,9 @@ class MovieSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['created_at', 'updated_at']  # Αυτά τα πεδία δεν μπορούν να τροποποιηθούν από το API
 
+    def get_status(self, obj):
+        return obj.computed_status
+
 
 class ScreeningSerializer(serializers.ModelSerializer):
     """
@@ -150,6 +156,7 @@ class ScreeningSerializer(serializers.ModelSerializer):
     movie_details = MovieSerializer(source='movie', read_only=True)
     # Keep 'hall' as the writable FK (default behavior of ModelSerializer) and add a read-only hall_name
     hall_name = serializers.CharField(source='hall.name', read_only=True)
+    hall_layout = serializers.JSONField(source='hall.layout', read_only=True)
 
     # Serialize computed properties explicitly to JSON-friendly types (no redundant `source`)
     end_time = serializers.DateTimeField(read_only=True)
@@ -164,6 +171,7 @@ class ScreeningSerializer(serializers.ModelSerializer):
             'movie_details',
             'hall',
             'hall_name',
+            'hall_layout',
             'start_time',
             'end_time',
             'price',
