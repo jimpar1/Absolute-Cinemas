@@ -70,6 +70,8 @@ print("✅ Migrations applied.")
 # =============================================================================
 
 from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
 from cinema.models import Customer
 
 print("\n👤 Creating users...")
@@ -100,6 +102,38 @@ if not User.objects.filter(username='user').exists():
     print(f"   ✅ Regular user: user / user")
 else:
     print(f"   ⏩ User 'user' already exists, skipping.")
+
+# Staff user (limited admin access via group permissions)
+if not User.objects.filter(username='staff').exists():
+    staff_user = User.objects.create_user(
+        username='staff',
+        email='staff@absolutecinema.gr',
+        password='staff',
+        first_name='Staff',
+        last_name='User'
+    )
+    staff_user.is_staff = True
+    staff_user.is_superuser = False
+    staff_user.save()
+
+    staff_group, _ = Group.objects.get_or_create(name='Cinema Staff')
+    desired = {
+        'movie': ['add', 'change', 'delete', 'view'],
+        'moviehall': ['add', 'change', 'delete', 'view'],
+        'screening': ['add', 'change', 'delete', 'view'],
+        'booking': ['view', 'change'],
+    }
+    perms = []
+    for model, actions in desired.items():
+        ct = ContentType.objects.get(app_label='cinema', model=model)
+        for action in actions:
+            perms.append(Permission.objects.get(content_type=ct, codename=f'{action}_{model}'))
+    staff_group.permissions.set(perms)
+    staff_user.groups.add(staff_group)
+
+    print(f"   ✅ Staff user: staff / staff (limited via 'Cinema Staff' group)")
+else:
+    print(f"   ⏩ User 'staff' already exists, skipping.")
 
 # =============================================================================
 # STEP 4: Create Cinema Halls
