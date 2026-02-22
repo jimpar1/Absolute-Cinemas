@@ -1,11 +1,16 @@
+import os
+
 import MySQLdb
 
-# Database connection parameters (update with your root credentials)
-DB_HOST = '127.0.0.1'
-DB_USER = 'root'
-DB_PASSWORD = ''
-DB_PORT = 3306
-DB_NAME = 'cinema_db'
+
+# Database connection parameters (can be overridden with env vars)
+# Use the same variables as Django settings:
+# DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
+DB_HOST = os.environ.get('DB_HOST', '127.0.0.1')
+DB_USER = os.environ.get('DB_USER', 'root')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
+DB_PORT = int(os.environ.get('DB_PORT', '3306'))
+DB_NAME = os.environ.get('DB_NAME', 'cinema_db')
 
 try:
     # Connect to MySQL server without specifying a database

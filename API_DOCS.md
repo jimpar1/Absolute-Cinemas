@@ -18,6 +18,16 @@
 	- Χρησιμοποιείται **σχεσιακή βάση** (MySQL/MariaDB).
 	- Η επικοινωνία από το business logic προς τη βάση γίνεται μέσω **ORM (Django ORM)**.
 
+### Εσωτερική 3‑layer δομή (controllers / business logic / data) + Dependency Injection
+
+Για να ταιριάζει με το μάθημα, εσωτερικά το backend χωρίζεται σε 3 layers:
+
+- **Controllers:** DRF ViewSets/APIViews (π.χ. `cinema/views.py`, `cinema/auth_views.py`)
+- **Business logic:** service classes (π.χ. `cinema/services.py`)
+- **Data layer:** repository classes που μιλάνε με Django ORM (π.χ. `cinema/repositories.py`)
+
+Η σύνδεση των layers γίνεται με **Dependency Injection** μέσω DI container (`dependency-injector`) που γίνεται wire στο startup της εφαρμογής (AppConfig `ready()`).
+
 ## Base URL
 
 The base URL for all API endpoints is `/api/`.

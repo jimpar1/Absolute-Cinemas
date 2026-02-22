@@ -17,3 +17,11 @@ class CinemaConfig(AppConfig):
     name = 'cinema'
     verbose_name = 'Διαχείριση Σινεμά'  # Όνομα που θα εμφανίζεται στο admin
 
+    def ready(self):
+        # Wire dependency injection container for controllers (views/auth_views)
+        # Import inside ready() to avoid side effects during app loading.
+        from .container import container
+        from . import views, auth_views
+
+        container.wire(modules=[views, auth_views])
+

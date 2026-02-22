@@ -30,7 +30,18 @@ This document provides instructions on how to set up and run the Cinema-Django-B
     
     a. Κατέβασε και εγκατέστησε **MariaDB** από το επίσημο site: https://mariadb.org/download/
        - Σε Windows, επίλεξε MSI installer και άφησε την προεπιλεγμένη πόρτα 3306.
-       - Σύνδεση: Host `127.0.0.1`, User `root`, Password '' , Port `3306`.
+         - Σύνδεση: Host `127.0.0.1`, User `root`, Port `3306`.
+         - Αν ο `root` έχει password (σύνηθες), θα χρειαστεί να το περάσεις ως environment variable (βλ. παρακάτω).
+
+     b. **Ρύθμιση credentials μέσω environment variables (Windows PowerShell):**
+         ```powershell
+         $env:DB_HOST="127.0.0.1"
+         $env:DB_PORT="3306"
+         $env:DB_NAME="cinema_db"
+         $env:DB_USER="root"
+         $env:DB_PASSWORD="<το_root_password_σου>"
+         ```
+         (Αυτά χρησιμοποιούνται τόσο από το Django όσο και από το `create_db.py`.)
 
 4. **Create database**
     ```bash
@@ -74,6 +85,13 @@ This document provides instructions on how to set up and run the Cinema-Django-B
 - **Front‑end:** ξεχωριστή εφαρμογή (π.χ. Angular/React) που καλεί το backend μόνο μέσω REST (JSON) στο `/api/`.
 - **Business logic:** Django + Django REST Framework (Python, OOP).
 - **Database:** MySQL/MariaDB (σχεσιακή). Πρόσβαση γίνεται μέσω Django ORM (models/querysets).
+
+## Controllers / Business / Data + Dependency Injection (μάθημα)
+
+- **Controllers:** DRF views (endpoints)
+- **Business logic:** `cinema/services.py`
+- **Data layer:** `cinema/repositories.py` (Django ORM)
+- **DI:** `dependency-injector` container wired στο startup (Cinema AppConfig `ready()`).
 
 Σημείωση: Για τοπική ανάπτυξη, το CORS είναι ενεργό στο backend ώστε ένα front‑end σε άλλο origin/port να μπορεί να καλέσει το API.
 

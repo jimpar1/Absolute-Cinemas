@@ -8,3 +8,4 @@ django-cors-headers>=4.3.0
 django-filter>=23.0
 tmdbv3api>=1.9.0
 mysqlclient>=2.2.0
+dependency-injector>=4.41.0

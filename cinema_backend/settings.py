@@ -8,6 +8,7 @@
 Το business logic επικοινωνεί με τη βάση μέσω Django ORM (models/querysets), όχι με raw SQL.
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -42,7 +43,7 @@ INSTALLED_APPS = [
     'corsheaders',  # CORS headers για επικοινωνία με Angular frontend
     'django_filters',  # Django filters for DRF
     # Δικές μας εφαρμογές (Our apps)
-    'cinema',  # Η εφαρμογή cinema με τα models μας
+    'cinema.apps.CinemaConfig',  # Η εφαρμογή cinema με DI wiring στο AppConfig
 ]
 
 MIDDLEWARE = [
@@ -81,14 +82,20 @@ WSGI_APPLICATION = 'cinema_backend.wsgi.application'
 
 # Ρυθμίσεις για MySQL/MariaDB Database
 # MySQL/MariaDB Database Configuration
+DB_NAME = os.environ.get('DB_NAME', 'cinema_db')
+DB_USER = os.environ.get('DB_USER', 'root')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
+DB_PORT = os.environ.get('DB_PORT', '3306')
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'cinema_db',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASSWORD,
+        'HOST': DB_HOST,
+        'PORT': DB_PORT,
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
