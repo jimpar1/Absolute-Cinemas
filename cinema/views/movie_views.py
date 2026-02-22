@@ -18,7 +18,7 @@ from rest_framework.response import Response
 from dependency_injector.wiring import Provide, inject
 
 from ..container import Container
-from ..permissions import IsStaffOrReadOnly
+from ..permissions import IsStaffWithModelPermsOrReadOnly
 from ..serializers import MovieSerializer, ScreeningSerializer
 from ..services import MovieService, ScreeningService, ServiceError
 
@@ -29,7 +29,7 @@ class MovieViewSet(viewsets.ModelViewSet):
     Manual creation is disabled — movies are always imported from TMDB.
     """
     serializer_class = MovieSerializer
-    permission_classes = [IsStaffOrReadOnly]
+    permission_classes = [IsStaffWithModelPermsOrReadOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title', 'director', 'genre']
     ordering_fields = ['title', 'release_year', 'rating', 'created_at']

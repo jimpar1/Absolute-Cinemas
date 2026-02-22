@@ -17,7 +17,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from dependency_injector.wiring import Provide, inject
 
 from ..container import Container
-from ..permissions import IsStaffOrReadOnly
+from ..permissions import IsStaffWithModelPermsOrReadOnly, IsStaffWithBookingViewPermission
 from ..serializers import ScreeningSerializer, BookingSerializer
 from ..services import ScreeningService, SeatLockService, ServiceError
 
@@ -28,7 +28,7 @@ class ScreeningViewSet(viewsets.ModelViewSet):
     Read access is public; write access requires staff.
     """
     serializer_class = ScreeningSerializer
-    permission_classes = [IsStaffOrReadOnly]
+    permission_classes = [IsStaffWithModelPermsOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['movie', 'hall']
     ordering_fields = ['start_time', 'available_seats']
@@ -38,7 +38,7 @@ class ScreeningViewSet(viewsets.ModelViewSet):
     def get_queryset(self, service: ScreeningService = Provide[Container.screening_service]):
         return service.list_screenings()
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], permission_classes=[IsStaffWithBookingViewPermission])
     @inject
     def bookings(self, request, pk=None, service: ScreeningService = Provide[Container.screening_service]):
         """List all bookings for this screening."""
