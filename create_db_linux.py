@@ -1,6 +1,7 @@
-"""
-Cinema Database Setup Script — Linux / macOS
-Uses mysqlclient (C extension) as the MySQL driver.
+"""Cinema Database Setup Script — Linux / macOS.
+
+Primary MySQL driver: mysqlclient (C extension).
+Fallback driver: PyMySQL (pure Python) when mysqlclient isn't available.
 
 Run:
     python create_db_linux.py
@@ -10,11 +11,46 @@ import os
 import sys
 import time
 
+
+def _configure_stdout_utf8() -> None:
+    """Avoid UnicodeEncodeError on systems with non-UTF-8 locales."""
+    try:
+        # Python 3.7+: TextIOWrapper supports reconfigure
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+    except Exception:
+        pass
+
+
+_configure_stdout_utf8()
+
 # =============================================================================
-# MySQL Driver: mysqlclient (C extension, fast, native Django support)
+# MySQL Driver selection
+#   - Prefer mysqlclient (MySQLdb)
+#   - Fallback to PyMySQL (install_as_MySQLdb)
 # =============================================================================
 
-import MySQLdb  # type: ignore[import-not-found]
+try:
+    import MySQLdb  # type: ignore[import-not-found]
+except Exception as exc:
+    try:
+        import pymysql
+
+        pymysql.install_as_MySQLdb()
+        # Satisfy Django 5.x MySQL backend version check when using PyMySQL.
+        pymysql.version_info = (2, 2, 1, "final", 0)
+        import MySQLdb  # type: ignore[import-not-found]
+        print("ℹ️  mysqlclient not available; using PyMySQL fallback.")
+    except Exception:
+        print("❌ Could not import a MySQL driver (mysqlclient / PyMySQL).")
+        print(f"   Import error: {exc!r}")
+        print("\nLinux/macOS tips:")
+        print("  - Install system deps (Debian/Ubuntu):")
+        print("    sudo apt install python3-dev default-libmysqlclient-dev build-essential pkg-config")
+        print("  - Then install Python deps:")
+        print("    pip install -r requirements.txt")
+        print("  - Or install pure-Python fallback:")
+        print("    pip install PyMySQL")
+        sys.exit(1)
 
 # =============================================================================
 # STEP 1: Create MySQL Database
@@ -25,15 +61,24 @@ DB_USER = os.environ.get('DB_USER', 'root')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
 DB_PORT = int(os.environ.get('DB_PORT', '3306'))
 DB_NAME = os.environ.get('DB_NAME', 'cinema_db')
+DB_SOCKET = os.environ.get('DB_SOCKET', '').strip()
 
 print("=" * 60)
 print("🎬 ABSOLUTE CINEMA — Database Setup (Linux)")
 print("=" * 60)
 
 try:
-    connection = MySQLdb.connect(
-        host=DB_HOST, user=DB_USER, password=DB_PASSWORD, port=DB_PORT
-    )
+    connect_kwargs = {
+        "host": DB_HOST,
+        "user": DB_USER,
+        "password": DB_PASSWORD,
+        "port": DB_PORT,
+        "charset": "utf8mb4",
+    }
+    if DB_SOCKET:
+        connect_kwargs["unix_socket"] = DB_SOCKET
+
+    connection = MySQLdb.connect(**connect_kwargs)
     cursor = connection.cursor()
 
     cursor.execute(f"DROP DATABASE IF EXISTS {DB_NAME}")
@@ -45,6 +90,11 @@ try:
     connection.close()
 except MySQLdb.Error as e:
     print(f"❌ Database error: {e}")
+    if "Access denied" in str(e):
+        print("\nTroubleshooting:")
+        print("  - On some Linux installs, MariaDB's 'root' uses unix_socket auth.")
+        print("    Try setting a dedicated DB user/password, or set DB_SOCKET.")
+        print("  - Example (socket): export DB_SOCKET=/var/run/mysqld/mysqld.sock")
     sys.exit(1)
 
 # =============================================================================
