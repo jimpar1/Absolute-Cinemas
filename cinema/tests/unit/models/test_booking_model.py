@@ -12,21 +12,21 @@ class TestBookingSave:
     """Tests for Booking.save() method business logic."""
 
     def test_save_auto_calculates_total_price(self, screening, user):
-        """Test save() auto-calculates total_price on creation."""
+        """Test save() overwrites any manually-passed total_price on creation."""
         screening.price = Decimal("12.50")
         screening.save()
-        
+
         booking = Booking(
             screening=screening,
             user=user,
             customer_name="John Doe",
             customer_email="john@example.com",
             seats_booked=3,
-            total_price=0  # Will be auto-calculated
+            total_price=Decimal('999'),  # Must be overwritten by save()
         )
-        
+
         booking.save()
-        
+
         expected_price = Decimal("12.50") * 3
         assert booking.total_price == expected_price
 
@@ -148,7 +148,7 @@ class TestBookingValidation:
     def test_seats_booked_positive_validation(self, screening, user):
         """Test seats_booked must be positive (via MinValueValidator)."""
         from django.core.exceptions import ValidationError
-        
+
         booking = Booking(
             screening=screening,
             user=user,
@@ -157,7 +157,40 @@ class TestBookingValidation:
             seats_booked=0,  # Invalid
             total_price=10
         )
-        
+
+        with pytest.raises(ValidationError):
+            booking.full_clean()
+
+    def test_negative_seats_booked_raises(self, screening, user):
+        """seats_booked=-1 violates MinValueValidator(1) and raises ValidationError."""
+        from django.core.exceptions import ValidationError
+
+        booking = Booking(
+            screening=screening,
+            user=user,
+            customer_name="Test",
+            customer_email="test@example.com",
+            seats_booked=-1,
+            total_price=10,
+        )
+
+        with pytest.raises(ValidationError):
+            booking.full_clean()
+
+    def test_invalid_status_choice_raises(self, screening, user):
+        """status='unknown' is not a valid choice and raises ValidationError."""
+        from django.core.exceptions import ValidationError
+
+        booking = Booking(
+            screening=screening,
+            user=user,
+            customer_name="Test",
+            customer_email="test@example.com",
+            seats_booked=1,
+            total_price=10,
+            status='unknown',
+        )
+
         with pytest.raises(ValidationError):
             booking.full_clean()
 

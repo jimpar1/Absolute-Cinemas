@@ -79,6 +79,63 @@ class TestIsStaffWithModelPermsOrReadOnly:
         # Staff has all permissions, should pass
         assert permission.has_permission(request, view) is True
 
+    def test_delete_requires_delete_permission(self, permission, factory):
+        """Non-staff user cannot DELETE; permission is blocked before perm check."""
+        request = factory.delete('/api/movies/1/')
+        request.user = User.objects.create_user(username='nodelete', password='pass')
+
+        view = Mock()
+        view.queryset = Movie.objects.all()
+
+        assert permission.has_permission(request, view) is False
+
+    def test_delete_staff_without_perm_denied(self, permission, factory):
+        """Staff user without delete_movie permission cannot DELETE."""
+        request = factory.delete('/api/movies/1/')
+        user = User.objects.create_user(username='staffnodelete', password='pass')
+        user.is_staff = True
+        user.save()
+        request.user = user
+
+        view = Mock()
+        view.queryset = Movie.objects.all()
+
+        assert permission.has_permission(request, view) is False
+
+    def test_head_method_allowed(self, permission, factory):
+        """HEAD is a SAFE_METHOD and is always allowed."""
+        request = factory.head('/api/movies/')
+        request.user = User.objects.create_user(username='headuser', password='pass')
+
+        view = Mock()
+        view.queryset = Movie.objects.all()
+
+        assert permission.has_permission(request, view) is True
+
+    def test_options_method_allowed(self, permission, factory):
+        """OPTIONS is a SAFE_METHOD and is always allowed."""
+        request = factory.options('/api/movies/')
+        request.user = User.objects.create_user(username='optuser', password='pass')
+
+        view = Mock()
+        view.queryset = Movie.objects.all()
+
+        assert permission.has_permission(request, view) is True
+
+    def test_view_without_queryset_returns_false(self, permission, factory):
+        """POST with no queryset or serializer_class on view returns False."""
+        request = factory.post('/api/unknown/')
+        user = User.objects.create_user(username='noqs', password='pass')
+        user.is_staff = True
+        user.save()
+        request.user = user
+
+        view = Mock()
+        view.serializer_class = None
+        view.queryset = None
+        view.action = 'create'
+
+        assert permission.has_permission(request, view) is False
 
 
 @pytest.mark.django_db

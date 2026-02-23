@@ -259,7 +259,6 @@ class TestScreeningAdminWeeklyRepetition:
 
 
 @pytest.mark.django_db
-@pytest.mark.skip(reason="Django version compatibility: widget.widgets attribute not available in Django 6.x")
 class TestScreeningAdminForm:
     """Tests for ScreeningAdminForm validation."""
 

@@ -41,6 +41,13 @@ class TestBookingService:
         result = service.queryset_for_user(user=None)
         assert result.count() == 0
 
+    def test_queryset_for_anonymous_user_object(self, service, booking):
+        """Django's AnonymousUser (not None) has is_authenticated=False → empty queryset."""
+        from django.contrib.auth.models import AnonymousUser
+
+        result = service.queryset_for_user(user=AnonymousUser())
+        assert result.count() == 0
+
     def test_queryset_for_unauthenticated_object_without_is_authenticated(self, service, booking):
         """Test queryset_for_user with object missing is_authenticated returns empty."""
         # Create mock object without is_authenticated attribute

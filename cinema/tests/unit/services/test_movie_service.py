@@ -23,6 +23,17 @@ class TestMovieService:
         assert movie in movies
 
     @patch('cinema.services.movie_service.search_movies')
+    def test_search_tmdb_api_exception_propagates(self, mock_search):
+        """Unhandled exception from TMDB propagates out of search_tmdb (production 500 risk)."""
+        mock_search.side_effect = Exception("Connection timeout")
+
+        repo = MovieRepository()
+        service = MovieService(repo=repo)
+
+        with pytest.raises(Exception, match="timeout"):
+            service.search_tmdb('any query')
+
+    @patch('cinema.services.movie_service.search_movies')
     def test_search_tmdb_success(self, mock_search):
         """Test TMDB search with valid query."""
         mock_search.return_value = {'results': [{'id': 123, 'title': 'Test'}]}

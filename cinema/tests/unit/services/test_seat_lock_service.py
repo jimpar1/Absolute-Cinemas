@@ -171,6 +171,33 @@ class TestSeatLockService:
         # Verify no lock was created
         assert not SeatLock.objects.filter(screening=screening, seat_number="H1").exists()
 
+    def test_lock_exactly_at_expiry_boundary(self, screening):
+        """Lock exactly 10 min old is NOT expired (is_expired uses strict >).
+
+        is_expired = now > created_at + 10min
+        When now == created_at + 10min  →  False  →  lock still blocks other sessions.
+        """
+        from unittest.mock import patch
+        from cinema.services.errors import ServiceError
+
+        repo = SeatLockRepository()
+        service = SeatLockService(repo=repo)
+
+        fixed_now = timezone.now()
+        SeatLock.objects.create(
+            screening=screening,
+            seat_number="Z1",
+            session_id="other-session",
+            created_at=fixed_now - timedelta(minutes=10),
+        )
+
+        # Freeze timezone.now() inside the model so the boundary is exact:
+        # fixed_now > (fixed_now - 10min) + 10min  →  fixed_now > fixed_now  →  False
+        with patch('cinema.models.seat_lock.timezone') as mock_tz:
+            mock_tz.now.return_value = fixed_now
+            with pytest.raises(ServiceError):
+                service.lock_seat(screening, "Z1", "new-session")
+
     def test_lock_seat_different_screenings_independent(self, movie, hall):
         """Test same seat number can be locked in different screenings."""
         from cinema.models import Screening

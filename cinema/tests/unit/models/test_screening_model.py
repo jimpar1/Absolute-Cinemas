@@ -1,6 +1,7 @@
 """Unit tests for Screening model validation and business logic."""
 
 import pytest
+from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import timedelta
@@ -149,7 +150,7 @@ class TestScreeningValidation:
             director="Test",
             release_year=2023
         )
-        
+
         start = timezone.now().replace(hour=16, minute=0, second=0, microsecond=0)
         screening = Screening(
             movie=movie_zero, hall=hall,
@@ -157,11 +158,37 @@ class TestScreeningValidation:
             price=10,
             available_seats=100
         )
-        
+
         with pytest.raises(ValidationError) as exc:
             screening.clean()
-        
+
         assert "end_time" in exc.value.error_dict or "end time" in str(exc.value).lower()
+
+    def test_negative_price_raises(self, movie, hall):
+        """price=-0.01 violates MinValueValidator(0) and raises ValidationError."""
+        valid_time = timezone.now().replace(hour=3, minute=0, second=0, microsecond=0)
+        screening = Screening(
+            movie=movie, hall=hall,
+            start_time=valid_time,
+            price=Decimal('-0.01'),
+            available_seats=100,
+        )
+
+        with pytest.raises(ValidationError):
+            screening.full_clean()
+
+    def test_zero_price_is_valid(self, movie, hall):
+        """price=0.00 is allowed (MinValueValidator(0) is inclusive)."""
+        valid_time = timezone.now().replace(hour=3, minute=30, second=0, microsecond=0)
+        screening = Screening(
+            movie=movie, hall=hall,
+            start_time=valid_time,
+            price=Decimal('0.00'),
+            available_seats=100,
+        )
+
+        # Should not raise
+        screening.full_clean()
 
 
 @pytest.mark.django_db
