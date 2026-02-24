@@ -19,6 +19,9 @@ SCREENING_FIELDS = set(ScreeningSerializer.Meta.fields)
 # session_id is write-only, so it must not be present in response payloads.
 BOOKING_RESPONSE_FIELDS = set(BookingSerializer.Meta.fields) - {"session_id"}
 
+# Pagination field constants
+PAGINATED_KEYS = {"count", "next", "previous", "results"}
+
 
 def assert_keys_equal(payload: dict, expected_keys: set[str]) -> None:
     assert isinstance(payload, dict), f"Expected dict, got: {type(payload)}"
@@ -30,6 +33,13 @@ def assert_keys_superset(payload: dict, expected_keys: set[str]) -> None:
     assert isinstance(payload, dict), f"Expected dict, got: {type(payload)}"
     actual_keys = set(payload.keys())
     assert expected_keys.issubset(actual_keys), f"Missing keys: {expected_keys - actual_keys}"
+
+
+def unwrap_results(data):
+    """Extract results from paginated response or return data as-is."""
+    if isinstance(data, dict) and "results" in data:
+        return data["results"]
+    return data
 
 
 @pytest.fixture()
@@ -148,3 +158,77 @@ def booking(db, screening, user) -> Booking:
         customer_phone="123456789",
         seats_booked=2,
     )
+
+
+# Factory fixtures for easier test data creation
+@pytest.fixture()
+def make_movie(db):
+    """Factory to create movies with custom data."""
+    counter = {"i": 0}
+
+    def _make(**overrides):
+        counter["i"] += 1
+        data = {
+            "title": f"Test Movie {counter['i']}",
+            "description": f"Test Description {counter['i']}",
+            "duration": 120,
+            "genre": "Action",
+            "director": f"Test Director {counter['i']}",
+            "release_year": 2023,
+            "rating": 8.5,
+            "status": "now_playing",
+            "poster_url": "http://example.com/poster.jpg",
+            "trailer_url": "http://example.com/trailer.mp4",
+            "shots": ["http://example.com/shot1.jpg"],
+            "actors": [{"name": "Actor 1", "character": "Role 1"}],
+        }
+        data.update(overrides)
+        return Movie.objects.create(**data)
+
+    return _make
+
+
+@pytest.fixture()
+def make_screening(db, movie, hall):
+    """Factory to create screenings with custom data."""
+    from django.utils import timezone
+
+    counter = {"i": 0}
+
+    def _make(**overrides):
+        counter["i"] += 1
+        # Default to future times, incrementing by 3 hours each
+        base_time = timezone.now().replace(minute=0, second=0, microsecond=0)
+        default_start = base_time + timezone.timedelta(hours=3 * counter["i"])
+
+        data = {
+            "movie": movie,
+            "hall": hall,
+            "start_time": default_start,
+            "price": 10.00,
+        }
+        data.update(overrides)
+        return Screening.objects.create(**data)
+
+    return _make
+
+
+@pytest.fixture()
+def make_booking(db, screening, user):
+    """Factory to create bookings with custom data."""
+    counter = {"i": 0}
+
+    def _make(**overrides):
+        counter["i"] += 1
+        data = {
+            "screening": screening,
+            "user": user,
+            "customer_name": f"Customer {counter['i']}",
+            "customer_email": f"customer{counter['i']}@example.com",
+            "customer_phone": f"12345678{counter['i']}",
+            "seats_booked": 2,
+        }
+        data.update(overrides)
+        return Booking.objects.create(**data)
+
+    return _make

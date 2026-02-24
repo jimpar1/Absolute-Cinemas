@@ -5,16 +5,10 @@ from django.urls import reverse
 from rest_framework import status
 
 from cinema.models import MovieHall
-from cinema.tests.conftest import MOVIE_HALL_FIELDS, assert_keys_equal
+from cinema.tests.conftest import MOVIE_HALL_FIELDS, assert_keys_equal, unwrap_results
 
 
 pytestmark = pytest.mark.django_db
-
-
-def _unwrap_results(data):
-    if isinstance(data, dict) and "results" in data:
-        return data["results"]
-    return data
 
 
 def test_list_movie_halls(api_client, hall):
@@ -22,7 +16,7 @@ def test_list_movie_halls(api_client, hall):
     response = api_client.get(url)
 
     assert response.status_code == status.HTTP_200_OK
-    data = _unwrap_results(response.data)
+    data = unwrap_results(response.data)
     assert isinstance(data, list)
     assert_keys_equal(data[0], MOVIE_HALL_FIELDS)
     assert len(data) >= 1
