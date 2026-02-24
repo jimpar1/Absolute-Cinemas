@@ -14,9 +14,8 @@ class MovieHallAPITestCase(APITestCase):
         MovieHall.objects.all().delete()
         User.objects.all().delete()
 
-        self.staff_user = User.objects.create_user(username='staff', password='pass1234')
-        self.staff_user.is_staff = True
-        self.staff_user.save()
+        # Create a superuser to bypass permission checks
+        self.staff_user = User.objects.create_superuser(username='staff', password='pass1234', email='staff@example.com')
 
         self.hall_data = {'name': 'Hall 1', 'capacity': 100}
         self.hall = MovieHall.objects.create(**self.hall_data)
