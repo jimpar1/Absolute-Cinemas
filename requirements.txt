@@ -13,4 +13,4 @@ dependency-injector>=4.41.0
 #   Windows:  pip install PyMySQL
 #   Linux:    pip install mysqlclient (requires libmysqlclient-dev)
 mysqlclient>=2.2.0; platform_system != "Windows"
-PyMySQL>=1.1.0; platform_system == "Windows"
+PyMySQL>=1.1.0
