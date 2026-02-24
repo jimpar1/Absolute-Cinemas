@@ -6,7 +6,6 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cinema', '0013_add_hall_photo'),
         ('cinema', '0015_subscription'),
     ]
 
