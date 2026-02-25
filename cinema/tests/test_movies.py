@@ -16,7 +16,7 @@ class MovieAPITestCase(APITestCase):
         MovieHall.objects.all().delete()
         User.objects.all().delete()
 
-        # Create a superuser to bypass permission checks
+        # Use superuser to bypass permission checks for admin actions
         self.staff_user = User.objects.create_superuser(username='staff', password='pass1234', email='staff@example.com')
 
         self.hall = MovieHall.objects.create(name='Hall 1', capacity=100)
@@ -36,6 +36,7 @@ class MovieAPITestCase(APITestCase):
     def test_list_movies(self):
         response = self.client.get(self.url_list)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Handle both paginated and non-paginated responses
         data = response.data.get('results', response.data) if isinstance(response.data, dict) else response.data
         self.assertGreaterEqual(len(data), 1)
         movie_titles = [m['title'] for m in data]
@@ -47,9 +48,7 @@ class MovieAPITestCase(APITestCase):
         self.assertEqual(response.data['title'], self.movie_data['title'])
 
     def test_create_movie_disabled(self):
-        # Even for superuser, POST to movie-list might be disabled if the viewset doesn't allow it
-        # or if it's read-only. Let's check the viewset implementation if needed.
-        # Assuming the original test meant that standard create is disabled or handled via custom actions.
+        """Ensure manual creation is disabled (returns 405)."""
         self.client.force_authenticate(user=self.staff_user)
         response = self.client.post(self.url_list, self.movie_data, format='json')
         # If the viewset is ReadOnlyModelViewSet or similar, it should be 405.
@@ -83,61 +82,63 @@ class MovieAPITestCase(APITestCase):
         response = self.client.get(f'{self.url_detail}screenings/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    @patch('cinema.services.movie_service.search_movies')
+    @patch('cinema.services.movie_service.MovieService.search_tmdb')
     def test_search_tmdb(self, mock_search):
         mock_search.return_value = {'results': [{'id': 123, 'title': 'TMDB Movie'}]}
         response = self.client.get(f'{self.url_list}search_tmdb/?query=test')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    @patch('cinema.services.movie_service.get_popular_movies')
+    @patch('cinema.services.movie_service.MovieService.popular_tmdb')
     def test_popular_tmdb(self, mock_popular):
         mock_popular.return_value = {'results': [{'id': 123, 'title': 'Popular Movie'}]}
         response = self.client.get(f'{self.url_list}popular_tmdb/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    @patch('cinema.services.movie_service.get_movie_details')
+    @patch('cinema.services.movie_service.MovieService.tmdb_details')
     def test_tmdb_details(self, mock_details):
         mock_details.return_value = {'title': 'TMDB Details'}
         response = self.client.get(f'{self.url_list}tmdb_details/?movie_id=123')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    @patch('cinema.services.movie_service.search_movies')
-    @patch('cinema.services.movie_service.get_movie_details')
-    def test_refresh_from_tmdb(self, mock_details, mock_search):
+    @patch('cinema.services.movie_service.MovieService.refresh_movie_from_tmdb')
+    def test_refresh_from_tmdb(self, mock_refresh):
         self.client.force_authenticate(user=self.staff_user)
-        mock_search.return_value = {'results': [{'id': 123}]}
-        mock_details.return_value = {
-            'videos': {'results': [{'type': 'Trailer', 'site': 'YouTube', 'key': 'abc123'}]},
-            'images': {'backdrops': [{'file_path': '/backdrop.jpg'}]},
-            'credits': {'cast': [{'name': 'Actor', 'character': 'Role', 'profile_path': '/profile.jpg'}]}
+        mock_refresh.return_value = {
+            'trailer_url': 'http://new.trailer',
+            'shots': [],
+            'actors': []
         }
         response = self.client.post(f'{self.url_detail}refresh_from_tmdb/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.movie.refresh_from_db()
-        self.assertIsNotNone(self.movie.trailer_url)
+        self.assertEqual(self.movie.trailer_url, 'http://new.trailer')
 
-    @patch('cinema.services.movie_service.get_movie_details')
-    def test_create_from_tmdb(self, mock_details):
+    @patch('cinema.services.movie_service.MovieService.build_movie_data_from_tmdb_id')
+    def test_create_from_tmdb(self, mock_build):
         self.client.force_authenticate(user=self.staff_user)
-        mock_details.return_value = {
-            'title': 'New Movie', 'overview': 'Desc', 'runtime': 100, 'genres': [{'name': 'Action'}],
-            'release_date': '2023-01-01', 'vote_average': 7.5, 'poster_path': '/poster.jpg',
-            'credits': {'crew': [{'job': 'Director', 'name': 'Dir'}], 'cast': []},
-            'videos': {'results': []}, 'images': {'backdrops': []}
+        # Use valid URLs for URLFields
+        mock_build.return_value = {
+            'title': 'New Movie', 'description': 'Desc', 'duration': 100, 'genre': 'Action',
+            'director': 'Dir', 'release_year': 2023, 'rating': 7.5, 'poster_url': 'http://example.com/poster.jpg',
+            'trailer_url': 'http://example.com/trailer.mp4', 'shots': [], 'actors': []
         }
         response = self.client.post(f'{self.url_list}create_from_tmdb/', {'tmdb_id': 123}, format='json')
+        if response.status_code != status.HTTP_201_CREATED:
+            print(f"Create from TMDB failed: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    @patch('cinema.services.movie_service.search_movies')
-    @patch('cinema.services.movie_service.get_movie_details')
-    def test_create_from_search(self, mock_details, mock_search):
+    @patch('cinema.services.movie_service.MovieService.search_tmdb')
+    @patch('cinema.services.movie_service.MovieService.build_movie_data_from_tmdb_id')
+    def test_create_from_search(self, mock_build, mock_search):
         self.client.force_authenticate(user=self.staff_user)
         mock_search.return_value = {'results': [{'id': 123}]}
-        mock_details.return_value = {
-            'title': 'New Movie', 'overview': 'Desc', 'runtime': 100, 'genres': [{'name': 'Action'}],
-            'release_date': '2023-01-01', 'vote_average': 7.5, 'poster_path': '/poster.jpg',
-            'credits': {'crew': [{'job': 'Director', 'name': 'Dir'}], 'cast': []},
-            'videos': {'results': []}, 'images': {'backdrops': []}
+        # Use valid URLs for URLFields
+        mock_build.return_value = {
+            'title': 'New Movie', 'description': 'Desc', 'duration': 100, 'genre': 'Action',
+            'director': 'Dir', 'release_year': 2023, 'rating': 7.5, 'poster_url': 'http://example.com/poster.jpg',
+            'trailer_url': 'http://example.com/trailer.mp4', 'shots': [], 'actors': []
         }
         response = self.client.post(f'{self.url_list}create_from_search/', {'query': 'test'}, format='json')
+        if response.status_code != status.HTTP_201_CREATED:
+            print(f"Create from search failed: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

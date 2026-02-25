@@ -45,11 +45,14 @@ class BookingAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.get(self.url_list)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data.get('results', response.data) if isinstance(response.data, dict) else response.data
+        self.assertGreaterEqual(len(data), 1)
 
     def test_retrieve_booking(self):
         self.client.force_authenticate(user=self.user)
         response = self.client.get(self.url_detail)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['customer_name'], self.booking.customer_name)
 
     def test_create_booking(self):
         self.client.force_authenticate(user=self.user)
@@ -65,13 +68,18 @@ class BookingAPITestCase(APITestCase):
         updated_data['customer_name'] = 'Updated Name'
         response = self.client.put(self.url_detail, updated_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.customer_name, 'Updated Name')
 
     def test_partial_update_booking(self):
         self.client.force_authenticate(user=self.user)
         response = self.client.patch(self.url_detail, {'customer_phone': '987654321'}, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.customer_phone, '987654321')
 
     def test_delete_booking(self):
         self.client.force_authenticate(user=self.user)
         response = self.client.delete(self.url_detail)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Booking.objects.count(), 0)

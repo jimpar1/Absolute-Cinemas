@@ -17,7 +17,7 @@ class ScreeningAPITestCase(APITestCase):
         MovieHall.objects.all().delete()
         User.objects.all().delete()
 
-        # Create a superuser to bypass permission checks
+        # Use superuser to bypass permission checks for admin actions
         self.staff_user = User.objects.create_superuser(username='staff', password='pass1234', email='staff@example.com')
 
         self.hall = MovieHall.objects.create(name='Hall 1', capacity=100)
@@ -39,15 +39,19 @@ class ScreeningAPITestCase(APITestCase):
     def test_list_screenings(self):
         response = self.client.get(self.url_list)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data.get('results', response.data) if isinstance(response.data, dict) else response.data
+        self.assertGreaterEqual(len(data), 1)
 
     def test_retrieve_screening(self):
         response = self.client.get(self.url_detail)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Convert Decimal to float for comparison
+        self.assertEqual(float(response.data['price']), 10.00)
 
     def test_create_screening(self):
         self.client.force_authenticate(user=self.staff_user)
         new_data = self.screening_data.copy()
-        new_data['start_time'] = timezone.now()
+        new_data['start_time'] = timezone.now().isoformat()
         response = self.client.post(self.url_list, new_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -57,19 +61,23 @@ class ScreeningAPITestCase(APITestCase):
         updated_data['price'] = 12.00
         response = self.client.put(self.url_detail, updated_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.screening.refresh_from_db()
+        self.assertEqual(float(self.screening.price), 12.00)
 
     def test_partial_update_screening(self):
         self.client.force_authenticate(user=self.staff_user)
         response = self.client.patch(self.url_detail, {'price': 11.00}, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.screening.refresh_from_db()
+        self.assertEqual(float(self.screening.price), 11.00)
 
     def test_delete_screening(self):
         self.client.force_authenticate(user=self.staff_user)
         response = self.client.delete(self.url_detail)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Screening.objects.count(), 0)
 
     def test_bookings_action(self):
-        # This action likely requires authentication/permissions
         self.client.force_authenticate(user=self.staff_user)
         response = self.client.get(f'{self.url_detail}bookings/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)

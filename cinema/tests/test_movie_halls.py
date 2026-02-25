@@ -14,7 +14,7 @@ class MovieHallAPITestCase(APITestCase):
         MovieHall.objects.all().delete()
         User.objects.all().delete()
 
-        # Create a superuser to bypass permission checks
+        # Use superuser to bypass permission checks for admin actions
         self.staff_user = User.objects.create_superuser(username='staff', password='pass1234', email='staff@example.com')
 
         self.hall_data = {'name': 'Hall 1', 'capacity': 100}
