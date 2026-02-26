@@ -5,15 +5,31 @@ These correspond to the cinema's core data models.
 
 from rest_framework import serializers
 from django.core.exceptions import ValidationError as DjangoValidationError
-from ..models import Movie, Screening, Booking, MovieHall
+from ..models import Movie, Screening, Booking, MovieHall, HallPhoto
+
+
+class HallPhotoSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HallPhoto
+        fields = ['id', 'image', 'image_url', 'order']
+        extra_kwargs = {'image': {'write_only': True, 'required': True}}
+
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.image.url)
+        return f"http://127.0.0.1:8000{obj.image.url}"
 
 
 class MovieHallSerializer(serializers.ModelSerializer):
     """Serializer for cinema halls (id, name, capacity, layout JSON)."""
+    photos = HallPhotoSerializer(many=True, read_only=True)
 
     class Meta:
         model = MovieHall
-        fields = ['id', 'name', 'capacity', 'layout']
+        fields = ['id', 'name', 'capacity', 'layout', 'photos']
 
 
 class MovieSerializer(serializers.ModelSerializer):

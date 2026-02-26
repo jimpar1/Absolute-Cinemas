@@ -213,3 +213,17 @@ class MovieHall(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.capacity} seats)"
+
+
+class HallPhoto(models.Model):
+    hall = models.ForeignKey(MovieHall, on_delete=models.CASCADE, related_name='photos')
+    image = models.ImageField(upload_to='halls/')
+    order = models.PositiveIntegerField(default=0, help_text="Display order within the hall")
+
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = "Hall Photo"
+        verbose_name_plural = "Hall Photos"
+
+    def __str__(self):
+        return f"{self.hall.name} – photo {self.id}"
