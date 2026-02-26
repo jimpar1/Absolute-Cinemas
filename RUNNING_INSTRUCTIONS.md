@@ -139,7 +139,9 @@ Frontend (React)  ←—  REST/JSON  —→  Django Backend  ←—  ORM  —→
 ## Tests
 
 ```bash
-python manage.py test
+python -m pytest
 ```
 
-Τα tests δημιουργούν δική τους test database, οπότε φρόντισε ο DB user να έχει δικαίωμα δημιουργίας βάσεων.
+Τα tests δημιουργούν δική τους test database.
+
+Για αναλυτικά (τι καλύπτουμε/τι δεν καλύπτουμε + ανά test αρχείο): δες το [TESTING.md](TESTING.md).

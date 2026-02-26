@@ -30,7 +30,6 @@ env/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-media/
 staticfiles/
 
 # IDEs
@@ -64,3 +63,4 @@ coverage.xml
 # Compiled files
 __pycache__/
 *.pyc
+test_db.sqlite3

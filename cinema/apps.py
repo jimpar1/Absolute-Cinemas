@@ -16,6 +16,8 @@ class CinemaConfig(AppConfig):
         """Wire the DI container to all modules that use @inject."""
         from .container import container
         from .views import movie_views, screening_views, booking_views, movie_hall_views
+        from .views import subscription_views
+        from .views import payment_views
         from . import auth_views
 
         container.wire(modules=[
@@ -23,5 +25,7 @@ class CinemaConfig(AppConfig):
             screening_views,
             booking_views,
             movie_hall_views,
+            subscription_views,
+            payment_views,
             auth_views,
         ])

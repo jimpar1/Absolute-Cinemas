@@ -20,6 +20,13 @@ class Booking(models.Model):
         ('pending', 'Pending'),
     ]
 
+    PAYMENT_STATUS_CHOICES = [
+        ('pending_payment', 'Pending Payment'),
+        ('paid', 'Paid'),
+        ('failed', 'Failed'),
+        ('refunded', 'Refunded'),
+    ]
+
     user = models.ForeignKey(
         User, on_delete=models.SET_NULL,
         related_name='bookings', verbose_name="User",
@@ -48,6 +55,15 @@ class Booking(models.Model):
         max_length=20, choices=STATUS_CHOICES,
         default='pending', verbose_name="Status"
     )
+    stripe_payment_intent_id = models.CharField(
+        max_length=255, verbose_name="Stripe Payment Intent ID",
+        null=True, blank=True,
+        help_text="Stripe PaymentIntent ID for this booking"
+    )
+    payment_status = models.CharField(
+        max_length=20, choices=PAYMENT_STATUS_CHOICES,
+        default='pending_payment', verbose_name="Payment Status"
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated At")
 
@@ -66,7 +82,8 @@ class Booking(models.Model):
         2. Check seat availability, then decrement available_seats.
         """
         if not self.pk:
-            self.total_price = self.screening.price * self.seats_booked
+            if self.total_price is None:
+                self.total_price = self.screening.price * self.seats_booked
             if self.seats_booked > self.screening.available_seats:
                 raise ValueError("Not enough available seats")
             self.screening.available_seats -= self.seats_booked

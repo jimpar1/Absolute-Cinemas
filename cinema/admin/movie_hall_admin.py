@@ -1,7 +1,13 @@
 """MovieHallAdmin — admin panel config for cinema halls."""
 
 from django.contrib import admin
-from ..models import MovieHall
+from ..models import MovieHall, HallPhoto
+
+
+class HallPhotoInline(admin.StackedInline):
+    model = HallPhoto
+    extra = 1
+    fields = ('image', 'order')
 
 
 @admin.register(MovieHall)
@@ -10,6 +16,7 @@ class MovieHallAdmin(admin.ModelAdmin):
     list_display = ('name', 'capacity', 'left_section_capacity', 'middle_section_capacity', 'right_section_capacity')
     search_fields = ('name',)
     readonly_fields = ('capacity',)
+    inlines = [HallPhotoInline]
     fieldsets = (
         ('General', {
             'fields': ('name', 'capacity'),
@@ -30,3 +37,5 @@ class MovieHallAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
+
+
