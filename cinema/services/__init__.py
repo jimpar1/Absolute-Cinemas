@@ -9,3 +9,4 @@ from .movie_service import MovieService          # noqa: F401
 from .screening_service import ScreeningService  # noqa: F401
 from .booking_service import BookingService      # noqa: F401
 from .seat_lock_service import SeatLockService   # noqa: F401
+from .subscription_service import SubscriptionService  # noqa: F401
