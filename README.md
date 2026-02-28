@@ -292,24 +292,26 @@ python manage.py refresh_movies_from_tmdb --only-missing
 
 ## Tests
 
-Υπάρχουν tests στο `cinema/tests/` γραμμένα σε **pytest** style και υπάρχει `cinema_backend/settings_test.py` που χρησιμοποιεί **SQLite in‑memory**.
+Υπάρχουν integration tests στο `cinema/tests/` γραμμένα σε **pytest** style και υπάρχει `cinema_backend/settings_test.py` που χρησιμοποιεί **SQLite**.
 
-Αν θέλεις να τα τρέξεις με pytest:
+Για αναλυτικά (τι καλύπτουμε/τι δεν καλύπτουμε + ανά test αρχείο): δες το [TESTING.md](TESTING.md).
+
+Τρέξε τα tests με pytest (προτείνεται το `python -m pytest`):
 
 ```bash
-pip install pytest pytest-django
+python -m pytest
 ```
 
-**Windows (PowerShell):**
-```powershell
-$env:DJANGO_SETTINGS_MODULE="cinema_backend.settings_test"
-pytest
-```
+Coverage report (τρέχει αυτόματα μαζί με τα tests):
 
-**Linux/macOS (Bash):**
 ```bash
-export DJANGO_SETTINGS_MODULE="cinema_backend.settings_test"
-pytest
+python -m pytest
+```
+
+Προαιρετικά, HTML coverage report:
+
+```bash
+python -m pytest --cov-report=html
 ```
 
 > Εναλλακτικά, μπορείς να τρέξεις `python manage.py test`, αλλά τα υπάρχοντα tests είναι σχεδιασμένα για pytest.

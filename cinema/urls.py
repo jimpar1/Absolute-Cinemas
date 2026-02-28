@@ -14,6 +14,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import MovieViewSet, ScreeningViewSet, BookingViewSet, MovieHallViewSet
 from .auth_views import RegisterView, LoginView, LogoutView, ProfileView, MyBookingsView, ChangePasswordView
+from .views.subscription_views import SubscriptionView
 
 # Router auto-generates list / detail / custom-action URLs
 router = DefaultRouter()
@@ -36,4 +37,5 @@ auth_patterns = [
 urlpatterns = [
     path('', include(router.urls)),
     path('auth/', include(auth_patterns)),
+    path('me/subscription/', SubscriptionView.as_view(), name='me-subscription'),
 ]

@@ -18,7 +18,7 @@ from dependency_injector.wiring import Provide, inject
 
 from ..container import Container
 from ..permissions import IsStaffWithModelPermsOrReadOnly, IsStaffWithBookingViewPermission
-from ..serializers import ScreeningSerializer, BookingSerializer
+from ..serializers import ScreeningSerializer
 from ..services import ScreeningService, SeatLockService, ServiceError
 
 
@@ -38,13 +38,16 @@ class ScreeningViewSet(viewsets.ModelViewSet):
     def get_queryset(self, service: ScreeningService = Provide[Container.screening_service]):
         return service.list_screenings()
 
-    @action(detail=True, methods=['get'], permission_classes=[IsStaffWithBookingViewPermission])
+    @action(detail=True, methods=['get'], permission_classes=[AllowAny])
     @inject
     def bookings(self, request, pk=None, service: ScreeningService = Provide[Container.screening_service]):
-        """List all bookings for this screening."""
+        """Return booked seat numbers for this screening (public — no personal data)."""
         bookings = service.bookings_for_screening(int(pk))
-        serializer = BookingSerializer(bookings, many=True)
-        return Response(serializer.data)
+        return Response([
+            {'seat_numbers': b.seat_numbers}
+            for b in bookings
+            if b.seat_numbers
+        ])
 
     # ── Seat-lock endpoints ──
 
