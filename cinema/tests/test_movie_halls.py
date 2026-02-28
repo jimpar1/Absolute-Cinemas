@@ -1,65 +1,127 @@
-"""Tests for the MovieHall API endpoints (CRUD)."""
+"""Integration tests for the MovieHall API endpoints (CRUD)."""
 
-from rest_framework.test import APITestCase
-from rest_framework import status
+import pytest
 from django.urls import reverse
-from django.contrib.auth.models import User
+from rest_framework import status
+
 from cinema.models import MovieHall
+from cinema.tests.conftest import MOVIE_HALL_FIELDS, assert_keys_equal
 
 
-class MovieHallAPITestCase(APITestCase):
-    """Verify list, retrieve, create, update, partial_update, and delete for halls."""
+pytestmark = pytest.mark.django_db
 
-    def setUp(self):
-        MovieHall.objects.all().delete()
-        User.objects.all().delete()
 
-        # Use superuser to bypass permission checks for admin actions
-        self.staff_user = User.objects.create_superuser(username='staff', password='pass1234', email='staff@example.com')
+def _unwrap_results(data):
+    if isinstance(data, dict) and "results" in data:
+        return data["results"]
+    return data
 
-        self.hall_data = {'name': 'Hall 1', 'capacity': 100}
-        self.hall = MovieHall.objects.create(**self.hall_data)
-        self.url_list = reverse('moviehall-list')
-        self.url_detail = reverse('moviehall-detail', kwargs={'pk': self.hall.pk})
 
-    def test_list_movie_halls(self):
-        response = self.client.get(self.url_list)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        data = response.data.get('results', response.data) if isinstance(response.data, dict) else response.data
-        self.assertGreaterEqual(len(data), 1)
-        hall_names = [h['name'] for h in data]
-        self.assertIn(self.hall_data['name'], hall_names)
+def test_list_movie_halls(api_client, hall):
+    url = reverse("moviehall-list")
+    response = api_client.get(url)
 
-    def test_retrieve_movie_hall(self):
-        response = self.client.get(self.url_detail)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], self.hall_data['name'])
+    assert response.status_code == status.HTTP_200_OK
+    data = _unwrap_results(response.data)
+    assert isinstance(data, list)
+    assert_keys_equal(data[0], MOVIE_HALL_FIELDS)
+    assert len(data) >= 1
+    assert hall.name in [h["name"] for h in data]
 
-    def test_create_movie_hall(self):
-        self.client.force_authenticate(user=self.staff_user)
-        new_hall_data = {'name': 'Hall 2', 'capacity': 150}
-        response = self.client.post(self.url_list, new_hall_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(MovieHall.objects.count(), 2)
 
-    def test_update_movie_hall(self):
-        self.client.force_authenticate(user=self.staff_user)
-        updated_data = {'name': 'Updated Hall', 'capacity': 120}
-        response = self.client.put(self.url_detail, updated_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.hall.refresh_from_db()
-        self.assertEqual(self.hall.name, 'Updated Hall')
+def test_retrieve_movie_hall(api_client, hall):
+    url = reverse("moviehall-detail", kwargs={"pk": hall.pk})
+    response = api_client.get(url)
 
-    def test_partial_update_movie_hall(self):
-        """Patch the hall name — capacity is auto-computed and not directly writable."""
-        self.client.force_authenticate(user=self.staff_user)
-        response = self.client.patch(self.url_detail, {'name': 'Renamed Hall'}, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.hall.refresh_from_db()
-        self.assertEqual(self.hall.name, 'Renamed Hall')
+    assert response.status_code == status.HTTP_200_OK
+    assert_keys_equal(response.data, MOVIE_HALL_FIELDS)
+    assert response.data["name"] == hall.name
 
-    def test_delete_movie_hall(self):
-        self.client.force_authenticate(user=self.staff_user)
-        response = self.client.delete(self.url_detail)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(MovieHall.objects.count(), 0)
+
+def test_create_movie_hall(api_client, staff_user, hall):
+    api_client.force_authenticate(user=staff_user)
+    url = reverse("moviehall-list")
+    response = api_client.post(url, {"name": "Hall 2", "capacity": 150}, format="json")
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert_keys_equal(response.data, MOVIE_HALL_FIELDS)
+    assert MovieHall.objects.count() == 2
+
+
+def test_update_movie_hall(api_client, staff_user, hall):
+    api_client.force_authenticate(user=staff_user)
+    url = reverse("moviehall-detail", kwargs={"pk": hall.pk})
+    response = api_client.put(url, {"name": "Updated Hall", "capacity": 120}, format="json")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert_keys_equal(response.data, MOVIE_HALL_FIELDS)
+    hall.refresh_from_db()
+    assert hall.name == "Updated Hall"
+
+
+def test_partial_update_movie_hall(api_client, staff_user, hall):
+    """Patch the hall name — capacity is auto-computed and not directly writable."""
+    api_client.force_authenticate(user=staff_user)
+    url = reverse("moviehall-detail", kwargs={"pk": hall.pk})
+    response = api_client.patch(url, {"name": "Renamed Hall"}, format="json")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert_keys_equal(response.data, MOVIE_HALL_FIELDS)
+    hall.refresh_from_db()
+    assert hall.name == "Renamed Hall"
+
+
+def test_delete_movie_hall(api_client, staff_user, hall):
+    api_client.force_authenticate(user=staff_user)
+    url = reverse("moviehall-detail", kwargs={"pk": hall.pk})
+    response = api_client.delete(url)
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert MovieHall.objects.count() == 0
+
+
+def test_movie_hall_write_requires_staff_and_model_perms(api_client, user, staff_basic, make_staff_user):
+    url = reverse("moviehall-list")
+    payload = {"name": "Hall X", "capacity": 10}
+
+    # Unauthenticated -> forbidden
+    unauth = api_client.post(url, payload, format="json")
+    assert unauth.status_code == status.HTTP_401_UNAUTHORIZED
+
+    # Authenticated non-staff -> forbidden
+    api_client.force_authenticate(user=user)
+    nonstaff = api_client.post(url, payload, format="json")
+    assert nonstaff.status_code == status.HTTP_403_FORBIDDEN
+
+    # Staff but without perms -> forbidden
+    api_client.force_authenticate(user=staff_basic)
+    staff_no_perms = api_client.post(url, payload, format="json")
+    assert staff_no_perms.status_code == status.HTTP_403_FORBIDDEN
+
+    # Staff with add_moviehall -> allowed
+    staff_with = make_staff_user(perm_codenames=["add_moviehall"])
+    api_client.force_authenticate(user=staff_with)
+    ok = api_client.post(url, payload, format="json")
+    assert ok.status_code == status.HTTP_201_CREATED
+
+
+def test_movie_hall_update_delete_require_change_delete_perms(api_client, staff_basic, make_staff_user, hall):
+    detail = reverse("moviehall-detail", kwargs={"pk": hall.pk})
+
+    api_client.force_authenticate(user=staff_basic)
+    no_change = api_client.patch(detail, {"name": "Nope"}, format="json")
+    assert no_change.status_code == status.HTTP_403_FORBIDDEN
+
+    staff_change = make_staff_user(perm_codenames=["change_moviehall"])
+    api_client.force_authenticate(user=staff_change)
+    ok = api_client.patch(detail, {"name": "Yep"}, format="json")
+    assert ok.status_code == status.HTTP_200_OK
+
+    api_client.force_authenticate(user=staff_basic)
+    no_delete = api_client.delete(detail)
+    assert no_delete.status_code == status.HTTP_403_FORBIDDEN
+
+    staff_delete = make_staff_user(perm_codenames=["delete_moviehall"])
+    api_client.force_authenticate(user=staff_delete)
+    ok_del = api_client.delete(detail)
+    assert ok_del.status_code == status.HTTP_204_NO_CONTENT

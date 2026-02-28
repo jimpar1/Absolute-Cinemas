@@ -1,144 +1,239 @@
-"""Tests for the Movie API endpoints (CRUD + TMDB integration)."""
+"""Integration tests for the Movie API endpoints (CRUD + TMDB integration)."""
 
-from rest_framework.test import APITestCase
-from rest_framework import status
+import pytest
 from django.urls import reverse
-from django.contrib.auth.models import User
+from rest_framework import status
 from unittest.mock import patch
-from cinema.models import Movie, MovieHall
+
+from cinema.models import Movie
+from cinema.tests.conftest import MOVIE_FIELDS, SCREENING_FIELDS, assert_keys_equal
 
 
-class MovieAPITestCase(APITestCase):
-    """Verify list, retrieve, update, delete, and TMDB custom actions for movies."""
+pytestmark = pytest.mark.django_db
 
-    def setUp(self):
-        Movie.objects.all().delete()
-        MovieHall.objects.all().delete()
-        User.objects.all().delete()
 
-        # Use superuser to bypass permission checks for admin actions
-        self.staff_user = User.objects.create_superuser(username='staff', password='pass1234', email='staff@example.com')
+def _unwrap_results(data):
+    if isinstance(data, dict) and "results" in data:
+        return data["results"]
+    return data
 
-        self.hall = MovieHall.objects.create(name='Hall 1', capacity=100)
-        self.movie_data = {
-            'title': 'Test Movie', 'description': 'Test Description',
-            'duration': 120, 'genre': 'Action', 'director': 'Test Director',
-            'release_year': 2023, 'rating': 8.5, 'status': 'now_playing',
-            'poster_url': 'http://example.com/poster.jpg',
-            'trailer_url': 'http://example.com/trailer.mp4',
-            'shots': ['http://example.com/shot1.jpg'],
-            'actors': [{'name': 'Actor 1', 'character': 'Role 1'}]
-        }
-        self.movie = Movie.objects.create(**self.movie_data)
-        self.url_list = reverse('movie-list')
-        self.url_detail = reverse('movie-detail', kwargs={'pk': self.movie.pk})
 
-    def test_list_movies(self):
-        response = self.client.get(self.url_list)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Handle both paginated and non-paginated responses
-        data = response.data.get('results', response.data) if isinstance(response.data, dict) else response.data
-        self.assertGreaterEqual(len(data), 1)
-        movie_titles = [m['title'] for m in data]
-        self.assertIn(self.movie_data['title'], movie_titles)
+def test_list_movies(api_client, movie, movie_data):
+    url = reverse("movie-list")
+    response = api_client.get(url)
 
-    def test_retrieve_movie(self):
-        response = self.client.get(self.url_detail)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['title'], self.movie_data['title'])
+    assert response.status_code == status.HTTP_200_OK
+    data = _unwrap_results(response.data)
+    assert isinstance(data, list)
+    assert_keys_equal(data[0], MOVIE_FIELDS)
+    assert len(data) >= 1
+    assert movie_data["title"] in [m["title"] for m in data]
 
-    def test_create_movie_disabled(self):
-        """Ensure manual creation is disabled (returns 405)."""
-        self.client.force_authenticate(user=self.staff_user)
-        response = self.client.post(self.url_list, self.movie_data, format='json')
-        # If the viewset is ReadOnlyModelViewSet or similar, it should be 405.
-        # If it's a ModelViewSet but we want to forbid standard creation, we'd expect 405.
-        # Let's keep the assertion as is, assuming the intention is to forbid standard creation.
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    def test_update_movie(self):
-        self.client.force_authenticate(user=self.staff_user)
-        updated_data = self.movie_data.copy()
-        updated_data['title'] = 'Updated Movie'
-        response = self.client.put(self.url_detail, updated_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.movie.refresh_from_db()
-        self.assertEqual(self.movie.title, 'Updated Movie')
+def test_retrieve_movie(api_client, movie, movie_data):
+    url = reverse("movie-detail", kwargs={"pk": movie.pk})
+    response = api_client.get(url)
 
-    def test_partial_update_movie(self):
-        self.client.force_authenticate(user=self.staff_user)
-        response = self.client.patch(self.url_detail, {'rating': 9.0}, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.movie.refresh_from_db()
-        self.assertEqual(self.movie.rating, 9.0)
+    assert response.status_code == status.HTTP_200_OK
+    assert_keys_equal(response.data, MOVIE_FIELDS)
+    assert response.data["title"] == movie_data["title"]
 
-    def test_delete_movie(self):
-        self.client.force_authenticate(user=self.staff_user)
-        response = self.client.delete(self.url_detail)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Movie.objects.count(), 0)
 
-    def test_screenings_action(self):
-        response = self.client.get(f'{self.url_detail}screenings/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+def test_create_movie_disabled(api_client, staff_user, movie_data):
+    """Ensure manual creation is disabled (returns 405)."""
+    api_client.force_authenticate(user=staff_user)
+    url = reverse("movie-list")
+    response = api_client.post(url, movie_data, format="json")
 
-    @patch('cinema.services.movie_service.MovieService.search_tmdb')
-    def test_search_tmdb(self, mock_search):
-        mock_search.return_value = {'results': [{'id': 123, 'title': 'TMDB Movie'}]}
-        response = self.client.get(f'{self.url_list}search_tmdb/?query=test')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+    assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
-    @patch('cinema.services.movie_service.MovieService.popular_tmdb')
-    def test_popular_tmdb(self, mock_popular):
-        mock_popular.return_value = {'results': [{'id': 123, 'title': 'Popular Movie'}]}
-        response = self.client.get(f'{self.url_list}popular_tmdb/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    @patch('cinema.services.movie_service.MovieService.tmdb_details')
-    def test_tmdb_details(self, mock_details):
-        mock_details.return_value = {'title': 'TMDB Details'}
-        response = self.client.get(f'{self.url_list}tmdb_details/?movie_id=123')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+def test_update_movie(api_client, staff_user, movie, movie_data):
+    api_client.force_authenticate(user=staff_user)
+    url = reverse("movie-detail", kwargs={"pk": movie.pk})
 
-    @patch('cinema.services.movie_service.MovieService.refresh_movie_from_tmdb')
-    def test_refresh_from_tmdb(self, mock_refresh):
-        self.client.force_authenticate(user=self.staff_user)
-        mock_refresh.return_value = {
-            'trailer_url': 'http://new.trailer',
-            'shots': [],
-            'actors': []
-        }
-        response = self.client.post(f'{self.url_detail}refresh_from_tmdb/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.movie.refresh_from_db()
-        self.assertEqual(self.movie.trailer_url, 'http://new.trailer')
+    updated_data = dict(movie_data)
+    updated_data["title"] = "Updated Movie"
+    response = api_client.put(url, updated_data, format="json")
 
-    @patch('cinema.services.movie_service.MovieService.build_movie_data_from_tmdb_id')
-    def test_create_from_tmdb(self, mock_build):
-        self.client.force_authenticate(user=self.staff_user)
-        # Use valid URLs for URLFields
-        mock_build.return_value = {
-            'title': 'New Movie', 'description': 'Desc', 'duration': 100, 'genre': 'Action',
-            'director': 'Dir', 'release_year': 2023, 'rating': 7.5, 'poster_url': 'http://example.com/poster.jpg',
-            'trailer_url': 'http://example.com/trailer.mp4', 'shots': [], 'actors': []
-        }
-        response = self.client.post(f'{self.url_list}create_from_tmdb/', {'tmdb_id': 123}, format='json')
-        if response.status_code != status.HTTP_201_CREATED:
-            print(f"Create from TMDB failed: {response.data}")
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    assert response.status_code == status.HTTP_200_OK
+    assert_keys_equal(response.data, MOVIE_FIELDS)
+    movie.refresh_from_db()
+    assert movie.title == "Updated Movie"
 
-    @patch('cinema.services.movie_service.MovieService.search_tmdb')
-    @patch('cinema.services.movie_service.MovieService.build_movie_data_from_tmdb_id')
-    def test_create_from_search(self, mock_build, mock_search):
-        self.client.force_authenticate(user=self.staff_user)
-        mock_search.return_value = {'results': [{'id': 123}]}
-        # Use valid URLs for URLFields
-        mock_build.return_value = {
-            'title': 'New Movie', 'description': 'Desc', 'duration': 100, 'genre': 'Action',
-            'director': 'Dir', 'release_year': 2023, 'rating': 7.5, 'poster_url': 'http://example.com/poster.jpg',
-            'trailer_url': 'http://example.com/trailer.mp4', 'shots': [], 'actors': []
-        }
-        response = self.client.post(f'{self.url_list}create_from_search/', {'query': 'test'}, format='json')
-        if response.status_code != status.HTTP_201_CREATED:
-            print(f"Create from search failed: {response.data}")
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+def test_partial_update_movie(api_client, staff_user, movie):
+    api_client.force_authenticate(user=staff_user)
+    url = reverse("movie-detail", kwargs={"pk": movie.pk})
+    response = api_client.patch(url, {"rating": 9.0}, format="json")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert_keys_equal(response.data, MOVIE_FIELDS)
+    movie.refresh_from_db()
+    assert float(movie.rating) == 9.0
+
+
+def test_delete_movie(api_client, staff_user, movie):
+    api_client.force_authenticate(user=staff_user)
+    url = reverse("movie-detail", kwargs={"pk": movie.pk})
+    response = api_client.delete(url)
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert Movie.objects.count() == 0
+
+
+def test_movie_detail_404(api_client):
+    url = reverse("movie-detail", kwargs={"pk": 999999})
+    response = api_client.get(url)
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_movie_update_delete_require_staff_and_model_perms(api_client, user, staff_basic, make_staff_user, movie, movie_data):
+    url = reverse("movie-detail", kwargs={"pk": movie.pk})
+
+    # Unauthenticated write -> forbidden
+    unauth = api_client.patch(url, {"rating": 9.1}, format="json")
+    assert unauth.status_code == status.HTTP_401_UNAUTHORIZED
+
+    # Non-staff -> forbidden
+    api_client.force_authenticate(user=user)
+    nonstaff = api_client.patch(url, {"rating": 9.1}, format="json")
+    assert nonstaff.status_code == status.HTTP_403_FORBIDDEN
+
+    # Staff without change perm -> forbidden
+    api_client.force_authenticate(user=staff_basic)
+    denied = api_client.patch(url, {"rating": 9.1}, format="json")
+    assert denied.status_code == status.HTTP_403_FORBIDDEN
+
+    # Staff with change_movie -> ok
+    staff_change = make_staff_user(perm_codenames=["change_movie"])
+    api_client.force_authenticate(user=staff_change)
+    ok = api_client.patch(url, {"rating": 9.1}, format="json")
+    assert ok.status_code == status.HTTP_200_OK
+
+    # Delete requires delete_movie
+    api_client.force_authenticate(user=staff_basic)
+    denied_del = api_client.delete(url)
+    assert denied_del.status_code == status.HTTP_403_FORBIDDEN
+
+    staff_delete = make_staff_user(perm_codenames=["delete_movie"])
+    api_client.force_authenticate(user=staff_delete)
+    ok_del = api_client.delete(url)
+    assert ok_del.status_code == status.HTTP_204_NO_CONTENT
+
+
+def test_movie_refresh_from_tmdb_requires_change_perm(api_client, staff_basic, make_staff_user, movie):
+    url = reverse("movie-detail", kwargs={"pk": movie.pk})
+
+    api_client.force_authenticate(user=staff_basic)
+    denied = api_client.post(f"{url}refresh_from_tmdb/")
+    assert denied.status_code == status.HTTP_403_FORBIDDEN
+
+    staff_change = make_staff_user(perm_codenames=["change_movie"])
+    api_client.force_authenticate(user=staff_change)
+
+    with patch("cinema.services.movie_service.MovieService.refresh_movie_from_tmdb") as mock_refresh:
+        mock_refresh.return_value = {"trailer_url": "http://x", "shots": [], "actors": []}
+        ok = api_client.post(f"{url}refresh_from_tmdb/")
+        assert ok.status_code == status.HTTP_200_OK
+
+
+def test_screenings_action(api_client, movie):
+    url = reverse("movie-detail", kwargs={"pk": movie.pk})
+    response = api_client.get(f"{url}screenings/")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert isinstance(response.data, list)
+    if response.data:
+        assert_keys_equal(response.data[0], SCREENING_FIELDS)
+
+
+@patch("cinema.services.movie_service.MovieService.search_tmdb")
+def test_search_tmdb(mock_search, api_client):
+    mock_search.return_value = {"results": [{"id": 123, "title": "TMDB Movie"}]}
+    url = reverse("movie-list")
+    response = api_client.get(f"{url}search_tmdb/?query=test")
+
+    assert response.status_code == status.HTTP_200_OK
+
+
+@patch("cinema.services.movie_service.MovieService.popular_tmdb")
+def test_popular_tmdb(mock_popular, api_client):
+    mock_popular.return_value = {"results": [{"id": 123, "title": "Popular Movie"}]}
+    url = reverse("movie-list")
+    response = api_client.get(f"{url}popular_tmdb/")
+
+    assert response.status_code == status.HTTP_200_OK
+
+
+@patch("cinema.services.movie_service.MovieService.tmdb_details")
+def test_tmdb_details(mock_details, api_client):
+    mock_details.return_value = {"title": "TMDB Details"}
+    url = reverse("movie-list")
+    response = api_client.get(f"{url}tmdb_details/?movie_id=123")
+
+    assert response.status_code == status.HTTP_200_OK
+
+
+@patch("cinema.services.movie_service.MovieService.refresh_movie_from_tmdb")
+def test_refresh_from_tmdb(mock_refresh, api_client, staff_user, movie):
+    api_client.force_authenticate(user=staff_user)
+    mock_refresh.return_value = {"trailer_url": "http://new.trailer", "shots": [], "actors": []}
+
+    url = reverse("movie-detail", kwargs={"pk": movie.pk})
+    response = api_client.post(f"{url}refresh_from_tmdb/")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert_keys_equal(response.data, MOVIE_FIELDS)
+    movie.refresh_from_db()
+    assert movie.trailer_url == "http://new.trailer"
+
+
+@patch("cinema.services.movie_service.MovieService.build_movie_data_from_tmdb_id")
+def test_create_from_tmdb(mock_build, api_client, staff_user):
+    api_client.force_authenticate(user=staff_user)
+    mock_build.return_value = {
+        "title": "New Movie",
+        "description": "Desc",
+        "duration": 100,
+        "genre": "Action",
+        "director": "Dir",
+        "release_year": 2023,
+        "rating": 7.5,
+        "poster_url": "http://example.com/poster.jpg",
+        "trailer_url": "http://example.com/trailer.mp4",
+        "shots": [],
+        "actors": [],
+    }
+
+    url = reverse("movie-list")
+    response = api_client.post(f"{url}create_from_tmdb/", {"tmdb_id": 123}, format="json")
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert_keys_equal(response.data, MOVIE_FIELDS)
+
+
+@patch("cinema.services.movie_service.MovieService.search_tmdb")
+@patch("cinema.services.movie_service.MovieService.build_movie_data_from_tmdb_id")
+def test_create_from_search(mock_build, mock_search, api_client, staff_user):
+    api_client.force_authenticate(user=staff_user)
+    mock_search.return_value = {"results": [{"id": 123}]}
+    mock_build.return_value = {
+        "title": "New Movie",
+        "description": "Desc",
+        "duration": 100,
+        "genre": "Action",
+        "director": "Dir",
+        "release_year": 2023,
+        "rating": 7.5,
+        "poster_url": "http://example.com/poster.jpg",
+        "trailer_url": "http://example.com/trailer.mp4",
+        "shots": [],
+        "actors": [],
+    }
+
+    url = reverse("movie-list")
+    response = api_client.post(f"{url}create_from_search/", {"query": "test"}, format="json")
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert_keys_equal(response.data, MOVIE_FIELDS)
