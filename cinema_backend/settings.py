@@ -1,17 +1,14 @@
-"""
-Ρυθμίσεις Django για το cinema_backend project.
-Django settings for cinema_backend project.
+"""cinema_backend Django settings.
 
-Αυτό το αρχείο περιέχει όλες τις ρυθμίσεις για το Django project.
-This file contains all the settings for the Django project.
+Το project είναι σχεδιασμένο ως 3-tier εφαρμογή:
+1) Front-end: επικοινωνεί αποκλειστικά μέσω REST API
+2) Business logic: Python/Django (αντικειμενοστρεφής γλώσσα)
+3) Database: σχεσιακή (MySQL/MariaDB)
 
-Περιλαμβάνει ρυθμίσεις για:
-- Εγκατεστημένες εφαρμογές (Django apps)
-- Middleware για CORS και άλλες λειτουργίες
-- Ρυθμίσεις βάσης δεδομένων (SQLite)
-- REST Framework configuration
+Το business logic επικοινωνεί με τη βάση μέσω Django ORM (models/querysets), όχι με raw SQL.
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -42,10 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Εφαρμογές τρίτων (Third-party apps)
     'rest_framework',  # Django REST Framework για API
+    'rest_framework_simplejwt.token_blacklist',  # JWT token blacklisting
     'corsheaders',  # CORS headers για επικοινωνία με Angular frontend
     'django_filters',  # Django filters for DRF
     # Δικές μας εφαρμογές (Our apps)
-    'cinema',  # Η εφαρμογή cinema με τα models μας
+    'cinema.apps.CinemaConfig',  # Η εφαρμογή cinema με DI wiring στο AppConfig
 ]
 
 MIDDLEWARE = [
@@ -79,15 +77,32 @@ TEMPLATES = [
 WSGI_APPLICATION = 'cinema_backend.wsgi.application'
 
 
-# Database
+# Database (Relational DB: MySQL/MariaDB)
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+
+# Ρυθμίσεις για MySQL/MariaDB Database
+# MySQL/MariaDB Database Configuration
+DB_NAME = os.environ.get('DB_NAME', 'cinema_db')
+DB_USER = os.environ.get('DB_USER', 'root')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
+DB_PORT = os.environ.get('DB_PORT', '3306')
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASSWORD,
+        'HOST': DB_HOST,
+        'PORT': DB_PORT,
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
+
+
 
 
 # Password validation
@@ -144,9 +159,27 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',  # Επιτρέπει πρόσβαση χωρίς authentication (για development)
     ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # JWT Authentication
+        'rest_framework.authentication.SessionAuthentication',  # Session Authentication για admin
+    ],
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10  # Αριθμός αποτελεσμάτων ανά σελίδα
+}
+
+# JWT Settings
+# Ρυθμίσεις για JSON Web Tokens
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),  # Access token διαρκεί 1 ώρα
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Refresh token διαρκεί 7 ημέρες
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'ALGORITHM': 'HS256',
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 # TMDB API Key
