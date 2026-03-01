@@ -13,8 +13,10 @@ from cinema.tests.conftest import (
     BOOKING_RESPONSE_FIELDS,
     SCREENING_FIELDS,
     MOVIE_FIELDS,
+    PAGINATED_KEYS,
     assert_keys_equal,
     assert_keys_superset,
+    unwrap_results,
 )
 
 
@@ -31,15 +33,6 @@ CUSTOMER_PROFILE_KEYS = {"phone"}
 
 PROFILE_GET_KEYS = {"id", "username", "email", "first_name", "last_name", "phone"}
 PROFILE_PUT_KEYS = {"message", "user"}
-
-
-PAGINATED_KEYS = {"count", "next", "previous", "results"}
-
-
-def _unwrap_results(data):
-    if isinstance(data, dict) and "results" in data:
-        return data["results"]
-    return data
 
 
 def test_register_returns_all_fields(api_client):
@@ -159,6 +152,33 @@ def test_change_password_fields_and_login_with_new_password(api_client, customer
     assert_keys_equal(login.data, LOGIN_RESPONSE_KEYS)
 
 
+def test_change_password_mismatch_new_passwords(api_client, customer_user):
+    """Test change password when new passwords don't match."""
+    api_client.force_authenticate(user=customer_user)
+    response = api_client.post(reverse("auth-change-password"), {
+        "old_password": "pass1234",
+        "new_password": "newpass1234",
+        "new_password2": "differentpass",
+    })
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "new_password" in str(response.data)
+
+
+def test_register_password_mismatch(api_client):
+    """Test registration when passwords don't match."""
+    response = api_client.post(reverse("auth-register"), {
+        "username": "testuser2",
+        "email": "test2@example.com",
+        "password": "pass1234",
+        "password2": "differentpass",
+        "first_name": "Test",
+        "last_name": "User",
+        "phone": "123456789",
+    })
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "password" in str(response.data)
+
+
 def test_token_refresh_returns_expected_fields(api_client):
     # Obtain refresh token via register
     username = f"refresh_{uuid.uuid4().hex[:8]}"
@@ -235,7 +255,7 @@ def test_my_bookings_returns_booking_fields(api_client, customer_user, screening
 
     assert response.status_code == status.HTTP_200_OK
     assert_keys_equal(response.data, PAGINATED_KEYS)
-    data = _unwrap_results(response.data)
+    data = unwrap_results(response.data)
     assert isinstance(data, list)
     assert data, "Expected at least one booking"
 

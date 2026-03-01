@@ -22,7 +22,7 @@ class SeatLock(models.Model):
     )
     seat_number = models.CharField(max_length=10, verbose_name="Seat Number")
     session_id = models.CharField(max_length=100, verbose_name="Session ID")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Created At")
 
     class Meta:
         verbose_name = "Seat Lock"

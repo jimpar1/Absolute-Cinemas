@@ -8,16 +8,10 @@ from datetime import timedelta
 
 from cinema.models import Screening
 from cinema.models import Booking
-from cinema.tests.conftest import MOVIE_FIELDS, SCREENING_FIELDS, assert_keys_equal
+from cinema.tests.conftest import MOVIE_FIELDS, SCREENING_FIELDS, assert_keys_equal, unwrap_results
 
 
 pytestmark = pytest.mark.django_db
-
-
-def _unwrap_results(data):
-    if isinstance(data, dict) and "results" in data:
-        return data["results"]
-    return data
 
 
 def test_list_screenings(api_client, screening):
@@ -25,7 +19,7 @@ def test_list_screenings(api_client, screening):
     response = api_client.get(url)
 
     assert response.status_code == status.HTTP_200_OK
-    data = _unwrap_results(response.data)
+    data = unwrap_results(response.data)
     assert isinstance(data, list)
     assert_keys_equal(data[0], SCREENING_FIELDS)
     assert_keys_equal(data[0]["movie_details"], MOVIE_FIELDS)
@@ -280,3 +274,219 @@ def test_lock_seats_conflict_and_expiry_takeover(api_client, screening):
     current = api_client.get(locked_url)
     assert current.status_code == 200
     assert current.data.get("A1") == "s2"
+
+
+# ============================================================================
+# FILTER AND ORDERING TESTS
+# ============================================================================
+
+
+class TestScreeningFiltering:
+    """Tests for screening filtering by movie and hall."""
+
+    def test_filter_screenings_by_movie(self, api_client, make_movie, make_screening, hall):
+        """Test filtering screenings by movie ID."""
+        movie1 = make_movie(title="Movie 1")
+        movie2 = make_movie(title="Movie 2")
+
+        screening1 = make_screening(movie=movie1, hall=hall)
+        screening2 = make_screening(movie=movie2, hall=hall)
+
+        url = reverse("screening-list")
+        response = api_client.get(url, {"movie": movie1.id})
+
+        assert response.status_code == status.HTTP_200_OK
+        data = unwrap_results(response.data)
+        assert len(data) >= 1
+        # All screenings should be for movie1
+        assert all(s["movie"] == movie1.id for s in data)
+
+    def test_filter_screenings_by_hall(self, api_client, make_screening, movie):
+        """Test filtering screenings by hall ID."""
+        from cinema.models import MovieHall
+
+        hall1 = MovieHall.objects.create(name="Filter Test Hall A", capacity=100)
+        hall2 = MovieHall.objects.create(name="Filter Test Hall B", capacity=150)
+
+        screening1 = make_screening(movie=movie, hall=hall1)
+        screening2 = make_screening(movie=movie, hall=hall2)
+
+        url = reverse("screening-list")
+        response = api_client.get(url, {"hall": hall1.id})
+
+        assert response.status_code == status.HTTP_200_OK
+        data = unwrap_results(response.data)
+        assert len(data) >= 1
+        # All screenings should be in hall1
+        assert all(s["hall"] == hall1.id for s in data)
+
+    def test_filter_screenings_by_movie_and_hall(self, api_client, make_movie, make_screening):
+        """Test filtering screenings by both movie and hall."""
+        from cinema.models import MovieHall
+
+        movie1 = make_movie(title="Movie 1")
+        movie2 = make_movie(title="Movie 2")
+        hall1 = MovieHall.objects.create(name="Filter Test Hall C", capacity=100)
+        hall2 = MovieHall.objects.create(name="Filter Test Hall D", capacity=150)
+
+        # Create various combinations
+        s1 = make_screening(movie=movie1, hall=hall1)
+        s2 = make_screening(movie=movie1, hall=hall2)
+        s3 = make_screening(movie=movie2, hall=hall1)
+
+        url = reverse("screening-list")
+        response = api_client.get(url, {"movie": movie1.id, "hall": hall1.id})
+
+        assert response.status_code == status.HTTP_200_OK
+        data = unwrap_results(response.data)
+        assert len(data) >= 1
+        # All screenings should match both filters
+        assert all(s["movie"] == movie1.id and s["hall"] == hall1.id for s in data)
+
+    def test_filter_screenings_nonexistent_movie(self, api_client, make_screening, movie, hall):
+        """Test filtering by nonexistent movie ID returns empty list."""
+        # Create at least one screening so we can test filtering
+        make_screening(movie=movie, hall=hall)
+
+        url = reverse("screening-list")
+        # Use a very high ID that's unlikely to exist
+        response = api_client.get(url, {"movie": 999999})
+
+        # Django filters may return 200 with empty list or 400 for invalid ID
+        # Both are acceptable behaviors
+        assert response.status_code in [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST]
+
+        if response.status_code == status.HTTP_200_OK:
+            data = unwrap_results(response.data)
+            assert len(data) == 0
+
+    def test_filter_screenings_no_filters_returns_all(self, api_client, make_screening, movie, hall):
+        """Test no filters returns all screenings."""
+        make_screening(movie=movie, hall=hall)
+        make_screening(movie=movie, hall=hall)
+
+        url = reverse("screening-list")
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = unwrap_results(response.data)
+        assert len(data) >= 2
+
+
+class TestScreeningOrdering:
+    """Tests for screening ordering."""
+
+    def test_order_screenings_by_start_time_default(self, api_client, make_screening, movie, hall):
+        """Test default ordering is by start_time ascending (earliest first)."""
+        from django.utils import timezone
+
+        now = timezone.now().replace(minute=0)
+
+        # Create screenings in random order
+        s2 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=6))
+        s1 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=3))
+
+        url = reverse("screening-list")
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = unwrap_results(response.data)
+        # Default ordering is start_time ascending
+        # First screening should have earliest start_time
+        start_times = [s["start_time"] for s in data]
+        assert start_times == sorted(start_times)
+
+    def test_order_screenings_by_start_time_descending(self, api_client, make_screening, movie, hall):
+        """Test ordering by start_time descending (latest first)."""
+        from django.utils import timezone
+
+        now = timezone.now().replace(minute=0)
+
+        s1 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=3))
+        s2 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=6))
+
+        url = reverse("screening-list")
+        response = api_client.get(url, {"ordering": "-start_time"})
+
+        assert response.status_code == status.HTTP_200_OK
+        data = unwrap_results(response.data)
+        start_times = [s["start_time"] for s in data]
+        # Should be in reverse chronological order
+        assert start_times == sorted(start_times, reverse=True)
+
+    def test_order_screenings_by_available_seats_ascending(self, api_client, make_screening, movie, hall):
+        """Test ordering by available_seats (least available first)."""
+        from django.utils import timezone
+        from cinema.models import Screening
+
+        now = timezone.now().replace(minute=0)
+
+        s1 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=3))
+        s2 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=6))
+
+        # Manually set different available_seats
+        Screening.objects.filter(id=s1.id).update(available_seats=10)
+        Screening.objects.filter(id=s2.id).update(available_seats=50)
+
+        url = reverse("screening-list")
+        response = api_client.get(url, {"ordering": "available_seats"})
+
+        assert response.status_code == status.HTTP_200_OK
+        data = unwrap_results(response.data)
+        seats = [s["available_seats"] for s in data]
+        # Should be ordered least to most available
+        assert seats == sorted(seats)
+
+    def test_order_screenings_by_available_seats_descending(self, api_client, make_screening, movie, hall):
+        """Test ordering by available_seats descending (most available first)."""
+        from django.utils import timezone
+        from cinema.models import Screening
+
+        now = timezone.now().replace(minute=0)
+
+        s1 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=3))
+        s2 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=6))
+
+        Screening.objects.filter(id=s1.id).update(available_seats=10)
+        Screening.objects.filter(id=s2.id).update(available_seats=50)
+
+        url = reverse("screening-list")
+        response = api_client.get(url, {"ordering": "-available_seats"})
+
+        assert response.status_code == status.HTTP_200_OK
+        data = unwrap_results(response.data)
+        seats = [s["available_seats"] for s in data]
+        # Should be ordered most to least available
+        assert seats == sorted(seats, reverse=True)
+
+
+class TestScreeningCombinedFilterAndOrder:
+    """Tests combining filters and ordering."""
+
+    def test_filter_by_movie_and_order_by_start_time(self, api_client, make_movie, make_screening, hall):
+        """Test filtering by movie and ordering by start_time."""
+        from django.utils import timezone
+
+        movie1 = make_movie(title="Movie 1")
+        movie2 = make_movie(title="Movie 2")
+
+        now = timezone.now().replace(minute=0)
+
+        # Create screenings for both movies
+        s1 = make_screening(movie=movie1, hall=hall, start_time=now + timezone.timedelta(hours=6))
+        s2 = make_screening(movie=movie1, hall=hall, start_time=now + timezone.timedelta(hours=3))
+        s3 = make_screening(movie=movie2, hall=hall, start_time=now + timezone.timedelta(hours=4))
+
+        url = reverse("screening-list")
+        response = api_client.get(url, {
+            "movie": movie1.id,
+            "ordering": "start_time"
+        })
+
+        assert response.status_code == status.HTTP_200_OK
+        data = unwrap_results(response.data)
+        # Should only have movie1 screenings
+        assert all(s["movie"] == movie1.id for s in data)
+        # Should be ordered by start_time
+        start_times = [s["start_time"] for s in data]
+        assert start_times == sorted(start_times)
