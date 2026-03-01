@@ -90,22 +90,35 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     """View / update an authenticated user's profile."""
     phone = serializers.CharField(source='customer_profile.phone', required=False, allow_blank=True)
+    # Support both 'password' and 'new_password' to be safe with frontend
+    password = serializers.CharField(write_only=True, required=False, validators=[validate_password])
+    new_password = serializers.CharField(write_only=True, required=False, validators=[validate_password])
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone', 'password', 'new_password']
         read_only_fields = ['username']
 
     def update(self, instance, validated_data):
-        customer_data = validated_data.pop('customer_profile', {})
-        instance.email = validated_data.get('email', instance.email)
-        instance.first_name = validated_data.get('first_name', instance.first_name)
-        instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.save()
+        # 1. Password Update
+        password = validated_data.pop('password', None)
+        new_password = validated_data.pop('new_password', None)
+        
+        final_password = password or new_password
+        if final_password:
+            instance.set_password(final_password)
+            instance.save()
 
-        if hasattr(instance, 'customer_profile'):
-            instance.customer_profile.phone = customer_data.get('phone', instance.customer_profile.phone)
-            instance.customer_profile.save()
-        else:
-            Customer.objects.create(user=instance, phone=customer_data.get('phone', ''))
-        return instance
+        # 2. Phone Update
+        # Due to source='customer_profile.phone', DRF nests the phone inside customer_profile dict
+        customer_data = validated_data.pop('customer_profile', {})
+        phone = customer_data.get('phone')
+
+        if phone is not None:
+            Customer.objects.update_or_create(
+                user=instance,
+                defaults={'phone': phone}
+            )
+
+        # 3. Standard User Fields Update (email, first_name, last_name)
+        return super().update(instance, validated_data)

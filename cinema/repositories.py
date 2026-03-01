@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .models import Booking, Movie, MovieHall, Screening, SeatLock
+from .models import Booking, Movie, MovieHall, Screening, SeatLock, Subscription
 
 
 @dataclass(frozen=True)
@@ -61,3 +61,20 @@ class SeatLockRepository:
 
     def for_screening(self, screening: Screening):
         return SeatLock.objects.filter(screening=screening)
+
+
+@dataclass(frozen=True)
+class SubscriptionRepository:
+    """Read/write access to Subscription objects."""
+
+    def get_for_user(self, user):
+        return Subscription.objects.select_related('customer').get(customer__user=user)
+
+    def get_or_create_free(self, user):
+        try:
+            profile = user.customer_profile
+        except Exception:
+            from .models import Customer
+            profile, _ = Customer.objects.get_or_create(user=user)
+        sub, _ = Subscription.objects.get_or_create(customer=profile)
+        return sub

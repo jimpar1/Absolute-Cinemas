@@ -4,6 +4,7 @@ These correspond to the cinema's core data models.
 """
 
 from rest_framework import serializers
+from django.core.exceptions import ValidationError as DjangoValidationError
 from ..models import Movie, Screening, Booking, MovieHall, HallPhoto
 
 
@@ -12,13 +13,14 @@ class HallPhotoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = HallPhoto
-        fields = ['id', 'image_url', 'order']
+        fields = ['id', 'image', 'image_url', 'order']
+        extra_kwargs = {'image': {'write_only': True, 'required': True}}
 
     def get_image_url(self, obj):
         request = self.context.get('request')
         if request:
             return request.build_absolute_uri(obj.image.url)
-        return obj.image.url
+        return f"http://127.0.0.1:8000{obj.image.url}"
 
 
 class MovieHallSerializer(serializers.ModelSerializer):
@@ -72,6 +74,37 @@ class ScreeningSerializer(serializers.ModelSerializer):
             'available_seats', 'total_seats',
         ]
         read_only_fields = ['end_time', 'total_seats', 'available_seats']
+
+    def validate(self, attrs):
+        """Enforce Screening.clean() rules (time alignment + overlap) via the API."""
+        instance = getattr(self, "instance", None)
+
+        movie = attrs.get("movie") or (getattr(instance, "movie", None) if instance else None)
+        hall = attrs.get("hall") or (getattr(instance, "hall", None) if instance else None)
+        start_time = attrs.get("start_time") or (getattr(instance, "start_time", None) if instance else None)
+        price = attrs.get("price") if "price" in attrs else (getattr(instance, "price", None) if instance else None)
+
+        if movie is not None and hall is not None and start_time is not None:
+            temp = Screening(movie=movie, hall=hall, start_time=start_time, price=price or 0)
+            # Exclude self from overlap queries on update
+            if instance is not None and getattr(instance, "pk", None) is not None:
+                temp.pk = instance.pk
+                # available_seats is a required model field, but it's read-only in the API.
+                # Provide a safe value to satisfy model validation if full_clean is ever invoked.
+                temp.available_seats = getattr(instance, "available_seats", 0)
+            else:
+                # On create, available_seats is auto-set in model.save; for validation we just need a non-negative int.
+                temp.available_seats = 0
+
+            try:
+                temp.clean()
+            except DjangoValidationError as exc:
+                # Django may raise dict(field->msg) or a plain string.
+                if hasattr(exc, "message_dict"):
+                    raise serializers.ValidationError(exc.message_dict)
+                raise serializers.ValidationError({"detail": exc.messages})
+
+        return attrs
 
 
 class BookingSerializer(serializers.ModelSerializer):

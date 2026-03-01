@@ -11,3 +11,4 @@ from .movie import Movie                # noqa: F401
 from .screening import Screening        # noqa: F401
 from .booking import Booking            # noqa: F401
 from .seat_lock import SeatLock         # noqa: F401
+from .subscription import Subscription  # noqa: F401

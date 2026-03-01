@@ -31,7 +31,8 @@ class ScreeningAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['start_time'].widget.widgets[1].attrs['required'] = True
+        if hasattr(self.fields['start_time'].widget, 'widgets'):
+            self.fields['start_time'].widget.widgets[1].attrs['required'] = True
         if self.instance and self.instance.pk:
             self.fields['repeat_weekly'].widget = forms.HiddenInput()
             self.fields['repeat_weeks'].widget = forms.HiddenInput()
