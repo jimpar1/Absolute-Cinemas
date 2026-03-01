@@ -190,6 +190,46 @@ for hall_data in HALLS:
         print(f"   ⏩ {hall.name} already exists, skipping.")
 
 # =============================================================================
+# STEP 4b: Attach hall photos
+# =============================================================================
+
+from cinema.models import HallPhoto
+
+HALL_PHOTOS = {
+    'Αίθουσα 1': [
+        ('halls/hall1/hall1.webp',   1),
+        ('halls/hall1/hall1_2.webp', 2),
+        ('halls/hall1/hall1_3.webp', 3),
+    ],
+    'Αίθουσα 2': [
+        ('halls/hall2/hall2_2.webp', 1),
+        ('halls/hall2/hall2_3.webp', 2),
+        ('halls/hall2/hall2_4.webp', 3),
+    ],
+    'Αίθουσα 3': [
+        ('halls/hall3/hall3_1.webp', 1),
+        ('halls/hall3/hall3_2.webp', 2),
+        ('halls/hall3/hall3_3.webp', 3),
+        ('halls/hall3/hall3_4.webp', 4),
+        ('halls/hall3/hall3_5.webp', 5),
+    ],
+}
+
+print("\n🖼️  Attaching hall photos...")
+for hall_name, photos in HALL_PHOTOS.items():
+    try:
+        hall = MovieHall.objects.get(name=hall_name)
+    except MovieHall.DoesNotExist:
+        print(f"   ⚠️  Hall '{hall_name}' not found, skipping photos.")
+        continue
+    for path, order in photos:
+        _, created = HallPhoto.objects.get_or_create(hall=hall, image=path, defaults={'order': order})
+        if created:
+            print(f"   ✅ {hall_name} — {path}")
+        else:
+            print(f"   ⏩ {path} already exists, skipping.")
+
+# =============================================================================
 # STEP 5: Import Legendary Movies from TMDB
 # =============================================================================
 

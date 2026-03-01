@@ -4,15 +4,30 @@ These correspond to the cinema's core data models.
 """
 
 from rest_framework import serializers
-from ..models import Movie, Screening, Booking, MovieHall
+from ..models import Movie, Screening, Booking, MovieHall, HallPhoto
+
+
+class HallPhotoSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HallPhoto
+        fields = ['id', 'image_url', 'order']
+
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.image.url)
+        return obj.image.url
 
 
 class MovieHallSerializer(serializers.ModelSerializer):
     """Serializer for cinema halls (id, name, capacity, layout JSON)."""
+    photos = HallPhotoSerializer(many=True, read_only=True)
 
     class Meta:
         model = MovieHall
-        fields = ['id', 'name', 'capacity', 'layout']
+        fields = ['id', 'name', 'capacity', 'layout', 'photos']
 
 
 class MovieSerializer(serializers.ModelSerializer):
