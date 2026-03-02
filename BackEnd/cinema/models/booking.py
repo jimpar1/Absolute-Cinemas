@@ -82,8 +82,7 @@ class Booking(models.Model):
         2. Check seat availability, then decrement available_seats.
         """
         if not self.pk:
-            if self.total_price is None:
-                self.total_price = self.screening.price * self.seats_booked
+            self.total_price = self.screening.price * self.seats_booked
             if self.seats_booked > self.screening.available_seats:
                 raise ValueError("Not enough available seats")
             self.screening.available_seats -= self.seats_booked

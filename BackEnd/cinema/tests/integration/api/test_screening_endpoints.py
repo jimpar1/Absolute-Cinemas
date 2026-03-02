@@ -186,8 +186,9 @@ def test_screening_update_delete_require_change_delete_perms(api_client, staff_b
     assert ok_del.status_code == status.HTTP_204_NO_CONTENT
 
 
-def test_screening_bookings_action_requires_view_booking_perm(api_client, staff_basic, make_staff_user, customer_user, screening):
-    # create a booking so the endpoint has something to return
+def test_screening_bookings_action_is_public(api_client, staff_basic, customer_user, screening):
+    """The bookings action returns only seat_numbers and is publicly accessible (AllowAny).
+    It exists to show seat availability in the booking UI — no personal data is exposed."""
     Booking.objects.create(
         screening=screening,
         user=customer_user,
@@ -199,12 +200,14 @@ def test_screening_bookings_action_requires_view_booking_perm(api_client, staff_
 
     url = reverse("screening-bookings", kwargs={"pk": screening.pk})
 
-    api_client.force_authenticate(user=staff_basic)
-    denied = api_client.get(url)
-    assert denied.status_code == status.HTTP_403_FORBIDDEN
+    # Unauthenticated access is allowed
+    api_client.force_authenticate(user=None)
+    anon = api_client.get(url)
+    assert anon.status_code == status.HTTP_200_OK
+    assert isinstance(anon.data, list)
 
-    staff_view = make_staff_user(perm_codenames=["view_booking"])
-    api_client.force_authenticate(user=staff_view)
+    # Staff without view_booking perm also allowed (endpoint is public)
+    api_client.force_authenticate(user=staff_basic)
     ok = api_client.get(url)
     assert ok.status_code == status.HTTP_200_OK
     assert isinstance(ok.data, list)
