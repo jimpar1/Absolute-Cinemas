@@ -103,7 +103,8 @@ def test_delete_booking(api_client, user, booking):
     assert Booking.objects.count() == 0
 
 
-def test_booking_create_requires_auth(api_client, screening):
+def test_booking_create_allows_guest(api_client, screening):
+    """Guest (unauthenticated) users can create a booking — guest-support is intentional."""
     url = reverse("booking-list")
     response = api_client.post(
         url,
@@ -116,7 +117,7 @@ def test_booking_create_requires_auth(api_client, screening):
         },
         format="json",
     )
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.status_code == status.HTTP_201_CREATED
 
 
 def test_booking_seats_booked_cannot_exceed_available(api_client, user, screening):

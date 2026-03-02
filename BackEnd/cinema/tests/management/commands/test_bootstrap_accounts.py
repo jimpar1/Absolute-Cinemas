@@ -2,6 +2,7 @@
 
 import pytest
 from io import StringIO
+from unittest import mock
 from django.core.management import call_command
 from django.contrib.auth.models import User, Group
 
@@ -154,8 +155,9 @@ class TestBootstrapAccountsCommand:
         staff = User.objects.get(username='staff')
         assert staff.check_password('StaffPass456')
 
+    @mock.patch.dict('os.environ', {'ADMIN_PASSWORD': '', 'STAFF_PASSWORD': ''}, clear=False)
     def test_command_uses_default_admin_password_when_not_provided(self):
-        """Test command uses default admin password when not provided."""
+        """Test command uses default admin password when ADMIN_PASSWORD env var is absent."""
         call_command('bootstrap_accounts')
 
         admin = User.objects.get(username='admin')
@@ -179,6 +181,7 @@ class TestBootstrapAccountsCommand:
         assert 'staff' in output
         assert 'superuser' in output
 
+    @mock.patch.dict('os.environ', {'ADMIN_PASSWORD': '', 'STAFF_PASSWORD': ''}, clear=False)
     def test_command_output_warns_about_default_passwords(self):
         """Test command warns when using default passwords."""
         out = StringIO()
