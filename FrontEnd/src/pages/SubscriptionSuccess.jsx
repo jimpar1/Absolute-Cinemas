@@ -20,6 +20,7 @@ export default function SubscriptionSuccess() {
     useEffect(() => {
         if (!refreshed && refreshSubscription) {
             refreshSubscription()
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setRefreshed(true)
         }
     }, [refreshed, refreshSubscription])

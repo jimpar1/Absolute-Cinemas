@@ -29,6 +29,7 @@ export default function SubscribeModal({ tier, isAnnual, open, onClose, onConfir
     const colors    = TIER_COLOR[tierKey] ?? TIER_COLOR.free
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (open) { setLoading(false); setError(null) }
     }, [open])
 

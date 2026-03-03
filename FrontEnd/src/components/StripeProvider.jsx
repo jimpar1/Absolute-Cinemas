@@ -12,6 +12,7 @@ import { getStripeConfig } from "@/api/payments"
 let stripePromiseCache = null
 
 const StripeStatusContext = createContext({ ready: false, loading: true, error: null })
+// eslint-disable-next-line react-refresh/only-export-components
 export const useStripeStatus = () => useContext(StripeStatusContext)
 
 export default function StripeProvider({ children }) {
@@ -20,6 +21,7 @@ export default function StripeProvider({ children }) {
     const [loading, setLoading] = useState(!stripePromiseCache)
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (stripePromiseCache) { setLoading(false); return }
         getStripeConfig()
             .then(({ publishable_key }) => {

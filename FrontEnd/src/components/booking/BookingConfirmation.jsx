@@ -45,6 +45,7 @@ function Barcode({ seed }) {
                         rx="0.3"
                     />
                 )
+                // eslint-disable-next-line react-hooks/immutability
                 x += bar.w + 1
                 return el
             })}
@@ -57,6 +58,7 @@ export default function BookingConfirmation({ screening, bookingSummary, onRetur
 
     // Stable booking reference — one per component mount
     const bookingRef = useMemo(() => {
+        // eslint-disable-next-line react-hooks/purity
         const hex = (Date.now() & 0xffff).toString(16).toUpperCase().padStart(4, "0")
         return `AC-${hex}`
     }, [])

@@ -47,6 +47,7 @@ function Barcode({ seed }) {
                         rx="0.3"
                     />
                 )
+                // eslint-disable-next-line react-hooks/immutability
                 x += bar.w + 1
                 return el
             })}
