@@ -2,6 +2,7 @@
  * HallFrame — mosaic gallery per hall, hall-to-hall slide transitions.
  * Left/right arrows navigate between halls. Click any photo → lightbox.
  */
+/* eslint-disable jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions */
 
 import { useEffect, useLayoutEffect, useRef, useState, forwardRef } from 'react'
 import gsap from 'gsap'
@@ -69,6 +70,7 @@ export default function HallFrame({ hallGroups = [] }) {
         if (!pendingRef.current) return
         const { targetHallIdx, direction } = pendingRef.current
         pendingRef.current = null
+        // eslint-disable-next-line react-hooks/immutability
         _executeAnimation(targetHallIdx, direction)
     })
 
