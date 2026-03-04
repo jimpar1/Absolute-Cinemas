@@ -35,18 +35,20 @@ git clone <repo-url>
 cd Cinema-Django-Backend
 
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-
 pip install -r requirements.txt
 ```
+
+| | Windows | Linux / macOS |
+|---|---------|---------------|
+| Ενεργοποίηση venv | `venv\Scripts\activate` | `source venv/bin/activate` |
 
 ---
 
 ## Ρύθμιση περιβάλλοντος
 
-```bash
-cp .env.example .env
-```
+| | Windows | Linux / macOS |
+|---|---------|---------------|
+| Αντιγραφή .env | `copy .env.example .env` | `cp .env.example .env` |
 
 Επεξεργαστείτε το `.env` και συμπληρώστε:
 
