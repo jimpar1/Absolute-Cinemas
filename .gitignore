@@ -64,3 +64,4 @@ coverage.xml
 # Compiled files
 __pycache__/
 *.pyc
+test_db.sqlite3

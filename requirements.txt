@@ -8,6 +8,7 @@ django-cors-headers>=4.3.0
 django-filter>=23.0
 tmdbv3api>=1.9.0
 dependency-injector>=4.41.0
+stripe>=8.0.0
 
 # Testing (integration tests)
 pytest>=8.0.0

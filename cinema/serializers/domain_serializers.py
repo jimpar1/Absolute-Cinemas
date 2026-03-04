@@ -126,9 +126,12 @@ class BookingSerializer(serializers.ModelSerializer):
             'customer_name', 'customer_email', 'customer_phone',
             'seats_booked', 'seat_numbers', 'session_id',
             'total_price', 'booking_date', 'status',
+            'stripe_payment_intent_id', 'payment_status',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['user', 'booking_date', 'total_price', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'booking_date', 'total_price',
+                            'stripe_payment_intent_id', 'payment_status',
+                            'created_at', 'updated_at']
 
     def create(self, validated_data):
         """Auto-fill customer info from the authenticated user and clear seat locks."""

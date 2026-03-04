@@ -17,6 +17,7 @@ class CinemaConfig(AppConfig):
         from .container import container
         from .views import movie_views, screening_views, booking_views, movie_hall_views
         from .views import subscription_views
+        from .views import payment_views
         from . import auth_views
 
         container.wire(modules=[
@@ -25,5 +26,6 @@ class CinemaConfig(AppConfig):
             booking_views,
             movie_hall_views,
             subscription_views,
+            payment_views,
             auth_views,
         ])
