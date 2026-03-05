@@ -1,0 +1,18 @@
+[run]
+source =
+    cinema
+    cinema_backend
+omit =
+    */migrations/*
+    */__pycache__/*
+    manage.py
+    */asgi.py
+    */wsgi.py
+
+[report]
+show_missing = True
+skip_covered = True
+precision = 1
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
