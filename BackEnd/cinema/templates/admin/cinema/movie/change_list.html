@@ -1,0 +1,8 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+{{ block.super }}
+<li>
+    <a href="{% url 'admin:cinema_movie_add_from_tmdb' %}" class="addlink">Add movie from TMDB</a>
+</li>
+{% endblock %}
