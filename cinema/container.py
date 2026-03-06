@@ -8,7 +8,7 @@ providers for all repository and service objects.
 from dependency_injector import containers, providers
 
 from .repositories import BookingRepository, MovieHallRepository, MovieRepository, ScreeningRepository, SeatLockRepository, SubscriptionRepository
-from .services import BookingService, MovieHallService, MovieService, ScreeningService, SeatLockService, SubscriptionService
+from .services import BookingService, MovieHallService, MovieService, ScreeningService, SeatLockService, SubscriptionService, PaymentService
 
 
 class Container(containers.DeclarativeContainer):
@@ -34,6 +34,8 @@ class Container(containers.DeclarativeContainer):
 
     subscription_repository = providers.Factory(SubscriptionRepository)
     subscription_service    = providers.Factory(SubscriptionService, repo=subscription_repository)
+
+    payment_service = providers.Factory(PaymentService)
 
 
 container = Container()

@@ -15,6 +15,10 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import MovieViewSet, ScreeningViewSet, BookingViewSet, MovieHallViewSet
 from .auth_views import RegisterView, LoginView, LogoutView, ProfileView, MyBookingsView, ChangePasswordView
 from .views.subscription_views import SubscriptionView
+from .views.payment_views import (
+    StripeConfigView, CreateBookingIntentView,
+    CreateSubscriptionCheckoutView, StripeWebhookView, RefundView,
+)
 
 # Router auto-generates list / detail / custom-action URLs
 router = DefaultRouter()
@@ -34,8 +38,18 @@ auth_patterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
 ]
 
+# Payment endpoints (Stripe integration)
+payment_patterns = [
+    path('config/', StripeConfigView.as_view(), name='payments-config'),
+    path('create-booking-intent/', CreateBookingIntentView.as_view(), name='payments-booking-intent'),
+    path('create-subscription-checkout/', CreateSubscriptionCheckoutView.as_view(), name='payments-subscription-checkout'),
+    path('webhook/', StripeWebhookView.as_view(), name='payments-webhook'),
+    path('refund/', RefundView.as_view(), name='payments-refund'),
+]
+
 urlpatterns = [
     path('', include(router.urls)),
     path('auth/', include(auth_patterns)),
     path('me/subscription/', SubscriptionView.as_view(), name='me-subscription'),
+    path('payments/', include(payment_patterns)),
 ]

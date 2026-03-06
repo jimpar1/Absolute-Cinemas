@@ -24,6 +24,15 @@ class Subscription(models.Model):
     free_tickets_used = models.IntegerField(default=0)               # used in current week
     week_start        = models.DateField(default=_this_monday)       # for reset detection
 
+    stripe_checkout_session_id = models.CharField(
+        max_length=255, null=True, blank=True,
+        help_text="Stripe Checkout Session ID for the last subscription purchase"
+    )
+    stripe_customer_id = models.CharField(
+        max_length=255, null=True, blank=True,
+        help_text="Stripe Customer ID for recurring billing"
+    )
+
     class Meta:
         verbose_name = "Subscription"
         verbose_name_plural = "Subscriptions"
