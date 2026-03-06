@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: BackEnd/requirements.txt
+
+      - name: Install dependencies
+        working-directory: BackEnd
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: BackEnd
+        env:
+          DJANGO_SETTINGS_MODULE: cinema_backend.settings_test
+          SECRET_KEY: ci-insecure-key-for-tests-only
+        run: pytest --cov=cinema --cov-report=xml --cov-report=term-missing:skip-covered -q
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: BackEnd/coverage.xml
+          retention-days: 7
+
+  frontend-check:
+    name: Frontend Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: FrontEnd/package-lock.json
+
+      - name: Install dependencies
+        working-directory: FrontEnd
+        run: npm ci
+
+      - name: Lint
+        working-directory: FrontEnd
+        run: npm run lint
+
+      - name: Build
+        working-directory: FrontEnd
+        env:
+          VITE_API_URL: ""
+        run: npm run build
