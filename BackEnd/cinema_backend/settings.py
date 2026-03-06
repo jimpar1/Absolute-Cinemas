@@ -1,33 +1,21 @@
-"""cinema_backend Django settings.
-
-Το project είναι σχεδιασμένο ως 3-tier εφαρμογή:
-1) Front-end: επικοινωνεί αποκλειστικά μέσω REST API
-2) Business logic: Python/Django (αντικειμενοστρεφής γλώσσα)
-3) Database: σχεσιακή (MySQL/MariaDB)
-
-Το business logic επικοινωνεί με τη βάση μέσω Django ORM (models/querysets), όχι με raw SQL.
-"""
+"""cinema_backend Django settings."""
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-qk*=#z9=ln-mxqp=t9cxn=g+ao=%z0fh+%g&o3-gx8e8q7$44@'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-only-change-in-production')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+_allowed = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,backend,testserver')
+ALLOWED_HOSTS = [h.strip() for h in _allowed.split(',') if h.strip()]
 
 
 # Ορισμός εγκατεστημένων εφαρμογών
@@ -46,7 +34,7 @@ INSTALLED_APPS = [
     'corsheaders',  # CORS headers για επικοινωνία με Angular frontend
     'django_filters',  # Django filters for DRF
     # Δικές μας εφαρμογές (Our apps)
-    'cinema.apps.CinemaConfig',  # Η εφαρμογή cinema με DI wiring στο AppConfig
+    'cinema',  # Η εφαρμογή cinema με τα models μας
 ]
 
 MIDDLEWARE = [
@@ -80,28 +68,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'cinema_backend.wsgi.application'
 
 
-# Database (Relational DB: MySQL/MariaDB)
+# Database — PostgreSQL (Docker) with env-var fallback for local dev
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-# Ρυθμίσεις για MySQL/MariaDB Database
-# MySQL/MariaDB Database Configuration
-DB_NAME = os.environ.get('DB_NAME', 'cinema_db')
-DB_USER = os.environ.get('DB_USER', 'root')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
-DB_HOST = os.environ.get('DB_HOST', 'localhost')
-DB_PORT = os.environ.get('DB_PORT', '3306')
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': DB_NAME,
-        'USER': DB_USER,
-        'PASSWORD': DB_PASSWORD,
-        'HOST': DB_HOST,
-        'PORT': DB_PORT,
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'cinema_db'),
+        'USER': os.environ.get('DB_USER', 'cinema_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'cinema_pass'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
@@ -143,9 +119,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -156,8 +130,12 @@ APPEND_SLASH = True
 
 # Ρυθμίσεις CORS για επικοινωνία με Angular frontend
 # CORS settings for communication with Angular frontend
-CORS_ALLOW_ALL_ORIGINS = True  # Για development - επιτρέπει όλα τα origins
-# Για production, χρησιμοποιήστε: CORS_ALLOWED_ORIGINS = ['http://localhost:4200']
+# CORS
+_cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+if _cors_origins:
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
+else:
+    CORS_ALLOW_ALL_ORIGINS = True  # dev fallback
 
 # Ρυθμίσεις Django REST Framework
 # Django REST Framework settings
@@ -189,9 +167,13 @@ SIMPLE_JWT = {
 }
 
 # TMDB API Key
-TMDB_API_KEY = '18324c6e6eb5ceed0ea8c49c26fcf8b8'
+TMDB_API_KEY = os.environ.get('TMDB_API_KEY', '')
 
-# Stripe Settings (test mode)
+# Stripe
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
 STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

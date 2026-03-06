@@ -1,0 +1,46 @@
+name: Docker Build Check
+
+on:
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  build-backend:
+    name: Build Backend Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./BackEnd
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: absolutecinemas-backend:pr-${{ github.event.number }}
+
+  build-frontend:
+    name: Build Frontend Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./FrontEnd
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: absolutecinemas-frontend:pr-${{ github.event.number }}
