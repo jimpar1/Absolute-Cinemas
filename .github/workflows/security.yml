@@ -1,6 +1,6 @@
 name: Security Scan
 
-on:
+on: # yamllint disable-line rule:truthy
   schedule:
     - cron: "0 9 * * 1"  # Every Monday at 09:00 UTC
   workflow_dispatch:
