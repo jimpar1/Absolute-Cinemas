@@ -3,7 +3,7 @@
  * Backend should be running at VITE_API_URL (default: http://localhost:8000)
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || ''
 
 async function safeReadJson(response) {
     const text = await response.text()

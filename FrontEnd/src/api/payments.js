@@ -3,7 +3,7 @@
  * Endpoints for Stripe PaymentIntent (bookings) and Checkout Sessions (subscriptions).
  */
 
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 /** Fetch the Stripe publishable key from the backend. */
 export async function getStripeConfig() {
