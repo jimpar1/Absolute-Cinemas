@@ -151,7 +151,7 @@ export default function Booking() {
 
         const handleBeforeUnload = () => {
             const data = JSON.stringify({ session_id: sessionId })
-            const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"
+            const apiUrl = import.meta.env.VITE_API_URL || ""
             navigator.sendBeacon(`${apiUrl}/api/screenings/${id}/unlock_seats/`, new Blob([data], { type: 'application/json' }))
         }
         window.addEventListener('beforeunload', handleBeforeUnload)

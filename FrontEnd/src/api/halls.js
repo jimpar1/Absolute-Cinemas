@@ -1,4 +1,4 @@
-const API = "http://127.0.0.1:8000/api/moviehalls/";
+const API = `${import.meta.env.VITE_API_URL || ""}/api/moviehalls/`;
 
 export async function getHalls() {
     const res = await fetch(API);

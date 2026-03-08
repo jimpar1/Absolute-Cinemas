@@ -3,7 +3,7 @@
  * Endpoints related to individual screening details.
  */
 
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 /** Fetch a single screening by its ID (includes hall layout, price, etc.). */
 export async function getScreening(screeningId) {
