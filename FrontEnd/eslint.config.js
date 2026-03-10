@@ -10,7 +10,7 @@ import jsxA11y from 'eslint-plugin-jsx-a11y'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'playwright.config.js', 'e2e/**']),
   jsxA11y.flatConfigs.recommended,
   {
     files: ['**/*.{js,jsx}'],
