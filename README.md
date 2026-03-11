@@ -1,7 +1,6 @@
 # AbsoluteCinema
 
 [![CI](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/ci.yml/badge.svg)](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/ci.yml)
-[![Docker Build](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/docker-build.yml/badge.svg)](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/docker-build.yml)
 [![CodeQL](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/codeql.yml/badge.svg)](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/codeql.yml)
 
 Πλατφόρμα διαχείρισης και κρατήσεων εισιτηρίων κινηματογράφου. React frontend, Django REST backend, PostgreSQL βάση δεδομένων.
