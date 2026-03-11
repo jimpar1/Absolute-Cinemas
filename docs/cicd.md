@@ -16,8 +16,8 @@ flowchart TD
     H -- Όχι --> D
     H -- Ναι --> G
     G --> I[Merge στο master]
-    I --> J[Deploy Workflow\nDημοσίευση στο GHCR]
-    J --> K[ghcr.io - latest + SHA tag]
+    I --> J[Deploy Workflow\nDigitalOcean App Platform]
+    J --> K[doctl apps create-deployment]
 
     style D fill:#cf222e,color:#fff
     style K fill:#2da44e,color:#fff
@@ -59,32 +59,21 @@ flowchart TD
 
 ### 3. Deploy (`deploy.yml`)
 
-**Πότε τρέχει:** Σε `push` στο `master` (δηλαδή κάθε φορά που γίνεται merge).
+**Πότε τρέχει:** Όταν ολοκληρωθεί επιτυχώς το Release workflow στο `master`.
 
 **Jobs:**
-1. Σύνδεση στο **GitHub Container Registry** (`ghcr.io`) με `GITHUB_TOKEN` — δεν απαιτούνται επιπλέον secrets
-2. Build και push εικόνας backend:
-   - `ghcr.io/jimpar1/absolute-cinemas-backend:latest`
-   - `ghcr.io/jimpar1/absolute-cinemas-backend:<sha>` (πρώτα 7 χαρακτήρες του commit SHA)
-3. Build και push εικόνας frontend (ίδιες ετικέτες)
-4. Summary στο GitHub Actions UI με τις εικόνες που δημοσιεύτηκαν
+1. Σύνδεση στο **DigitalOcean** με `DIGITALOCEAN_ACCESS_TOKEN`
+2. Εκκίνηση νέου deployment στο App Platform:
+   ```bash
+   doctl apps create-deployment $DO_APP_ID --wait
+   ```
 
-**Χρήση εικόνων:**
+**Απαιτούμενα secrets:**
 
-```yaml
-# docker-compose.yml σε production server
-services:
-  backend:
-    image: ghcr.io/jimpar1/absolute-cinemas-backend:latest
-  frontend:
-    image: ghcr.io/jimpar1/absolute-cinemas-frontend:latest
-```
-
-**Σύνδεση με Railway/Render:**
-
-Και τα δύο πλατφόρμες υποστηρίζουν auto-deploy από GitHub push:
-- **Railway**: Σύνδεσε το αποθετήριο και επίλεξε το branch `master`. Εντοπίζει αυτόματα το `docker-compose.yml`.
-- **Render**: Δημιούργησε Web Service → GitHub → επίλεξε branch `master` → Docker.
+| Secret | Περιγραφή |
+|--------|-----------|
+| `DIGITALOCEAN_ACCESS_TOKEN` | API token για doctl |
+| `DO_APP_ID` | ID της εφαρμογής στο DigitalOcean App Platform |
 
 ---
 
@@ -121,23 +110,20 @@ services:
 Πρόσθεσε τα παρακάτω badges στο `README.md` για άμεση εικόνα κατάστασης:
 
 ```markdown
-[![CI](https://github.com/jimpar1/AbsoluteCinemasV2/actions/workflows/ci.yml/badge.svg)](https://github.com/jimpar1/AbsoluteCinemasV2/actions/workflows/ci.yml)
-[![Docker Build](https://github.com/jimpar1/AbsoluteCinemasV2/actions/workflows/docker-build.yml/badge.svg)](https://github.com/jimpar1/AbsoluteCinemasV2/actions/workflows/docker-build.yml)
-[![CodeQL](https://github.com/jimpar1/AbsoluteCinemasV2/actions/workflows/codeql.yml/badge.svg)](https://github.com/jimpar1/AbsoluteCinemasV2/actions/workflows/codeql.yml)
+[![CI](https://github.com/jimpar1/v3/actions/workflows/ci.yml/badge.svg)](https://github.com/jimpar1/v3/actions/workflows/ci.yml)
+[![Docker Build](https://github.com/jimpar1/v3/actions/workflows/docker-build.yml/badge.svg)](https://github.com/jimpar1/v3/actions/workflows/docker-build.yml)
+[![CodeQL](https://github.com/jimpar1/v3/actions/workflows/codeql.yml/badge.svg)](https://github.com/jimpar1/v3/actions/workflows/codeql.yml)
 ```
 
 ---
 
 ## Απαιτήσεις & Secrets
 
-Κανένα επιπλέον secret δεν απαιτείται για τα βασικά workflows. Το `GITHUB_TOKEN` παρέχεται αυτόματα από το GitHub.
+Κανένα επιπλέον secret δεν απαιτείται για τα βασικά workflows (CI, Docker Build, Security, CodeQL). Το `GITHUB_TOKEN` παρέχεται αυτόματα από το GitHub.
 
-Για production deployment σε VPS (αντί Railway/Render), μπορείς να προσθέσεις:
+Για το `deploy.yml` (DigitalOcean App Platform) απαιτούνται:
 
 | Secret | Περιγραφή |
 |--------|-----------|
-| `DEPLOY_HOST` | IP ή hostname του server |
-| `DEPLOY_KEY` | SSH private key για σύνδεση |
-| `DEPLOY_USER` | SSH username |
-
-Και να επεκτείνεις το `deploy.yml` με ένα `ssh-action` step που κάνει `docker compose pull && docker compose up -d`.
+| `DIGITALOCEAN_ACCESS_TOKEN` | API token για doctl |
+| `DO_APP_ID` | ID της εφαρμογής στο App Platform |

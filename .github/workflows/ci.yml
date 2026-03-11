@@ -31,7 +31,7 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: cinema_backend.settings_test
           SECRET_KEY: ci-insecure-key-for-tests-only
-        run: pytest --cov=cinema --cov-report=xml --cov-report=term-missing:skip-covered -q
+        run: pytest --cov=cinema --cov-report=xml --cov-report=term-missing:skip-covered -q --override-ini="addopts=-ra"
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
