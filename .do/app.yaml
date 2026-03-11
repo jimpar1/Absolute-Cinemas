@@ -1,66 +1,102 @@
 name: absolute-cinemas
 region: ams
 
-# ─── Backend (Django REST API) ───────────────────────────────────────────────
 services:
   - name: backend
     image:
-      registry_type: DOCR
+      registry_type: GHCR
+      registry: jimpar1
       repository: absolutecinemas-backend
       tag: latest
     http_port: 8000
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-0.5gb
-    run_command: gunicorn cinema_backend.wsgi:application --bind 0.0.0.0:8000 --workers 2
+    routes:
+      - path: /api
+      - path: /admin
+      - path: /media
+      - path: /static
     health_check:
       http_path: /api/movies/
       initial_delay_seconds: 30
       period_seconds: 30
     envs:
-      - key: DJANGO_SETTINGS_MODULE
-        value: cinema_backend.settings
-        scope: RUN_TIME
       - key: SECRET_KEY
-        value: ${SECRET_KEY}
+        value: "change-me-to-a-long-random-string"
         scope: RUN_TIME
         type: SECRET
-      - key: DATABASE_URL
-        value: ${DATABASE_URL}
+      - key: DEBUG
+        value: "False"
         scope: RUN_TIME
-        type: SECRET
       - key: ALLOWED_HOSTS
         value: ${APP_DOMAIN}
         scope: RUN_TIME
       - key: CORS_ALLOWED_ORIGINS
         value: https://${APP_DOMAIN}
         scope: RUN_TIME
-      - key: STRIPE_SECRET_KEY
-        value: ${STRIPE_SECRET_KEY}
+      - key: DB_HOST
+        value: ${cinema-db.HOSTNAME}
+        scope: RUN_TIME
+      - key: DB_PORT
+        value: ${cinema-db.PORT}
+        scope: RUN_TIME
+      - key: DB_NAME
+        value: ${cinema-db.DATABASE}
+        scope: RUN_TIME
+      - key: DB_USER
+        value: ${cinema-db.USERNAME}
+        scope: RUN_TIME
+      - key: DB_PASSWORD
+        value: ${cinema-db.PASSWORD}
         scope: RUN_TIME
         type: SECRET
+      - key: ADMIN_USERNAME
+        value: "admin"
+        scope: RUN_TIME
+      - key: ADMIN_PASSWORD
+        value: "change-me-admin-password"
+        scope: RUN_TIME
+        type: SECRET
+      - key: STAFF_USERNAME
+        value: "staff"
+        scope: RUN_TIME
+      - key: STAFF_PASSWORD
+        value: "change-me-staff-password"
+        scope: RUN_TIME
+        type: SECRET
+      - key: STRIPE_SECRET_KEY
+        value: "sk_test_..."
+        scope: RUN_TIME
+        type: SECRET
+      - key: STRIPE_PUBLISHABLE_KEY
+        value: "pk_test_..."
+        scope: RUN_TIME
+      - key: STRIPE_WEBHOOK_SECRET
+        value: "whsec_..."
+        scope: RUN_TIME
+        type: SECRET
+      - key: TMDB_API_KEY
+        value: "your_tmdb_api_key"
+        scope: RUN_TIME
 
-# ─── Frontend (React / Nginx) ─────────────────────────────────────────────────
   - name: frontend
     image:
-      registry_type: DOCR
+      registry_type: GHCR
+      registry: jimpar1
       repository: absolutecinemas-frontend
       tag: latest
     http_port: 80
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-0.5gb
+    routes:
+      - path: /
     health_check:
       http_path: /
       initial_delay_seconds: 20
       period_seconds: 30
-    envs:
-      - key: VITE_API_URL
-        value: https://${backend.PUBLIC_URL}
-        scope: BUILD_TIME
 
-# ─── Managed PostgreSQL database ─────────────────────────────────────────────
 databases:
   - name: cinema-db
     engine: PG
     version: "16"
     production: false
-    cluster_name: absolute-cinemas-db
