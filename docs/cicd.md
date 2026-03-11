@@ -45,15 +45,20 @@ flowchart TD
 
 ---
 
-### 2. Docker Build Check (`docker-build.yml`)
+### 2. Docker Build & Push (`docker-build.yml`)
 
-**Πότε τρέχει:** Σε `pull_request` που στοχεύει το `master` ή `main`.
+**Πότε τρέχει:** Σε κάθε `push` στο `master`/`main` και σε `pull_request` που στοχεύει αυτά τα branches.
 
 **Jobs:**
-- Builds την εικόνα backend (χωρίς push)
-- Builds την εικόνα frontend (χωρίς push)
+- Builds και pushes την εικόνα backend στο **GitHub Container Registry** (GHCR)
+- Builds και pushes την εικόνα frontend στο GHCR
 
-Ο σκοπός είναι να εντοπιστούν προβλήματα στα `Dockerfile` πριν το merge. Χρησιμοποιεί GitHub Actions cache για γρήγορα builds.
+Σε PRs γίνεται μόνο build (χωρίς push). Σε push στο master/main δημοσιεύονται οι εικόνες:
+- `ghcr.io/jimpar1/absolutecinemas-backend:latest`
+- `ghcr.io/jimpar1/absolutecinemas-backend:<sha>` (πρώτα 7 χαρακτήρες του SHA)
+- Αντίστοιχα για το frontend
+
+Χρησιμοποιεί `GITHUB_TOKEN` — δεν απαιτούνται επιπλέον secrets.
 
 ---
 
@@ -110,9 +115,9 @@ flowchart TD
 Πρόσθεσε τα παρακάτω badges στο `README.md` για άμεση εικόνα κατάστασης:
 
 ```markdown
-[![CI](https://github.com/jimpar1/v3/actions/workflows/ci.yml/badge.svg)](https://github.com/jimpar1/v3/actions/workflows/ci.yml)
-[![Docker Build](https://github.com/jimpar1/v3/actions/workflows/docker-build.yml/badge.svg)](https://github.com/jimpar1/v3/actions/workflows/docker-build.yml)
-[![CodeQL](https://github.com/jimpar1/v3/actions/workflows/codeql.yml/badge.svg)](https://github.com/jimpar1/v3/actions/workflows/codeql.yml)
+[![CI](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/ci.yml/badge.svg)](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/ci.yml)
+[![Docker Build](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/docker-build.yml/badge.svg)](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/docker-build.yml)
+[![CodeQL](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/codeql.yml/badge.svg)](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/codeql.yml)
 ```
 
 ---
