@@ -11,3 +11,14 @@ from .booking_service import BookingService      # noqa: F401
 from .seat_lock_service import SeatLockService   # noqa: F401
 from .subscription_service import SubscriptionService  # noqa: F401
 from .payment_service import PaymentService            # noqa: F401
+
+__all__ = [
+	'ServiceError',
+	'MovieHallService',
+	'MovieService',
+	'ScreeningService',
+	'BookingService',
+	'SeatLockService',
+	'SubscriptionService',
+	'PaymentService',
+]

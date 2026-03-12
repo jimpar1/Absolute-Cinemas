@@ -61,7 +61,6 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         const token = localStorage.getItem('accessToken')
         if (token) fetchSubscription(token)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     // Keep body[data-tier] in sync so CSS variables reflect the active plan

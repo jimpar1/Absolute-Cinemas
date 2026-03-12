@@ -209,3 +209,12 @@ JAZZMIN_SETTINGS = {
     'welcome_sign': 'Welcome to AbsoluteCinema Admin',
     'copyright': 'AbsoluteCinema',
 }
+
+# Jazzmin UI tweaks (force dark look)
+JAZZMIN_UI_TWEAKS = {
+    'theme': 'darkly',
+    'dark_mode_theme': 'darkly',
+    'navbar': 'navbar-dark',
+    'accent': 'accent-primary',
+    'sidebar': 'sidebar-dark-primary',
+}
