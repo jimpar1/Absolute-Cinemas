@@ -7,8 +7,25 @@ Functions:
   - get_popular_movies(page)      → trending / popular movies
 """
 
+import logging
+
+import requests
 from tmdbv3api import TMDb, Movie
 from django.conf import settings
+
+
+logger = logging.getLogger(__name__)
+
+TMDB_IMAGES_ENDPOINT_TEMPLATE = "https://api.themoviedb.org/3/movie/{movie_id}/images"
+
+
+def _normalize_movie_id(movie_id):
+    """Return a positive integer TMDB movie id, or None if invalid."""
+    try:
+        normalized = int(movie_id)
+    except (TypeError, ValueError):
+        return None
+    return normalized if normalized > 0 else None
 
 
 def search_movies(query, page=1):
@@ -35,19 +52,27 @@ def get_movie_details(movie_id):
     Appends videos, images, and credits to the response.
     Filters backdrops to prefer text-free scene shots.
     """
-    import requests
+    normalized_movie_id = _normalize_movie_id(movie_id)
+    if normalized_movie_id is None:
+        logger.warning("Rejected invalid TMDB movie_id: %r", movie_id)
+        return None
+
     tmdb = TMDb()
     tmdb.api_key = settings.TMDB_API_KEY
     movie_api = Movie()
     try:
-        details = movie_api.details(movie_id, append_to_response="videos,images,credits")
+        details = movie_api.details(normalized_movie_id, append_to_response="videos,images,credits")
         if hasattr(details, '_json'):
             details = details._json
 
         # Fetch images separately to get text-free backdrops
         try:
-            images_url = f"https://api.themoviedb.org/3/movie/{movie_id}/images?api_key={settings.TMDB_API_KEY}"
-            images_response = requests.get(images_url)
+            images_url = TMDB_IMAGES_ENDPOINT_TEMPLATE.format(movie_id=normalized_movie_id)
+            images_response = requests.get(
+                images_url,
+                params={'api_key': settings.TMDB_API_KEY},
+                timeout=10,
+            )
             if images_response.status_code == 200:
                 images_data = images_response.json()
                 backdrops = images_data.get('backdrops', [])
@@ -64,11 +89,11 @@ def get_movie_details(movie_id):
                     scene_shots = sorted(backdrops, key=lambda x: x.get('vote_average', 0), reverse=True)
                 details['images'] = {'backdrops': scene_shots}
         except Exception as e:
-            print(f"Error fetching images: {e}")
+            logger.warning("Error fetching TMDB images for %s: %s", normalized_movie_id, e)
 
         return details
     except Exception as e:
-        print(f"Error getting movie details: {e}")
+        logger.error("Error getting TMDB movie details for %s: %s", normalized_movie_id, e)
         return None
 
 
