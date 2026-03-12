@@ -9,7 +9,12 @@ Run:
 
 from __future__ import annotations
 
-from .settings import *  # noqa: F403
+from . import settings as base_settings
+
+
+for _name in dir(base_settings):
+    if _name.isupper():
+        globals()[_name] = getattr(base_settings, _name)
 
 
 # Override DB for tests.
@@ -17,7 +22,7 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         # File-based DB is more stable than :memory: for Django test runner.
-        "NAME": BASE_DIR / "test_db.sqlite3",  # noqa: F405
+        "NAME": base_settings.BASE_DIR / "test_db.sqlite3",
     }
 }
 

@@ -15,3 +15,14 @@ from .domain_serializers import (        # noqa: F401
     ScreeningSerializer,
     BookingSerializer,
 )
+
+__all__ = [
+    'CustomerSerializer',
+    'ChangePasswordSerializer',
+    'UserRegistrationSerializer',
+    'UserProfileSerializer',
+    'MovieHallSerializer',
+    'MovieSerializer',
+    'ScreeningSerializer',
+    'BookingSerializer',
+]

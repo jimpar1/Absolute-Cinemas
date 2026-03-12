@@ -9,3 +9,12 @@ from .movie_admin import MovieAdmin              # noqa: F401
 from .screening_admin import ScreeningAdmin      # noqa: F401
 from .booking_admin import BookingAdmin          # noqa: F401
 from .subscription_admin import SubscriptionAdmin  # noqa: F401
+
+__all__ = [
+	'CustomerAdmin',
+	'MovieHallAdmin',
+	'MovieAdmin',
+	'ScreeningAdmin',
+	'BookingAdmin',
+	'SubscriptionAdmin',
+]

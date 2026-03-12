@@ -17,7 +17,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from dependency_injector.wiring import Provide, inject
 
 from ..container import Container
-from ..permissions import IsStaffWithModelPermsOrReadOnly, IsStaffWithBookingViewPermission
+from ..permissions import IsStaffWithModelPermsOrReadOnly
 from ..serializers import ScreeningSerializer
 from ..services import ScreeningService, SeatLockService, ServiceError
 
