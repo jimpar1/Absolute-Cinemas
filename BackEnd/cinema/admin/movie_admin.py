@@ -85,6 +85,14 @@ class MovieAdmin(admin.ModelAdmin):
         """Fetch TMDB details and create a Movie. Returns a redirect or None on error."""
         from ..tmdb_service import get_movie_details
 
+        try:
+            tmdb_id = int(tmdb_id)
+            if tmdb_id <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            self.message_user(request, 'Invalid TMDB movie id.')
+            return None
+
         movie_details = get_movie_details(tmdb_id)
         if not movie_details:
             self.message_user(request, 'Movie not found in TMDB.')
