@@ -47,8 +47,7 @@ export default function Home() {
     const heroBg = '/absulute-cinema.webp'
     const [movies, setMovies] = useState([])
     const [movieCount, setMovieCount] = useState(null)
-    // eslint-disable-next-line no-unused-vars
-    const { hallGroups, halls, hallCount, totalCapacity } = useHalls()
+    const { hallGroups, hallCount, totalCapacity } = useHalls()
 
     // Refs for GSAP targets
     const heroSectionRef = useRef(null)
