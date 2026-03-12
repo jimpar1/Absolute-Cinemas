@@ -110,7 +110,7 @@ class TestRefreshMoviesFromTMDBCommand:
     @patch('cinema.management.commands.refresh_movies_from_tmdb.search_movies')
     def test_command_handles_tmdb_details_fetch_failure(self, mock_search, mock_details, make_movie):
         """Test command handles TMDB details fetch failure."""
-        movie = make_movie(title="Test Movie")
+        _movie = make_movie(title="Test Movie")
 
         mock_search.return_value = {'results': [{'id': 12345}]}
         mock_details.return_value = None  # Simulates fetch failure

@@ -154,8 +154,8 @@ class CreateSubscriptionCheckoutView(APIView):
         frontend_base = request.data.get('frontend_url', default_frontend_origin)
         try:
             success_url, cancel_url = _build_subscription_redirect_urls(frontend_base)
-        except ValueError as exc:
-            return Response({'error': str(exc)}, status=400)
+        except ValueError:
+            return Response({'error': 'Invalid subscription configuration.'}, status=400)
 
         result = payment_service.create_subscription_checkout(
             tier=tier,
@@ -227,7 +227,7 @@ class StripeWebhookView(APIView):
             try:
                 user = User.objects.get(pk=int(user_id))
             except User.DoesNotExist:
-                pass
+                logger.warning("User %s not found for payment intent metadata", user_id)
 
         seats_booked = int(metadata.get('seats_booked', 1))
         total_price = intent['amount'] / 100  # cents → euros
@@ -295,7 +295,7 @@ class StripeWebhookView(APIView):
                 ).delete()
                 logger.info("Released %d seat locks for failed PI %s", deleted, intent['id'])
             except (ValueError, TypeError):
-                pass
+                logger.debug("Skipping seat lock cleanup for invalid metadata")
 
 
 class RefundView(APIView):
