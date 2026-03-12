@@ -10,6 +10,7 @@ Endpoints:
 """
 
 import logging
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
@@ -26,6 +27,40 @@ from ..services import PaymentService, SubscriptionService
 from ..models import Booking, Screening, SeatLock
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_origin(url: str) -> str | None:
+    """Normalize a URL-like string to origin (scheme://host[:port]) if valid."""
+    parsed = urlparse((url or '').strip())
+    if parsed.scheme not in {'http', 'https'}:
+        return None
+    if not parsed.netloc or not parsed.hostname:
+        return None
+    if parsed.username or parsed.password:
+        return None
+    if parsed.path not in {'', '/'} or parsed.params or parsed.query or parsed.fragment:
+        return None
+    return f"{parsed.scheme}://{parsed.netloc}".rstrip('/')
+
+
+def _build_subscription_redirect_urls(frontend_url: str) -> tuple[str, str]:
+    """Return validated success/cancel URLs for Stripe checkout redirects."""
+    requested_origin = _normalize_origin(frontend_url)
+    if not requested_origin:
+        raise ValueError('Invalid frontend_url format.')
+
+    allowed_origins = {
+        origin for origin in
+        (_normalize_origin(o) for o in getattr(settings, 'FRONTEND_ALLOWED_ORIGINS', []))
+        if origin
+    }
+
+    if requested_origin not in allowed_origins:
+        raise ValueError('frontend_url is not allowed.')
+
+    success_url = f"{requested_origin}/subscription/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{requested_origin}/subscription/cancel"
+    return success_url, cancel_url
 
 
 class StripeConfigView(APIView):
@@ -113,9 +148,14 @@ class CreateSubscriptionCheckoutView(APIView):
         if billing_period not in ('monthly', 'annual'):
             return Response({'error': 'Invalid billing_period. Choose monthly or annual.'}, status=400)
 
-        frontend_base = request.data.get('frontend_url', 'http://localhost:5173')
-        success_url = f"{frontend_base}/subscription/success?session_id={{CHECKOUT_SESSION_ID}}"
-        cancel_url = f"{frontend_base}/subscription/cancel"
+        default_frontend_origin = (
+            getattr(settings, 'FRONTEND_ALLOWED_ORIGINS', ['http://localhost:5173'])[0]
+        )
+        frontend_base = request.data.get('frontend_url', default_frontend_origin)
+        try:
+            success_url, cancel_url = _build_subscription_redirect_urls(frontend_base)
+        except ValueError as exc:
+            return Response({'error': str(exc)}, status=400)
 
         result = payment_service.create_subscription_checkout(
             tier=tier,
