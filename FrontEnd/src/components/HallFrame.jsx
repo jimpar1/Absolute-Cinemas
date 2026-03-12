@@ -249,10 +249,14 @@ export default function HallFrame({ hallGroups = [] }) {
     }, [hallGroups])
 
     useEffect(() => {
+        const slotAEl = slotARef.current
+        const slotBEl = slotBRef.current
+        const overlayEl = overlayRef.current
+
         return () => {
             killTimer()
             document.body.style.overflow = ''
-            gsap.killTweensOf([slotARef.current, slotBRef.current, overlayRef.current])
+            gsap.killTweensOf([slotAEl, slotBEl, overlayEl])
         }
     }, [])
 
