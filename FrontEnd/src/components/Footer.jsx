@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { Github } from 'lucide-react';
 import './Footer.css';
 
 export default function Footer() {
@@ -14,7 +15,14 @@ export default function Footer() {
                 <div className="footer-section footer-brand">
                     <div className="footer-logos">
                         <img src="/logo.webp" alt="Absolute Cinema" className="footer-logo" />
-                        <img src="/padaLOGO.webp" alt="Pada Logo" className="footer-logo" />
+                        <a
+                            href="https://ice.uniwa.gr/en/home/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Visit UNIWA ICE website"
+                        >
+                            <img src="/padaLOGO.webp" alt="UNIWA ICE Logo" className="footer-logo" />
+                        </a>
                     </div>
                     <p className="footer-tagline">Your Ultimate/Fake Movie Experience</p>
                 </div>
@@ -46,6 +54,16 @@ export default function Footer() {
                     <h3>Contact</h3>
                     <p>University of West Attica</p>
                     <p>Computer Science Department</p>
+                    <a
+                        className="footer-github"
+                        href="https://github.com/jimpar1/Absolute-Cinemas"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Open Absolute-Cinemas public repository on GitHub"
+                    >
+                        <Github size={18} aria-hidden="true" />
+                        <span>GitHub Repository</span>
+                    </a>
                     <p className="footer-year">© 2026 Absolute Cinema</p>
                 </div>
             </div>
