@@ -1,6 +1,6 @@
 """
 Cinema Database Setup Script — Windows
-Uses PyMySQL as the MySQL driver.
+Uses PostgreSQL via psycopg2.
 
 Run:
     python create_db_windows.py
@@ -9,44 +9,59 @@ Run:
 import os
 import sys
 import time
+from psycopg2 import sql
+import psycopg2
 
 # =============================================================================
-# MySQL Driver: PyMySQL (pure Python, works on Windows without C compiler)
-# =============================================================================
-
-import pymysql
-pymysql.install_as_MySQLdb()
-pymysql.version_info = (2, 2, 1, "final", 0)  # Satisfy Django 5 version check
-import MySQLdb  # type: ignore[import-not-found]
-
-# =============================================================================
-# STEP 1: Create MySQL Database
+# STEP 1: Create PostgreSQL Database
 # =============================================================================
 
 DB_HOST = os.environ.get('DB_HOST', 'localhost')
-DB_USER = os.environ.get('DB_USER', 'root')
+DB_USER = os.environ.get('DB_USER', 'postgres')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
-DB_PORT = int(os.environ.get('DB_PORT', '3306'))
+DB_PORT = int(os.environ.get('DB_PORT', '5432'))
 DB_NAME = os.environ.get('DB_NAME', 'cinema_db')
+DB_ADMIN_DB = os.environ.get('DB_ADMIN_DB', 'postgres')
+DB_SSLMODE = os.environ.get('DB_SSLMODE', '').strip()
 
 print("=" * 60)
 print("🎬 ABSOLUTE CINEMA — Database Setup (Windows)")
 print("=" * 60)
 
 try:
-    connection = MySQLdb.connect(
-        host=DB_HOST, user=DB_USER, password=DB_PASSWORD, port=DB_PORT
-    )
+    connect_kwargs = {
+        'host': DB_HOST,
+        'user': DB_USER,
+        'password': DB_PASSWORD,
+        'port': DB_PORT,
+        'dbname': DB_ADMIN_DB,
+    }
+    if DB_SSLMODE:
+        connect_kwargs['sslmode'] = DB_SSLMODE
+
+    connection = psycopg2.connect(**connect_kwargs)
+    connection.autocommit = True
     cursor = connection.cursor()
 
-    cursor.execute(f"DROP DATABASE IF EXISTS {DB_NAME}")
+    # PostgreSQL requires terminating active sessions before dropping a database.
+    cursor.execute(
+        """
+        SELECT pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE datname = %s AND pid <> pg_backend_pid()
+        """,
+        (DB_NAME,),
+    )
+
+    cursor.execute(sql.SQL("DROP DATABASE IF EXISTS {};").format(sql.Identifier(DB_NAME)))
     print(f"🗑️  Dropped database '{DB_NAME}' (if existed).")
-    cursor.execute(f"CREATE DATABASE {DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
+
+    cursor.execute(sql.SQL("CREATE DATABASE {} ENCODING 'UTF8';").format(sql.Identifier(DB_NAME)))
     print(f"✅ Database '{DB_NAME}' created.")
 
     cursor.close()
     connection.close()
-except MySQLdb.Error as e:
+except psycopg2.Error as e:
     print(f"❌ Database error: {e}")
     sys.exit(1)
 
