@@ -17,7 +17,7 @@ def _configure_stdout_utf8() -> None:
     try:
         # Python 3.7+: TextIOWrapper supports reconfigure
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
-    except Exception:
+    except (AttributeError, OSError):
         pass
 
 

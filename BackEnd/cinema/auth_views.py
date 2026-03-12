@@ -84,10 +84,8 @@ class LoginView(APIView):
         refresh = RefreshToken.for_user(user)
 
         customer_profile = None
-        try:
+        if hasattr(user, 'customer_profile'):
             customer_profile = {'phone': user.customer_profile.phone}
-        except Customer.DoesNotExist:
-            pass
 
         return Response({
             'user': {
