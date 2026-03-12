@@ -300,6 +300,7 @@ class StripeWebhookView(APIView):
 
 class RefundView(APIView):
     """Refund a booking via its Stripe PaymentIntent."""
+    # Trigger CodeQL re-scan
     permission_classes = [IsAuthenticated]
 
     @inject
