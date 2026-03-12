@@ -9,11 +9,9 @@ Endpoints:
   POST /api/payments/refund/                     → refund a booking
 """
 
-import json
 import logging
 
 from django.conf import settings
-from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
@@ -25,7 +23,7 @@ from dependency_injector.wiring import inject, Provide
 
 from ..container import Container
 from ..services import PaymentService, SubscriptionService
-from ..models import Booking, Screening, SeatLock, Subscription
+from ..models import Booking, Screening, SeatLock
 
 logger = logging.getLogger(__name__)
 

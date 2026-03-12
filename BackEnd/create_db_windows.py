@@ -100,9 +100,9 @@ if not User.objects.filter(username='admin').exists():
         first_name='Admin',
         last_name='User'
     )
-    print(f"   ✅ Superuser: admin / admin")
+    print("   ✅ Superuser: admin / admin")
 else:
-    print(f"   ⏩ Superuser 'admin' already exists, skipping.")
+    print("   ⏩ Superuser 'admin' already exists, skipping.")
 
 # Regular user
 if not User.objects.filter(username='user').exists():
@@ -114,9 +114,9 @@ if not User.objects.filter(username='user').exists():
         last_name='Παπαδόπουλος'
     )
     Customer.objects.get_or_create(user=regular_user, defaults={'phone': '6912345678'})
-    print(f"   ✅ Regular user: user / user")
+    print("   ✅ Regular user: user / user")
 else:
-    print(f"   ⏩ User 'user' already exists, skipping.")
+    print("   ⏩ User 'user' already exists, skipping.")
 
 # Staff user (limited admin access via group permissions)
 if not User.objects.filter(username='staff').exists():
@@ -146,9 +146,9 @@ if not User.objects.filter(username='staff').exists():
     staff_group.permissions.set(perms)
     staff_user.groups.add(staff_group)
 
-    print(f"   ✅ Staff user: staff / staff (limited via 'Cinema Staff' group)")
+    print("   ✅ Staff user: staff / staff (limited via 'Cinema Staff' group)")
 else:
-    print(f"   ⏩ User 'staff' already exists, skipping.")
+    print("   ⏩ User 'staff' already exists, skipping.")
 
 # =============================================================================
 # STEP 4: Create Cinema Halls
@@ -321,7 +321,7 @@ for tmdb_id, status in LEGENDARY_MOVIES:
     time.sleep(0.3)  # Be kind to TMDB API
 
 print(f"\n{'=' * 60}")
-print(f"🎉 Setup complete!")
+print("🎉 Setup complete!")
 print(f"   Users: {User.objects.count()} (admin + regular)")
 print(f"   Halls: {MovieHall.objects.count()}")
 print(f"   Movies: {Movie.objects.count()} ({success} imported)")
