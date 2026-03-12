@@ -44,7 +44,7 @@ class TestScreeningValidation:
         """Overlapping screenings in same hall are rejected."""
         # Create first screening 10:00-12:00 (120min movie)
         start1 = timezone.now().replace(hour=10, minute=0, second=0, microsecond=0)
-        screening1 = Screening.objects.create(
+        Screening.objects.create(
             movie=movie, hall=hall,
             start_time=start1,
             price=10
@@ -72,7 +72,7 @@ class TestScreeningValidation:
         start = timezone.now().replace(hour=14, minute=0, second=0, microsecond=0)
         
         # Create screening in hall1
-        screening1 = Screening.objects.create(
+        Screening.objects.create(
             movie=movie, hall=hall1,
             start_time=start,
             price=10

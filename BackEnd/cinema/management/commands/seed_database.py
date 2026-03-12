@@ -1,9 +1,6 @@
 import time
 
 from django.core.management.base import BaseCommand
-from django.contrib.auth.models import User
-from django.contrib.auth.models import Group, Permission
-from django.contrib.contenttypes.models import ContentType
 from cinema.models import MovieHall, HallPhoto, Movie
 from cinema.tmdb_service import get_movie_details
 
