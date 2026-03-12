@@ -6,6 +6,7 @@ These correspond to the cinema's core data models.
 from rest_framework import serializers
 from django.core.exceptions import ValidationError as DjangoValidationError
 from ..models import Movie, Screening, Booking, MovieHall, HallPhoto
+from ..realtime import broadcast_screening_seat_state
 
 
 class HallPhotoSerializer(serializers.ModelSerializer):
@@ -155,6 +156,8 @@ class BookingSerializer(serializers.ModelSerializer):
                 seat_number__in=seats,
                 session_id=session_id
             ).delete()
+
+        broadcast_screening_seat_state(booking.screening_id)
 
         return booking
 

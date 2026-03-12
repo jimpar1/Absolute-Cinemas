@@ -25,6 +25,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from dependency_injector.wiring import inject, Provide
 
 from ..container import Container
+from ..realtime import broadcast_screening_seat_state
 from ..services import PaymentService, SubscriptionService
 from ..models import Booking, Screening, SeatLock, Subscription
 
@@ -259,6 +260,8 @@ class StripeWebhookView(APIView):
                 session_id=session_id,
             ).delete()
 
+        broadcast_screening_seat_state(screening.id)
+
         logger.info("Booking #%d created via webhook for PI %s", booking.id, payment_intent_id)
 
     def _handle_checkout_completed(self, session, subscription_service):
@@ -296,6 +299,8 @@ class StripeWebhookView(APIView):
                     session_id=session_id,
                 ).delete()
                 logger.info("Released %d seat locks for failed PI %s", deleted, intent['id'])
+                if deleted:
+                    broadcast_screening_seat_state(int(screening_id))
             except (ValueError, TypeError):
                 pass
 
@@ -336,6 +341,8 @@ class RefundView(APIView):
         # Restore available seats
         booking.screening.available_seats += booking.seats_booked
         booking.screening.save(update_fields=['available_seats'])
+
+        broadcast_screening_seat_state(booking.screening_id)
 
         return Response({
             'refund_id': result['refund_id'],

@@ -23,6 +23,7 @@ ALLOWED_HOSTS = [h.strip() for h in _allowed.split(',') if h.strip()]
 
 INSTALLED_APPS = [
     'jazzmin',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -68,6 +69,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'cinema_backend.wsgi.application'
+ASGI_APPLICATION = 'cinema_backend.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
 
 
 # Database — PostgreSQL (Docker) with env-var fallback for local dev
