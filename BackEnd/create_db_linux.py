@@ -1,7 +1,6 @@
 """Cinema Database Setup Script — Linux / macOS.
 
-Primary MySQL driver: mysqlclient (C extension).
-Fallback driver: PyMySQL (pure Python) when mysqlclient isn't available.
+Uses PostgreSQL via psycopg2.
 
 Run:
     python create_db_linux.py
@@ -10,6 +9,8 @@ Run:
 import os
 import sys
 import time
+from psycopg2 import sql
+import psycopg2
 
 
 def _configure_stdout_utf8() -> None:
@@ -24,44 +25,16 @@ def _configure_stdout_utf8() -> None:
 _configure_stdout_utf8()
 
 # =============================================================================
-# MySQL Driver selection
-#   - Prefer mysqlclient (MySQLdb)
-#   - Fallback to PyMySQL (install_as_MySQLdb)
-# =============================================================================
-
-try:
-    import MySQLdb  # type: ignore[import-not-found]
-except Exception as exc:
-    try:
-        import pymysql
-
-        pymysql.install_as_MySQLdb()
-        # Satisfy Django 5.x MySQL backend version check when using PyMySQL.
-        pymysql.version_info = (2, 2, 1, "final", 0)
-        import MySQLdb  # type: ignore[import-not-found]
-        print("ℹ️  mysqlclient not available; using PyMySQL fallback.")
-    except Exception:
-        print("❌ Could not import a MySQL driver (mysqlclient / PyMySQL).")
-        print(f"   Import error: {exc!r}")
-        print("\nLinux/macOS tips:")
-        print("  - Install system deps (Debian/Ubuntu):")
-        print("    sudo apt install python3-dev default-libmysqlclient-dev build-essential pkg-config")
-        print("  - Then install Python deps:")
-        print("    pip install -r requirements.txt")
-        print("  - Or install pure-Python fallback:")
-        print("    pip install PyMySQL")
-        sys.exit(1)
-
-# =============================================================================
-# STEP 1: Create MySQL Database
+# STEP 1: Create PostgreSQL Database
 # =============================================================================
 
 DB_HOST = os.environ.get('DB_HOST', 'localhost')
-DB_USER = os.environ.get('DB_USER', 'root')
+DB_USER = os.environ.get('DB_USER', 'postgres')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
-DB_PORT = int(os.environ.get('DB_PORT', '3306'))
+DB_PORT = int(os.environ.get('DB_PORT', '5432'))
 DB_NAME = os.environ.get('DB_NAME', 'cinema_db')
-DB_SOCKET = os.environ.get('DB_SOCKET', '').strip()
+DB_ADMIN_DB = os.environ.get('DB_ADMIN_DB', 'postgres')
+DB_SSLMODE = os.environ.get('DB_SSLMODE', '').strip()
 
 print("=" * 60)
 print("🎬 ABSOLUTE CINEMA — Database Setup (Linux)")
@@ -69,32 +42,43 @@ print("=" * 60)
 
 try:
     connect_kwargs = {
-        "host": DB_HOST,
-        "user": DB_USER,
-        "password": DB_PASSWORD,
-        "port": DB_PORT,
-        "charset": "utf8mb4",
+        'host': DB_HOST,
+        'user': DB_USER,
+        'password': DB_PASSWORD,
+        'port': DB_PORT,
+        'dbname': DB_ADMIN_DB,
     }
-    if DB_SOCKET:
-        connect_kwargs["unix_socket"] = DB_SOCKET
+    if DB_SSLMODE:
+        connect_kwargs['sslmode'] = DB_SSLMODE
 
-    connection = MySQLdb.connect(**connect_kwargs)
+    connection = psycopg2.connect(**connect_kwargs)
+    connection.autocommit = True
     cursor = connection.cursor()
 
-    cursor.execute(f"DROP DATABASE IF EXISTS {DB_NAME}")
+    # PostgreSQL requires terminating active sessions before dropping a database.
+    cursor.execute(
+        """
+        SELECT pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE datname = %s AND pid <> pg_backend_pid()
+        """,
+        (DB_NAME,),
+    )
+
+    cursor.execute(sql.SQL("DROP DATABASE IF EXISTS {};").format(sql.Identifier(DB_NAME)))
     print(f"🗑️  Dropped database '{DB_NAME}' (if existed).")
-    cursor.execute(f"CREATE DATABASE {DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
+
+    cursor.execute(sql.SQL("CREATE DATABASE {} ENCODING 'UTF8';").format(sql.Identifier(DB_NAME)))
     print(f"✅ Database '{DB_NAME}' created.")
 
     cursor.close()
     connection.close()
-except MySQLdb.Error as e:
+except psycopg2.Error as e:
     print(f"❌ Database error: {e}")
-    if "Access denied" in str(e):
+    if 'password authentication failed' in str(e):
         print("\nTroubleshooting:")
-        print("  - On some Linux installs, MariaDB's 'root' uses unix_socket auth.")
-        print("    Try setting a dedicated DB user/password, or set DB_SOCKET.")
-        print("  - Example (socket): export DB_SOCKET=/var/run/mysqld/mysqld.sock")
+        print('  - Verify DB_USER / DB_PASSWORD for your PostgreSQL server.')
+        print('  - Ensure the role has CREATEDB privilege or use a superuser role.')
     sys.exit(1)
 
 # =============================================================================
