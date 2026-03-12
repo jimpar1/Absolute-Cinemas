@@ -171,18 +171,6 @@ HALLS = [
     },
     {
         'name': 'Αίθουσα 2',
-        'left_section_capacity': 10,
-        'middle_section_capacity': 60,
-        'right_section_capacity': 10,
-        'balcony_left_capacity': 0,
-        'balcony_middle_capacity': 0,
-        'balcony_right_capacity': 0,
-        'left_seats_per_row': 2,
-        'middle_seats_per_row': 12,
-        'right_seats_per_row': 2,
-    },
-    {
-        'name': 'Αίθουσα 3',
         'left_section_capacity': 20,
         'middle_section_capacity': 40,
         'right_section_capacity': 20,
@@ -217,11 +205,6 @@ HALL_PHOTOS = {
         ('halls/hall1/hall1_3.webp', 3),
     ],
     'Αίθουσα 2': [
-        ('halls/hall2/hall2_2.webp', 1),
-        ('halls/hall2/hall2_3.webp', 2),
-        ('halls/hall2/hall2_4.webp', 3),
-    ],
-    'Αίθουσα 3': [
         ('halls/hall3/hall3_1.webp', 1),
         ('halls/hall3/hall3_2.webp', 2),
         ('halls/hall3/hall3_3.webp', 3),

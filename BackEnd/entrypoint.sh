@@ -23,6 +23,9 @@ python manage.py collectstatic --no-input
 # Seed accounts on first boot (idempotent)
 python manage.py bootstrap_accounts
 
+# Seed database with halls and movies (idempotent)
+python manage.py seed_database
+
 exec gunicorn cinema_backend.wsgi:application \
     --bind 0.0.0.0:8000 \
     --workers 3 \
