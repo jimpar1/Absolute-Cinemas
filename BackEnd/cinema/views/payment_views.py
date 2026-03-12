@@ -189,7 +189,7 @@ class StripeWebhookView(APIView):
             event = PaymentService.verify_webhook(payload, sig_header)
         except Exception as exc:
             logger.warning("Webhook verification failed: %s", exc)
-            return Response({'error': str(exc)}, status=400)
+            return Response({'error': 'Webhook verification failed.'}, status=400)
 
         event_type = event['type']
         data_object = event['data']['object']

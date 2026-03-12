@@ -12,8 +12,13 @@
  */
 export function getHighQualityImage(url) {
     if (!url) return url;
-    if (url.includes('image.tmdb.org')) {
-        return url.replace(/\/t\/p\/w\d+\//, '/t/p/original/');
+    try {
+        const parsed = new URL(url);
+        if (parsed.hostname === 'image.tmdb.org') {
+            return url.replace(/\/t\/p\/w\d+\//, '/t/p/original/');
+        }
+    } catch {
+        return url;
     }
     return url;
 }
