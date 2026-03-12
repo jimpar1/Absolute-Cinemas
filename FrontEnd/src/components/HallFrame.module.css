@@ -9,6 +9,54 @@
     border-radius: 0;
 }
 
+/* Current JSX uses hallSlot/photoItem/photoImg naming. */
+.hallSlot {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    gap: 3px;
+    padding: 0 2rem;
+}
+
+.photoItem {
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    border-radius: 4px;
+    cursor: zoom-in;
+}
+
+.photoImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.emptySlot {
+    width: 100%;
+    height: 100%;
+    background: #1c1c1c;
+}
+
+.overlay {
+    position: absolute;
+    left: 2rem;
+    right: 2rem;
+    bottom: 0;
+    z-index: 9;
+    padding: 1.5rem 1.5rem 1.25rem;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.92) 0%,
+        rgba(0, 0, 0, 0.6) 55%,
+        transparent 100%
+    );
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
 /* ── Two absolute layers (A + B) for GSAP crossfade ─────────────── */
 
 .layer {
@@ -129,6 +177,105 @@
     pointer-events: none;
 }
 
+.navBtn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 12;
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.navBtnLeft {
+    left: 0.8rem;
+}
+
+.navBtnRight {
+    right: 0.8rem;
+}
+
+.lbOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lbImg {
+    max-width: min(92vw, 1280px);
+    max-height: 82vh;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.lbClose,
+.lbArrow {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.lbClose {
+    top: 1rem;
+    right: 1rem;
+}
+
+.lbArrowLeft {
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.lbArrowRight {
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.lbCaption {
+    position: absolute;
+    left: 50%;
+    bottom: 1rem;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    padding: 0.45rem 0.8rem;
+    color: #fff;
+}
+
+.lbName {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.lbCounter {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+
 .hallDot {
     width: 5px;
     height: 5px;
@@ -160,14 +307,16 @@
     .gallery {
         height: 260px;
     }
-    .layer {
+    .layer,
+    .hallSlot {
         padding: 0 1rem;
         gap: 2px;
     }
     .hallName {
         font-size: 1rem;
     }
-    .slot:not(:first-child) {
+    .slot:not(:first-child),
+    .photoItem:not(:first-child) {
         flex: 1.5;
     }
 }
