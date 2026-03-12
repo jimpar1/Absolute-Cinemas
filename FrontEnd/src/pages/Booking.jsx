@@ -7,8 +7,8 @@
  *   3. PaymentForm      → enter card details and pay
  *   4. BookingConfirmation → success screen with ticket summary
  *
- * Manages seat locking/unlocking via the bookings API so that two users
- * cannot select the same seat simultaneously.
+ * Manages seat locking/unlocking via the bookings API and receives
+ * realtime seat state via WebSocket so users stay in sync.
  */
 
 import { useState, useEffect, useCallback } from "react"
@@ -88,6 +88,38 @@ export default function Booking() {
         }
     }, [id, sessionId])
 
+    const applyRealtimeSeatState = useCallback((payload) => {
+        if (!payload || typeof payload !== 'object') return
+
+        const bookedSeats = Array.isArray(payload.booked_seats) ? payload.booked_seats : []
+        const lockMap = payload.locked_seats && typeof payload.locked_seats === 'object'
+            ? payload.locked_seats
+            : {}
+
+        const lockedByOthers = Object.entries(lockMap)
+            .filter(([, sid]) => sid !== sessionId)
+            .map(([seat]) => seat)
+
+        const myLockedSeats = Object.entries(lockMap)
+            .filter(([, sid]) => sid === sessionId)
+            .map(([seat]) => seat)
+
+        setSelectedSeats(prev => {
+            const uniqueSeats = Array.from(new Set([...prev, ...myLockedSeats]))
+            return uniqueSeats.filter(s => !bookedSeats.includes(s))
+        })
+
+        setHallLayout(prev => {
+            const base = prev || screening?.layout
+            if (!base) return prev
+            return {
+                ...base,
+                pricePerSeat: Number.isFinite(moviePrice) ? moviePrice : 0,
+                occupiedSeats: [...bookedSeats, ...lockedByOthers],
+            }
+        })
+    }, [sessionId, screening, moviePrice])
+
     const [formData, setFormData] = useState({
         name: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || "" : "",
         email: user?.email || "",
@@ -157,6 +189,61 @@ export default function Booking() {
         window.addEventListener('beforeunload', handleBeforeUnload)
         return () => window.removeEventListener('beforeunload', handleBeforeUnload)
     }, [moviePrice, id, sessionId, fetchOccupiedData, screening])
+
+    /* WebSocket-first realtime updates with fallback polling. */
+    useEffect(() => {
+        if (moviePrice === null || !screening || step !== 1) return
+
+        let socket = null
+        let reconnectTimer = null
+        let isClosed = false
+
+        const fallbackRefresh = () => fetchOccupiedData(moviePrice, screening.layout)
+
+        const connectSocket = () => {
+            const apiBase = import.meta.env.VITE_API_URL || window.location.origin
+            const parsed = new URL(apiBase, window.location.origin)
+            const wsProtocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:'
+            const wsUrl = `${wsProtocol}//${parsed.host}/ws/screenings/${id}/seats/`
+
+            socket = new WebSocket(wsUrl)
+
+            socket.onmessage = (event) => {
+                try {
+                    const payload = JSON.parse(event.data)
+                    applyRealtimeSeatState(payload)
+                } catch (error) {
+                    console.error('Invalid websocket payload:', error)
+                }
+            }
+
+            socket.onclose = () => {
+                if (isClosed) return
+                reconnectTimer = window.setTimeout(connectSocket, 2000)
+            }
+
+            socket.onerror = () => {
+                // Keep fallback refresh running; close triggers reconnect.
+            }
+        }
+
+        connectSocket()
+
+        const fallbackIntervalId = window.setInterval(fallbackRefresh, 15000)
+
+        const handleFocus = () => fallbackRefresh()
+        window.addEventListener('focus', handleFocus)
+        document.addEventListener('visibilitychange', handleFocus)
+
+        return () => {
+            isClosed = true
+            if (reconnectTimer) window.clearTimeout(reconnectTimer)
+            if (socket && socket.readyState <= 1) socket.close()
+            window.clearInterval(fallbackIntervalId)
+            window.removeEventListener('focus', handleFocus)
+            document.removeEventListener('visibilitychange', handleFocus)
+        }
+    }, [moviePrice, screening, step, fetchOccupiedData, id, applyRealtimeSeatState])
 
     const pricePerSeat = hallLayout?.pricePerSeat ?? moviePrice ?? 0
 

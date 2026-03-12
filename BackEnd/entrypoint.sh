@@ -26,7 +26,4 @@ python manage.py bootstrap_accounts
 # Seed database with halls and movies (idempotent)
 python manage.py seed_database
 
-exec gunicorn cinema_backend.wsgi:application \
-    --bind 0.0.0.0:8000 \
-    --workers 3 \
-    --timeout 120
+exec daphne -b 0.0.0.0 -p 8000 cinema_backend.asgi:application

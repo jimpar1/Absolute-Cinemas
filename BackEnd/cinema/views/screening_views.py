@@ -17,7 +17,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from dependency_injector.wiring import Provide, inject
 
 from ..container import Container
-from ..permissions import IsStaffWithModelPermsOrReadOnly
+from ..permissions import IsStaffWithModelPermsOrReadOnly, IsStaffWithBookingViewPermission
+from ..realtime import broadcast_screening_seat_state
 from ..serializers import ScreeningSerializer
 from ..services import ScreeningService, SeatLockService, ServiceError
 
@@ -70,6 +71,8 @@ class ScreeningViewSet(viewsets.ModelViewSet):
         except ServiceError as e:
             return Response({'error': str(e)}, status=e.status_code)
 
+        broadcast_screening_seat_state(screening.id)
+
         return Response({'locked_seats': locked_seats, 'session_id': session_id})
 
     @action(detail=True, methods=['post'], permission_classes=[AllowAny])
@@ -90,6 +93,8 @@ class ScreeningViewSet(viewsets.ModelViewSet):
             # Unlock ALL seats for this session (used by beforeunload beacon)
             locks = seat_lock_service.repo.list().filter(screening=screening, session_id=session_id)
             locks.delete()
+
+        broadcast_screening_seat_state(screening.id)
 
         return Response({'status': 'success'})
 
