@@ -53,7 +53,7 @@ class MovieAdmin(admin.ModelAdmin):
         2. POST with query → show TMDB search results
         3. POST with tmdb_id → fetch details and create the Movie
         """
-        from ..tmdb_service import search_movies, get_movie_details
+        from ..tmdb_service import search_movies
 
         if request.method == 'POST':
             # Phase 3: user picked a movie from the search results
