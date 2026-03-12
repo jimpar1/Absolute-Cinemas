@@ -229,8 +229,7 @@ export default function RegisterDialog({ open, onOpenChange }) {
         setIsSubmitting(true)
 
         try {
-            // eslint-disable-next-line no-unused-vars
-            const result = await register(formData)
+            await register(formData)
 
             toast({
                 title: "Success",
