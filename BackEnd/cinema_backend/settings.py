@@ -146,6 +146,12 @@ _csrf_trusted_origins = os.environ.get(
 )
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_trusted_origins.split(',') if o.strip()]
 
+_frontend_allowed_origins = os.environ.get(
+    'FRONTEND_ALLOWED_ORIGINS',
+    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080'
+)
+FRONTEND_ALLOWED_ORIGINS = [o.strip().rstrip('/') for o in _frontend_allowed_origins.split(',') if o.strip()]
+
 # Ρυθμίσεις Django REST Framework
 # Django REST Framework settings
 REST_FRAMEWORK = {
