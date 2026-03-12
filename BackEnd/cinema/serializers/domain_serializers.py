@@ -17,10 +17,8 @@ class HallPhotoSerializer(serializers.ModelSerializer):
         extra_kwargs = {'image': {'write_only': True, 'required': True}}
 
     def get_image_url(self, obj):
-        request = self.context.get('request')
-        if request:
-            return request.build_absolute_uri(obj.image.url)
-        return f"http://127.0.0.1:8000{obj.image.url}"
+        # Return relative URL so frontend origin/port stays correct behind nginx.
+        return obj.image.url
 
 
 class MovieHallSerializer(serializers.ModelSerializer):

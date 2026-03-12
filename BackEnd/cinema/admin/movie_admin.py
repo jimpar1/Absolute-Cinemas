@@ -53,7 +53,7 @@ class MovieAdmin(admin.ModelAdmin):
         2. POST with query → show TMDB search results
         3. POST with tmdb_id → fetch details and create the Movie
         """
-        from ..tmdb_service import search_movies, get_movie_details
+        from ..tmdb_service import search_movies
 
         if request.method == 'POST':
             # Phase 3: user picked a movie from the search results
@@ -84,6 +84,14 @@ class MovieAdmin(admin.ModelAdmin):
     def _create_from_tmdb(self, request, tmdb_id):
         """Fetch TMDB details and create a Movie. Returns a redirect or None on error."""
         from ..tmdb_service import get_movie_details
+
+        try:
+            tmdb_id = int(tmdb_id)
+            if tmdb_id <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            self.message_user(request, 'Invalid TMDB movie id.')
+            return None
 
         movie_details = get_movie_details(tmdb_id)
         if not movie_details:

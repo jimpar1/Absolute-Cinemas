@@ -98,9 +98,9 @@
     gap: 1rem;
     overflow: hidden;
     will-change: clip-path, opacity;
-    /* initial state hidden — GSAP reveals on scroll */
-    clip-path: inset(100% 0 0 0 round 12px);
-    opacity: 0;
+    /* Keep cards visible by default; GSAP fromTo handles reveal animation when enabled. */
+    clip-path: inset(0 0 0 0 round 12px);
+    opacity: 1;
 }
 
 /* Pro — blue */

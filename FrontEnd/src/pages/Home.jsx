@@ -47,8 +47,7 @@ export default function Home() {
     const heroBg = '/absulute-cinema.webp'
     const [movies, setMovies] = useState([])
     const [movieCount, setMovieCount] = useState(null)
-    // eslint-disable-next-line no-unused-vars
-    const { hallGroups, halls, hallCount, totalCapacity } = useHalls()
+    const { hallGroups, hallCount, totalCapacity } = useHalls()
 
     // Refs for GSAP targets
     const heroSectionRef = useRef(null)
@@ -175,12 +174,18 @@ export default function Home() {
 
     // ─── Stats slot-machine counters ──────────────────────────────
     useEffect(() => {
-        if (movieCount === null || hallCount === 0) return  // wait for both APIs
-
-        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        if (prefersReduced) return
+        if (movieCount === null || hallCount === null || totalCapacity === null) return
 
         const statValues = [movieCount, hallCount, totalCapacity]
+
+        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        if (prefersReduced) {
+            statNumRefs.current.forEach((el, i) => {
+                if (!el) return
+                el.textContent = Math.round(statValues[i]) + STAT_META[i].suffix
+            })
+            return
+        }
 
         const ctx = gsap.context(() => {
             statNumRefs.current.forEach((el, i) => {

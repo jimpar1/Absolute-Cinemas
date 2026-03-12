@@ -22,6 +22,7 @@ ALLOWED_HOSTS = [h.strip() for h in _allowed.split(',') if h.strip()]
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -39,6 +40,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',  # CORS middleware - πρέπει να είναι πριν το CommonMiddleware
     'django.middleware.common.CommonMiddleware',
@@ -118,8 +120,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -136,6 +139,18 @@ if _cors_origins:
     CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
 else:
     CORS_ALLOW_ALL_ORIGINS = True  # dev fallback
+
+_csrf_trusted_origins = os.environ.get(
+    'CSRF_TRUSTED_ORIGINS',
+    'http://localhost:8080,http://127.0.0.1:8080,http://localhost,http://127.0.0.1'
+)
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_trusted_origins.split(',') if o.strip()]
+
+_frontend_allowed_origins = os.environ.get(
+    'FRONTEND_ALLOWED_ORIGINS',
+    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080'
+)
+FRONTEND_ALLOWED_ORIGINS = [o.strip().rstrip('/') for o in _frontend_allowed_origins.split(',') if o.strip()]
 
 # Ρυθμίσεις Django REST Framework
 # Django REST Framework settings
@@ -177,3 +192,21 @@ STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Django admin theme (Jazzmin)
+JAZZMIN_SETTINGS = {
+    'site_title': 'AbsoluteCinema Admin',
+    'site_header': 'AbsoluteCinema',
+    'site_brand': 'AbsoluteCinema',
+    'welcome_sign': 'Welcome to AbsoluteCinema Admin',
+    'copyright': 'AbsoluteCinema',
+}
+
+# Jazzmin UI tweaks (force dark look)
+JAZZMIN_UI_TWEAKS = {
+    'theme': 'darkly',
+    'dark_mode_theme': 'darkly',
+    'navbar': 'navbar-dark',
+    'accent': 'accent-primary',
+    'sidebar': 'sidebar-dark-primary',
+}
