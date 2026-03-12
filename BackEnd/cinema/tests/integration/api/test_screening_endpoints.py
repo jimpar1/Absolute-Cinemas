@@ -293,7 +293,7 @@ class TestScreeningFiltering:
         movie2 = make_movie(title="Movie 2")
 
         screening1 = make_screening(movie=movie1, hall=hall)
-        screening2 = make_screening(movie=movie2, hall=hall)
+        _screening2 = make_screening(movie=movie2, hall=hall)
 
         url = reverse("screening-list")
         response = api_client.get(url, {"movie": movie1.id})
@@ -312,7 +312,7 @@ class TestScreeningFiltering:
         hall2 = MovieHall.objects.create(name="Filter Test Hall B", capacity=150)
 
         screening1 = make_screening(movie=movie, hall=hall1)
-        screening2 = make_screening(movie=movie, hall=hall2)
+        _screening2 = make_screening(movie=movie, hall=hall2)
 
         url = reverse("screening-list")
         response = api_client.get(url, {"hall": hall1.id})
@@ -333,9 +333,9 @@ class TestScreeningFiltering:
         hall2 = MovieHall.objects.create(name="Filter Test Hall D", capacity=150)
 
         # Create various combinations
-        s1 = make_screening(movie=movie1, hall=hall1)
-        s2 = make_screening(movie=movie1, hall=hall2)
-        s3 = make_screening(movie=movie2, hall=hall1)
+        _s1 = make_screening(movie=movie1, hall=hall1)
+        _s2 = make_screening(movie=movie1, hall=hall2)
+        _s3 = make_screening(movie=movie2, hall=hall1)
 
         url = reverse("screening-list")
         response = api_client.get(url, {"movie": movie1.id, "hall": hall1.id})
@@ -386,8 +386,8 @@ class TestScreeningOrdering:
         now = timezone.now().replace(minute=0)
 
         # Create screenings in random order
-        s2 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=6))
-        s1 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=3))
+        _s2 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=6))
+        _s1 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=3))
 
         url = reverse("screening-list")
         response = api_client.get(url)
@@ -405,8 +405,8 @@ class TestScreeningOrdering:
 
         now = timezone.now().replace(minute=0)
 
-        s1 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=3))
-        s2 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=6))
+        _s1 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=3))
+        _s2 = make_screening(movie=movie, hall=hall, start_time=now + timezone.timedelta(hours=6))
 
         url = reverse("screening-list")
         response = api_client.get(url, {"ordering": "-start_time"})
@@ -476,9 +476,9 @@ class TestScreeningCombinedFilterAndOrder:
         now = timezone.now().replace(minute=0)
 
         # Create screenings for both movies
-        s1 = make_screening(movie=movie1, hall=hall, start_time=now + timezone.timedelta(hours=6))
-        s2 = make_screening(movie=movie1, hall=hall, start_time=now + timezone.timedelta(hours=3))
-        s3 = make_screening(movie=movie2, hall=hall, start_time=now + timezone.timedelta(hours=4))
+        _s1 = make_screening(movie=movie1, hall=hall, start_time=now + timezone.timedelta(hours=6))
+        _s2 = make_screening(movie=movie1, hall=hall, start_time=now + timezone.timedelta(hours=3))
+        _s3 = make_screening(movie=movie2, hall=hall, start_time=now + timezone.timedelta(hours=4))
 
         url = reverse("screening-list")
         response = api_client.get(url, {
