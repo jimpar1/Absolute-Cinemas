@@ -156,7 +156,8 @@ class CreateSubscriptionCheckoutView(APIView):
         try:
             success_url, cancel_url = _build_subscription_redirect_urls(frontend_base)
         except ValueError as exc:
-            return Response({'error': str(exc)}, status=400)
+            logger.warning("Invalid frontend_url: %s", exc)
+            return Response({'error': 'Invalid frontend URL.'}, status=400)
 
         result = payment_service.create_subscription_checkout(
             tier=tier,
