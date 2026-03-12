@@ -85,6 +85,7 @@ docker compose down -v
 | `DEBUG` | `True` / `False` | `True` |
 | `ALLOWED_HOSTS` | Comma-separated hostnames | `localhost,...` |
 | `CORS_ALLOWED_ORIGINS` | Allowed CORS origins (non-debug) | `http://localhost` |
+| `CSRF_TRUSTED_ORIGINS` | Trusted origins for CSRF checks | `http://localhost:8080,...` |
 | `DB_NAME` | PostgreSQL database name | `cinema_db` |
 | `DB_USER` | PostgreSQL username | `cinema_user` |
 | `DB_PASSWORD` | PostgreSQL password | `cinema_pass` |
