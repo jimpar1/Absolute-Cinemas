@@ -80,6 +80,9 @@ export default function CinemaPass() {
             const cards = tierRefs.current.filter(Boolean)
             if (!cards.length) return
 
+            // Initialize hidden state only when GSAP is active, so fallback stays visible.
+            gsap.set(cards, { clipPath: 'inset(100% 0 0 0 round 12px)', opacity: 0 })
+
             const trigger = {
                 trigger: sectionRef.current,
                 start: 'top 80%',
@@ -100,6 +103,8 @@ export default function CinemaPass() {
                     delay: i * 0.18,
                 })
             })
+
+            ScrollTrigger.refresh()
         })
 
         return () => ctx.revert()
