@@ -16,8 +16,8 @@ const FALLBACK_META = [
 export function useHalls() {
     const [hallGroups, setHallGroups]     = useState([])
     const [halls, setHalls]               = useState([])
-    const [hallCount, setHallCount]       = useState(0)
-    const [totalCapacity, setTotalCapacity] = useState(0)
+    const [hallCount, setHallCount]       = useState(null)
+    const [totalCapacity, setTotalCapacity] = useState(null)
 
     useEffect(() => {
         getHalls()
@@ -51,6 +51,8 @@ export function useHalls() {
             })
             .catch(() => {
                 // API unavailable — keep fallbacks
+                setHallCount(0)
+                setTotalCapacity(0)
             })
     }, [])
 
