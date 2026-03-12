@@ -175,12 +175,18 @@ export default function Home() {
 
     // ─── Stats slot-machine counters ──────────────────────────────
     useEffect(() => {
-        if (movieCount === null || hallCount === 0) return  // wait for both APIs
-
-        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        if (prefersReduced) return
+        if (movieCount === null || hallCount === null || totalCapacity === null) return
 
         const statValues = [movieCount, hallCount, totalCapacity]
+
+        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        if (prefersReduced) {
+            statNumRefs.current.forEach((el, i) => {
+                if (!el) return
+                el.textContent = Math.round(statValues[i]) + STAT_META[i].suffix
+            })
+            return
+        }
 
         const ctx = gsap.context(() => {
             statNumRefs.current.forEach((el, i) => {
