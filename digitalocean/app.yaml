@@ -6,16 +6,14 @@ databases:
     version: "16"
 services:
   - name: backend
-    source_dir: BackEnd
-    github:
-      repo: jimpar1/Absolute-Cinemas
-      branch: master
-      deploy_on_push: true
+    image:
+      registry_type: GHCR
+      registry: jimpar1
+      repository: absolutecinemas-backend
+      tag: latest
     http_port: 8000
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-0.5gb
-    build_command: pip install -r requirements.txt && python manage.py collectstatic --noinput
-    run_command: python manage.py migrate --noinput && gunicorn cinema_backend.wsgi --bind 0.0.0.0:8000
     envs:
       - key: SECRET_KEY
         value: "abc123secretkey12345678901234567890123456789012"
@@ -66,26 +64,22 @@ services:
         value: staff123456
         scope: RUN_AND_BUILD_TIME
       - key: TMDB_API_KEY
-        scope: RUN_AND_BUILD_TIME
         value: "18324c6e6eb5ceed0ea8c49c26fcf8b8"
+        scope: RUN_AND_BUILD_TIME
     health_check:
       http_path: /api/movies/
       initial_delay_seconds: 60
       period_seconds: 30
 
-static_sites:
   - name: frontend
-    source_dir: FrontEnd
-    github:
-      repo: jimpar1/Absolute-Cinemas
-      branch: master
-      deploy_on_push: true
-    build_command: npm run build
-    output_dir: dist
-    envs:
-      - key: VITE_API_URL
-        value: https://absolute-cinemas.ondigitalocean.app/api
-        scope: RUN_AND_BUILD_TIME
+    image:
+      registry_type: GHCR
+      registry: jimpar1
+      repository: absolutecinemas-frontend
+      tag: latest
+    http_port: 80
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-0.5gb
 
 ingress:
   rules:
