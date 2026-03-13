@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
 
+echo "DB_HOST=$DB_HOST DB_PORT=$DB_PORT DB_NAME=$DB_NAME DB_USER=$DB_USER DB_SSLMODE=$DB_SSLMODE"
 echo "Waiting for PostgreSQL..."
 until python -c "
 import os, psycopg2
