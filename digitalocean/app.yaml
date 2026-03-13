@@ -6,6 +6,7 @@ databases:
     version: "16"
 services:
   - name: backend
+    source_dir: BackEnd
     github:
       repo: jimpar1/Absolute-Cinemas
       branch: master
@@ -13,8 +14,8 @@ services:
     http_port: 8000
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-0.5gb
-    build_command: cd BackEnd && pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput
-    run_command: cd BackEnd && gunicorn cinema_backend.wsgi --bind 0.0.0.0:8000
+    build_command: pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput
+    run_command: gunicorn cinema_backend.wsgi --bind 0.0.0.0:8000
     envs:
       - key: SECRET_KEY
         value: "abc123secretkey12345678901234567890123456789012"
@@ -74,6 +75,7 @@ services:
 
 static_sites:
   - name: frontend
+    source_dir: FrontEnd
     github:
       repo: jimpar1/Absolute-Cinemas
       branch: master

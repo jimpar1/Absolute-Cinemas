@@ -9,6 +9,7 @@ jobs:
     name: Deploy to App Platform
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Deploy to App Platform
         uses: digitalocean/app_action/deploy@v2
         with:
