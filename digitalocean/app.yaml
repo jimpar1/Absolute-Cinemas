@@ -34,7 +34,7 @@ services:
         value: ${cinema-db.HOSTNAME}
         scope: RUN_TIME
       - key: DB_PORT
-        value: "5432"
+        value: ${cinema-db.PORT}
         scope: RUN_TIME
       - key: DB_NAME
         value: ${cinema-db.DATABASE}
