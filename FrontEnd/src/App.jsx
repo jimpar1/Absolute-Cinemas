@@ -24,6 +24,7 @@ import { AuthProvider } from "./context/AuthContext"
 import { useState, useEffect } from "react"
 import LoadingScreen from "./components/LoadingScreen"
 import CustomCursor from "./components/CustomCursor"
+import CookieNotice from "./components/CookieNotice"
 
 function ScrollToTop() {
     const { pathname } = useLocation()
@@ -68,6 +69,7 @@ export default function App() {
             </AuthProvider>
             {showLoader && <LoadingScreen onComplete={handleLoaderComplete} />}
             <CustomCursor />
+            <CookieNotice />
         </BrowserRouter>
     )
 }

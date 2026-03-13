@@ -31,8 +31,8 @@ class SeatLock(models.Model):
 
     @property
     def is_expired(self):
-        """True if the lock is older than 10 minutes."""
-        return timezone.now() > self.created_at + timedelta(minutes=10)
+        """True if the lock is older than 5 minutes."""
+        return timezone.now() > self.created_at + timedelta(minutes=5)
 
     def __str__(self):
         return f"Lock: {self.seat_number} for {self.screening.movie.title} (Session: {self.session_id})"

@@ -36,6 +36,13 @@ services:
     depends_on:
       - backend
 
+  stripe:
+    image: stripe/stripe-cli
+    command: listen --forward-to backend:8000/api/payments/webhook/ --api-key ${STRIPE_SECRET_KEY}
+    env_file: .env
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
   media_data:

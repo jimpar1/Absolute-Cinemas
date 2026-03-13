@@ -124,18 +124,7 @@
     letter-spacing: 0.04em;
     margin: 0;
     padding: 0 1rem;
-    background: linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0.55) 0%,
-        rgba(255, 255, 255, 0.95) 30%,
-        #ffffff 50%,
-        rgba(255, 255, 255, 0.95) 70%,
-        rgba(255, 255, 255, 0.55) 100%
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
+    color: #ffffff;
 }
 
 /* Each character span produced by <SplitChars> */

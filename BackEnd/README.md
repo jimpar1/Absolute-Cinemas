@@ -1,4 +1,4 @@
-# AbsoluteCinema — Backend
+# Absolute Cinemas — Backend
 
 ## Τι είναι
 

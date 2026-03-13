@@ -19,8 +19,17 @@ class SeatLockService:
     def lock_seat(self, screening, seat_number: str, session_id: str):
         """
         Create or refresh a lock on a seat.
-        Takes over expired locks; raises ServiceError if locked by another session.
+        Takes over expired locks; raises ServiceError if locked by another session
+        or already booked.
         """
+        # Check if already booked
+        active_bookings = screening.bookings.exclude(status='cancelled')
+        for booking in active_bookings:
+            if booking.seat_numbers:
+                seats = [s.strip() for s in booking.seat_numbers.split(',') if s.strip()]
+                if seat_number in seats:
+                    raise ServiceError("Seat already booked")
+
         lock, created = self.repo.list().get_or_create(
             screening=screening,
             seat_number=seat_number,
@@ -52,5 +61,5 @@ class SeatLockService:
         """Return active (non-expired) locks for a screening."""
         return self.repo.list().filter(
             screening=screening,
-            created_at__gte=timezone.now() - timedelta(minutes=10)
+            created_at__gte=timezone.now() - timedelta(minutes=5)
         )
