@@ -66,6 +66,9 @@ services:
       - key: TMDB_API_KEY
         value: "18324c6e6eb5ceed0ea8c49c26fcf8b8"
         scope: RUN_AND_BUILD_TIME
+      - key: DB_SSLMODE
+        value: require
+        scope: RUN_TIME
     health_check:
       http_path: /api/movies/
       initial_delay_seconds: 60

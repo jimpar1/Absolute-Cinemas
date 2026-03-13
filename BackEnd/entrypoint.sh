@@ -10,6 +10,7 @@ psycopg2.connect(
     password=os.environ.get('DB_PASSWORD', 'cinema_pass'),
     host=os.environ.get('DB_HOST', 'db'),
     port=os.environ.get('DB_PORT', '5432'),
+    sslmode=os.environ.get('DB_SSLMODE', 'prefer'),
 )
 " 2>/dev/null; do
     echo "  PostgreSQL not ready — retrying in 2s..."

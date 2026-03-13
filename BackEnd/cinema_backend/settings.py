@@ -80,6 +80,7 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'cinema_pass'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
+        'OPTIONS': {'sslmode': os.environ.get('DB_SSLMODE', 'prefer')},
     }
 }
 
