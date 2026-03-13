@@ -41,7 +41,7 @@ export default function InboxDropdown() {
                     localStorage.setItem('guestBookings', JSON.stringify(validLocal))
                 }
                 return validLocal
-            } catch (e) {
+            } catch {
                 return []
             }
         }
@@ -62,7 +62,7 @@ export default function InboxDropdown() {
                 })
                 .catch(() => setUpcomingBookings(guestB))
         } else {
-            setUpcomingBookings(guestB)
+            setTimeout(() => setUpcomingBookings(guestB), 0)
         }
     }, [inboxOpen, isAuthenticated, accessToken])
 

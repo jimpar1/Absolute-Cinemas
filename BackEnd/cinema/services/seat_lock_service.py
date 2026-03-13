@@ -14,6 +14,7 @@ from .errors import ServiceError
 @dataclass(frozen=True)
 class SeatLockService:
     """Manages temporary seat locks for a screening."""
+
     repo: SeatLockRepository
 
     def lock_seat(self, screening, seat_number: str, session_id: str):
@@ -23,17 +24,19 @@ class SeatLockService:
         or already booked.
         """
         # Check if already booked
-        active_bookings = screening.bookings.exclude(status='cancelled')
+        active_bookings = screening.bookings.exclude(status="cancelled")
         for booking in active_bookings:
             if booking.seat_numbers:
-                seats = [s.strip() for s in booking.seat_numbers.split(',') if s.strip()]
+                seats = [
+                    s.strip() for s in booking.seat_numbers.split(",") if s.strip()
+                ]
                 if seat_number in seats:
                     raise ServiceError("Seat already booked")
 
         lock, created = self.repo.list().get_or_create(
             screening=screening,
             seat_number=seat_number,
-            defaults={'session_id': session_id}
+            defaults={"session_id": session_id},
         )
         if not created:
             if lock.session_id != session_id:
@@ -52,14 +55,11 @@ class SeatLockService:
     def unlock_seat(self, screening, seat_number: str, session_id: str):
         """Remove a specific seat lock owned by the given session."""
         self.repo.list().filter(
-            screening=screening,
-            seat_number=seat_number,
-            session_id=session_id
+            screening=screening, seat_number=seat_number, session_id=session_id
         ).delete()
 
     def get_locked_seats(self, screening):
         """Return active (non-expired) locks for a screening."""
         return self.repo.list().filter(
-            screening=screening,
-            created_at__gte=timezone.now() - timedelta(minutes=5)
+            screening=screening, created_at__gte=timezone.now() - timedelta(minutes=10)
         )

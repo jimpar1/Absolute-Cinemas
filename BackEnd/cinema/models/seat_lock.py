@@ -16,9 +16,12 @@ class SeatLock(models.Model):
     can select it while a user is in the booking flow.
     Expires after 10 minutes.
     """
+
     screening = models.ForeignKey(
-        Screening, on_delete=models.CASCADE,
-        related_name='seat_locks', verbose_name="Screening"
+        Screening,
+        on_delete=models.CASCADE,
+        related_name="seat_locks",
+        verbose_name="Screening",
     )
     seat_number = models.CharField(max_length=10, verbose_name="Seat Number")
     session_id = models.CharField(max_length=100, verbose_name="Session ID")
@@ -27,12 +30,12 @@ class SeatLock(models.Model):
     class Meta:
         verbose_name = "Seat Lock"
         verbose_name_plural = "Seat Locks"
-        unique_together = ['screening', 'seat_number']
+        unique_together = ["screening", "seat_number"]
 
     @property
     def is_expired(self):
-        """True if the lock is older than 5 minutes."""
-        return timezone.now() > self.created_at + timedelta(minutes=5)
+        """True if the lock is older than 10 minutes."""
+        return timezone.now() > self.created_at + timedelta(minutes=10)
 
     def __str__(self):
         return f"Lock: {self.seat_number} for {self.screening.movie.title} (Session: {self.session_id})"
