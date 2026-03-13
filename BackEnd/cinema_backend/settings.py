@@ -195,11 +195,14 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Django admin theme (Jazzmin)
 JAZZMIN_SETTINGS = {
-    'site_title': 'AbsoluteCinema Admin',
-    'site_header': 'AbsoluteCinema',
-    'site_brand': 'AbsoluteCinema',
-    'welcome_sign': 'Welcome to AbsoluteCinema Admin',
-    'copyright': 'AbsoluteCinema',
+    'site_title': 'Absolute Cinemas Admin',
+    'site_header': 'Absolute Cinemas',
+    'site_brand': 'Absolute Cinemas',
+    'site_logo': 'cinema/img/logo.webp',
+    'login_logo': 'cinema/img/logo.webp',
+    'welcome_sign': 'Welcome to Absolute Cinemas Admin',
+    'copyright': 'Absolute Cinemas',
+    'custom_css': 'cinema/css/admin_login.css',
 }
 
 # Jazzmin UI tweaks (force dark look)

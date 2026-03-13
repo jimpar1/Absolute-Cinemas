@@ -114,6 +114,7 @@ export default function Booking() {
                     movieTitle: data?.movie_title || data?.movie?.title || "Sample Movie",
                     date: formattedDate,
                     time: formattedTime,
+                    rawStartTime: data?.start_time || null,
                     hall: data?.hall_name || data?.hall || "Hall 1",
                     hallImage: data?.hall_image_url || null,
                     movieId: data?.movie || data?.movie_id || null,
@@ -233,6 +234,23 @@ export default function Booking() {
             }
             // For paid bookings the backend webhook already created the booking
             // after Stripe confirmed the payment in PaymentForm.
+
+            // Save to local storage for guests
+            if (!isAuthenticated) {
+                const localBooking = {
+                    id: `local-${Date.now()}`,
+                    seat_numbers: selectedSeats.sort().join(','),
+                    status: 'confirmed',
+                    screening_details: {
+                        movie_title: screening.movieTitle,
+                        start_time: screening.rawStartTime || new Date().toISOString(), // Fallback if missing
+                        hall_name: screening.hall
+                    }
+                }
+                const existing = JSON.parse(localStorage.getItem('guestBookings') || '[]')
+                localStorage.setItem('guestBookings', JSON.stringify([...existing, localBooking]))
+            }
+
             setBookingSummary({ seats: [...selectedSeats].sort(), total: effectivePrice, email: formData.email })
             clearMovieReservations(screening.id, screening.date, screening.time)
             toast({ title: "Booking Confirmed!", description: `Seats ${selectedSeats.join(', ')} booked.` })

@@ -15,6 +15,8 @@ export default function ScreeningsCalendar({ movie, screenings }) {
     const [calendarView, setCalendarView] = useState('weekly')
     const [selectedDate, setSelectedDate] = useState(null)
 
+    const upcomingScreenings = screenings.filter(s => new Date(s.start_time) > new Date())
+
     /* The Monday that starts the currently viewed week */
     const [currentWeekStart, setCurrentWeekStart] = useState(() => {
         const today = new Date()
@@ -43,7 +45,7 @@ export default function ScreeningsCalendar({ movie, screenings }) {
         <div>
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">Screenings</h2>
-                {screenings.length > 0 && movie.status !== 'upcoming' && (
+                {upcomingScreenings.length > 0 && movie.status !== 'upcoming' && (
                     <div className="flex gap-2">
                         <Button
                             variant={calendarView === 'weekly' ? 'default' : 'outline'}
@@ -78,7 +80,7 @@ export default function ScreeningsCalendar({ movie, screenings }) {
                 </Card>
 
                 /* No screenings */
-            ) : screenings.length === 0 ? (
+            ) : upcomingScreenings.length === 0 ? (
                 <Card>
                     <CardContent className="py-8 text-center text-muted-foreground">
                         <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -117,7 +119,7 @@ export default function ScreeningsCalendar({ movie, screenings }) {
                                 </div>
                             ))}
                             {getWeekDays(currentWeekStart).map((date, index) => {
-                                const dayScreenings = getScreeningsForDate(screenings, date);
+                                const dayScreenings = getScreeningsForDate(upcomingScreenings, date);
                                 const hasScreenings = dayScreenings.length > 0;
                                 return (
                                     <div
@@ -180,7 +182,7 @@ export default function ScreeningsCalendar({ movie, screenings }) {
                             ))}
                             {getMonthDays(currentMonth).map((date, index) => {
                                 if (!date) return <div key={index} className="min-h-[60px]" />;
-                                const dayScreenings = getScreeningsForDate(screenings, date);
+                                const dayScreenings = getScreeningsForDate(upcomingScreenings, date);
                                 const hasScreenings = dayScreenings.length > 0;
                                 return (
                                     <div
@@ -224,7 +226,7 @@ export default function ScreeningsCalendar({ movie, screenings }) {
             {/* Screenings modal for a specific date */}
             <ScreeningsModal
                 selectedDate={selectedDate}
-                screenings={screenings}
+                screenings={upcomingScreenings}
                 onClose={() => setSelectedDate(null)}
             />
         </div>

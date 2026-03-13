@@ -7,7 +7,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .models import Booking, Movie, MovieHall, Screening, SeatLock, Subscription
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
+
+from .models import Booking, Customer, Movie, MovieHall, Screening, SeatLock, Subscription
 
 
 @dataclass(frozen=True)
@@ -37,7 +40,7 @@ class BookingRepository:
         return Booking.objects.all()
 
     def for_screening(self, screening: Screening):
-        return screening.bookings.all()
+        return screening.bookings.exclude(status='cancelled')
 
     def for_user(self, user):
         return Booking.objects.filter(user=user)
@@ -71,10 +74,11 @@ class SubscriptionRepository:
         return Subscription.objects.select_related('customer').get(customer__user=user)
 
     def get_or_create_free(self, user):
-        try:
-            profile = user.customer_profile
-        except Exception:
-            from .models import Customer
-            profile, _ = Customer.objects.get_or_create(user=user)
-        sub, _ = Subscription.objects.get_or_create(customer=profile)
-        return sub
+        with transaction.atomic():
+            try:
+                profile = user.customer_profile
+            except (ObjectDoesNotExist, AttributeError):
+                profile, _ = Customer.objects.get_or_create(user=user)
+            
+            sub, _ = Subscription.objects.get_or_create(customer=profile)
+            return sub

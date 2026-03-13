@@ -1,0 +1,85 @@
+.noticeContainer {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    max-width: 400px;
+    width: calc(100vw - 48px);
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    font-family: 'Syne', sans-serif;
+    transform: translateY(120%); /* initial state for GSAP */
+}
+
+.noticeText {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+}
+
+.noticeText strong {
+    color: #fff;
+    font-weight: 700;
+}
+
+.noticeActions {
+    display: flex;
+    gap: 12px;
+}
+
+.acceptBtn {
+    background: #fff;
+    color: #000;
+    border: none;
+    padding: 8px 24px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.acceptBtn:hover {
+    background: #e0e0e0;
+    transform: scale(1.02);
+}
+
+.secondaryBtn {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px 16px;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.secondaryBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 480px) {
+    .noticeContainer {
+        bottom: 16px;
+        right: 16px;
+        left: 16px;
+        max-width: none;
+        width: auto;
+    }
+}

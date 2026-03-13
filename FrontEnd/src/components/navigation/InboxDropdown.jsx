@@ -27,19 +27,43 @@ export default function InboxDropdown() {
 
     /* Fetch confirmed future bookings whenever the dropdown opens */
     useEffect(() => {
-        if (!inboxOpen || !isAuthenticated || !accessToken) return
-        getUserBookings(accessToken)
-            .then(data => {
-                const all = Array.isArray(data) ? data : (data.results || [])
+        if (!inboxOpen) return
+
+        const loadGuestBookings = () => {
+            try {
+                const local = JSON.parse(localStorage.getItem('guestBookings') || '[]')
                 const now = new Date()
-                setUpcomingBookings(
-                    all.filter(b => {
+                const validLocal = local.filter(b => {
+                    const t = b.screening_details?.start_time
+                    return t && new Date(t) > now && b.status !== "cancelled"
+                })
+                if (validLocal.length !== local.length) {
+                    localStorage.setItem('guestBookings', JSON.stringify(validLocal))
+                }
+                return validLocal
+            } catch {
+                return []
+            }
+        }
+
+        const guestB = loadGuestBookings()
+
+        if (isAuthenticated && accessToken) {
+            getUserBookings(accessToken)
+                .then(data => {
+                    const all = Array.isArray(data) ? data : (data.results || [])
+                    const now = new Date()
+                    const apiB = all.filter(b => {
                         const t = b.screening_details?.start_time
                         return t && new Date(t) > now && b.status !== "cancelled"
                     })
-                )
-            })
-            .catch(() => {})
+                    // Combine both so they don't lose local bookings upon login, though usually local is for guests
+                    setUpcomingBookings([...guestB, ...apiB])
+                })
+                .catch(() => setUpcomingBookings(guestB))
+        } else {
+            setTimeout(() => setUpcomingBookings(guestB), 0)
+        }
     }, [inboxOpen, isAuthenticated, accessToken])
 
     /* Close when clicking outside */

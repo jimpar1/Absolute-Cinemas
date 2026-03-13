@@ -138,33 +138,24 @@ export default function Movies() {
             const chars = headingRef.current?.querySelectorAll(`.${styles.char}`) || []
 
             // Set initial states before animating
-            gsap.set(headingRef.current, { clipPath: 'inset(0 105% 0 0 round 0 120px 120px 0)' })
             if (chars.length) gsap.set(chars, { y: 28, opacity: 0 })
 
             const tl = gsap.timeline({ delay: 0.15 })
 
-            // 1. Curve swipe — sweeps left→right with a rounded trailing edge
-            tl.to(headingRef.current, {
-                clipPath: 'inset(0 0% 0 0 round 0 0px 0px 0)',
-                duration: 0.9,
-                ease: 'power2.inOut',
-            })
-
-            // 2. Chars rise up during the tail of the swipe
+            // 1. Chars rise up and fade in
             if (chars.length) {
                 tl.to(
                     chars,
-                    { y: 0, opacity: 1, duration: 0.45, stagger: 0.04, ease: 'power3.out' },
-                    '-=0.55'
+                    { y: 0, opacity: 1, duration: 0.6, stagger: 0.04, ease: 'power3.out' }
                 )
             }
 
-            // 3. Filters fade up
+            // 2. Filters fade up
             tl.fromTo(
                 filtersRef.current,
                 { y: 28, opacity: 0 },
                 { y: 0, opacity: 1, duration: 0.5, ease: 'power3.out' },
-                '-=0.2'
+                '-=0.4'
             )
         })
 
@@ -334,7 +325,7 @@ export default function Movies() {
                     ref={headingRef}
                     className={styles.spotlightHeading}
                 >
-                    <SplitChars text="The Films" charClass={styles.char} />
+                    <SplitChars text="Box Office" charClass={styles.char} />
                 </h1>
             </section>
 
