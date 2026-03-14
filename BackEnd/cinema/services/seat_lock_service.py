@@ -24,7 +24,7 @@ class SeatLockService:
         or already booked.
         """
         # Check if already booked
-        active_bookings = screening.bookings.exclude(status="cancelled")
+        active_bookings = screening.bookings.filter(status="confirmed")
         for booking in active_bookings:
             if booking.seat_numbers:
                 seats = [

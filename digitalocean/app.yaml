@@ -25,10 +25,10 @@ services:
         value: "*"
         scope: RUN_AND_BUILD_TIME
       - key: CORS_ALLOWED_ORIGINS
-        value: https://absolute-cinemas.ondigitalocean.app
+        value: https://absolute-cinemas-olazi.ondigitalocean.app
         scope: RUN_AND_BUILD_TIME
       - key: CSRF_TRUSTED_ORIGINS
-        value: https://absolute-cinemas.ondigitalocean.app
+        value: https://absolute-cinemas-olazi.ondigitalocean.app
         scope: RUN_AND_BUILD_TIME
       - key: DB_HOST
         value: ${cinema-db.HOSTNAME}
@@ -69,6 +69,9 @@ services:
       - key: DB_SSLMODE
         value: require
         scope: RUN_TIME
+      - key: FRONTEND_ALLOWED_ORIGINS
+        value: "https://absolute-cinemas-olazi.ondigitalocean.app"
+        scope: RUN_AND_BUILD_TIME
     health_check:
       http_path: /api/movies/
       initial_delay_seconds: 60
@@ -88,21 +91,25 @@ ingress:
   rules:
     - component:
         name: backend
+        preserve_path_prefix: true
       match:
         path:
           prefix: /api
     - component:
         name: backend
+        preserve_path_prefix: true
       match:
         path:
           prefix: /admin
     - component:
         name: backend
+        preserve_path_prefix: true
       match:
         path:
           prefix: /media
     - component:
         name: backend
+        preserve_path_prefix: true
       match:
         path:
           prefix: /static

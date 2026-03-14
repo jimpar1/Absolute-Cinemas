@@ -40,7 +40,7 @@ class BookingRepository:
         return Booking.objects.all()
 
     def for_screening(self, screening: Screening):
-        return screening.bookings.exclude(status='cancelled')
+        return screening.bookings.filter(status='confirmed')
 
     def for_user(self, user):
         return Booking.objects.filter(user=user)

@@ -109,6 +109,9 @@ function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubm
     const [processing, setProcessing] = useState(false)
     const [error, setError] = useState(null)
     const [paymentSuccess, setPaymentSuccess] = useState(false)
+    const [serverPrice, setServerPrice] = useState(null)
+
+    const displayPrice = serverPrice !== null ? serverPrice : totalPrice
 
     const handlePay = async () => {
         if (!stripe || !elements) {
@@ -130,6 +133,11 @@ function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubm
                 customer_phone: formData.phone || "",
             }
             const result = await createBookingIntent(intentData, accessToken)
+
+            // Use the backend's authoritative price
+            if (result.amount !== undefined) {
+                setServerPrice(result.amount / 100)
+            }
 
             if (result.free_booking) {
                 setPaymentSuccess(true)
@@ -164,26 +172,28 @@ function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubm
         }
     }
 
-    if (paymentSuccess) return <SuccessDisplay totalPrice={totalPrice} />
+    if (paymentSuccess) return <SuccessDisplay totalPrice={displayPrice} />
 
     return (
         <Card className="max-w-md mx-auto">
             <CardHeader><CardTitle>Payment</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-                <PricingDisplay pricingBreakdown={pricingBreakdown} totalPrice={totalPrice} />
+                <PricingDisplay pricingBreakdown={pricingBreakdown} totalPrice={displayPrice} />
 
-                {totalPrice > 0 ? (
+                {displayPrice > 0 ? (
                     <StripeCardInput />
                 ) : (
                     <div className="p-4 bg-muted rounded-lg text-center">
-                        <p className="text-sm text-white/60">No payment required — free tickets applied!</p>
+                        <p className="text-sm text-white/60">
+                            {pricingBreakdown ? "No payment required — free tickets applied!" : "No payment required."}
+                        </p>
                     </div>
                 )}
 
                 <p className="text-xs text-white/40 italic">
-                    {totalPrice > 0
+                    {displayPrice > 0
                         ? "Enter your card details above to complete your booking."
-                        : "Your subscription covers these tickets."}
+                        : pricingBreakdown ? "Your subscription covers these tickets." : "This booking is free."}
                 </p>
 
                 {error && (
@@ -250,7 +260,9 @@ function FallbackForm({ formData, totalPrice, pricingBreakdown, onBack, onSubmit
                     <p className="font-semibold">⚠️ Card payments unavailable</p>
                     <p className="text-yellow-200/60 text-xs">{stripeError || "Stripe is not configured."}</p>
                     {totalPrice === 0 && (
-                        <p className="text-yellow-200/60 text-xs">Your tickets are free — you can still proceed!</p>
+                        <p className="text-yellow-200/60 text-xs">
+                            {pricingBreakdown ? "Your free tickets still apply — you can proceed!" : "No payment required — you can still proceed!"}
+                        </p>
                     )}
                 </div>
 

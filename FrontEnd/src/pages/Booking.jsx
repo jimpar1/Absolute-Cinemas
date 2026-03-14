@@ -172,8 +172,9 @@ export default function Booking() {
     }
 
     const seatsCount = selectedSeats.length
-    const pricing = computeClientPrice(subscription, seatsCount, pricePerSeat)
-    const effectivePrice = isAuthenticated ? pricing.total : seatsCount * pricePerSeat
+    const hasActiveSubscription = isAuthenticated && subscription && subscription.tier !== 'free'
+    const pricing = computeClientPrice(hasActiveSubscription ? subscription : null, seatsCount, pricePerSeat)
+    const effectivePrice = hasActiveSubscription ? pricing.total : seatsCount * pricePerSeat
     const totalPrice = effectivePrice
 
     /* ─── Toggle a single seat (lock / unlock on server) ─── */
@@ -282,7 +283,7 @@ export default function Booking() {
 
             {step === 1 && (
                 <>
-                {isAuthenticated && subscription && subscription.tier !== 'free' && (
+                {hasActiveSubscription && (
                     <div style={{ marginBottom: '12px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)' }}>
                         🎟 {Math.max(0, (subscription.weekly_free_total ?? 0) - (subscription.free_tickets_used ?? 0))} free ticket(s) remaining this week
                     </div>
@@ -318,7 +319,7 @@ export default function Booking() {
                 <PaymentForm
                     formData={formData}
                     totalPrice={totalPrice}
-                    pricingBreakdown={isAuthenticated && subscription && subscription.tier !== 'free' ? { ...pricing, tier: subscription.tier, pricePerSeat } : null}
+                    pricingBreakdown={hasActiveSubscription ? { ...pricing, tier: subscription.tier, pricePerSeat } : null}
                     screeningId={id}
                     selectedSeats={selectedSeats}
                     sessionId={sessionId}
