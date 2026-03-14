@@ -17,21 +17,39 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Inject secrets into app spec
-        run: |
-          sed -i '/key: FRONTEND_ALLOWED_ORIGINS/,/scope: RUN_AND_BUILD_TIME/a\
-      - key: STRIPE_SECRET_KEY\
-        value: "'"$STRIPE_SECRET_KEY"'"\
-        scope: RUN_AND_BUILD_TIME\
-      - key: STRIPE_PUBLISHABLE_KEY\
-        value: "'"$STRIPE_PUBLISHABLE_KEY"'"\
-        scope: RUN_AND_BUILD_TIME\
-      - key: STRIPE_WEBHOOK_SECRET\
-        value: "'"$STRIPE_WEBHOOK_SECRET"'"\
-        scope: RUN_AND_BUILD_TIME' digitalocean/app.yaml
         env:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+        run: |
+          python3 << 'PYEOF'
+          import os
+
+          keys = ['STRIPE_SECRET_KEY', 'STRIPE_PUBLISHABLE_KEY', 'STRIPE_WEBHOOK_SECRET']
+          lines = []
+          for k in keys:
+              v = os.environ.get(k, '')
+              if v:
+                  lines.append(f'      - key: {k}')
+                  lines.append(f'        value: "{v}"')
+                  lines.append(f'        scope: RUN_AND_BUILD_TIME')
+
+          if not lines:
+              print("No Stripe secrets to inject")
+              raise SystemExit(0)
+
+          with open('digitalocean/app.yaml', 'r') as f:
+              content = f.read()
+
+          marker = '    health_check:'
+          inject = '\n'.join(lines) + '\n'
+          content = content.replace(marker, inject + '    health_check:', 1)
+
+          with open('digitalocean/app.yaml', 'w') as f:
+              f.write(content)
+
+          print("Injected Stripe secrets into app spec")
+          PYEOF
 
       - name: Deploy to App Platform
         uses: digitalocean/app_action/deploy@v2
