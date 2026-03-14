@@ -7,7 +7,7 @@
  * Closes when clicking outside of the dropdown area.
  */
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Inbox, X, Armchair, Bookmark, Film, Trash2, Ticket } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useReservation } from "@/context/ReservationContext"
@@ -26,7 +26,8 @@ export default function InboxDropdown() {
     const { isAuthenticated, accessToken } = useAuth()
 
     /* Fetch confirmed future bookings on mount, when dropdown opens, and every 30s */
-    const fetchBookings = () => {
+    const fetchRef = useRef(null)
+    fetchRef.current = useCallback(() => {
         const loadGuestBookings = () => {
             try {
                 const local = JSON.parse(localStorage.getItem('guestBookings') || '[]')
@@ -61,18 +62,27 @@ export default function InboxDropdown() {
         } else {
             setUpcomingBookings(guestB)
         }
-    }
+    }, [isAuthenticated, accessToken])
 
     // Fetch on mount and poll every 30 seconds
     useEffect(() => {
-        fetchBookings()
-        const interval = setInterval(fetchBookings, 30000)
-        return () => clearInterval(interval)
+        const interval = setInterval(() => fetchRef.current?.(), 30000)
+        // Initial fetch after a tick to avoid synchronous setState in effect
+        const id = setTimeout(() => fetchRef.current?.(), 0)
+        return () => { clearInterval(interval); clearTimeout(id) }
+    }, [])
+
+    // Refresh when auth changes
+    useEffect(() => {
+        const id = setTimeout(() => fetchRef.current?.(), 0)
+        return () => clearTimeout(id)
     }, [isAuthenticated, accessToken])
 
     // Also refresh when dropdown opens
     useEffect(() => {
-        if (inboxOpen) fetchBookings()
+        if (!inboxOpen) return
+        const id = setTimeout(() => fetchRef.current?.(), 0)
+        return () => clearTimeout(id)
     }, [inboxOpen])
 
     /* Close when clicking outside */
