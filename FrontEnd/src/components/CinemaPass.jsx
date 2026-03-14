@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useAuth } from '@/context/AuthContext'
+import { useToast } from '@/hooks/use-toast'
 import { createSubscriptionCheckout } from '@/api/payments'
 import styles from './CinemaPass.module.css'
 
@@ -66,6 +67,7 @@ export default function CinemaPass() {
 
     const { isAuthenticated, subscription, subscribeTier, accessToken } = useAuth()
     const navigate = useNavigate()
+    const { toast } = useToast()
 
     const sectionRef   = useRef(null)
     const tierRefs     = useRef([])
@@ -193,7 +195,10 @@ export default function CinemaPass() {
                         let btn
                         if (!isAuthenticated) {
                             const btnClass = [styles.btn, isPro ? styles.btnPro : '', isUltra ? styles.btnUltra : ''].join(' ')
-                            btn = <button className={btnClass} onClick={() => navigate('/auth')}>Sign In to Subscribe</button>
+                            btn = <button className={btnClass} onClick={() => {
+                                toast({ title: 'Login Required', description: 'Please log in or create an account to subscribe.' })
+                                navigate('/auth')
+                            }}>Sign In to Subscribe</button>
                         } else if (isCurrent) {
                             const labelClass = [
                                 styles.currentPlanLabel,

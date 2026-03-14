@@ -15,6 +15,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Inject secrets into app spec
+        run: |
+          sed -i '/key: FRONTEND_ALLOWED_ORIGINS/,/scope: RUN_AND_BUILD_TIME/a\
+      - key: STRIPE_SECRET_KEY\
+        value: "'"$STRIPE_SECRET_KEY"'"\
+        scope: RUN_AND_BUILD_TIME\
+      - key: STRIPE_PUBLISHABLE_KEY\
+        value: "'"$STRIPE_PUBLISHABLE_KEY"'"\
+        scope: RUN_AND_BUILD_TIME\
+      - key: STRIPE_WEBHOOK_SECRET\
+        value: "'"$STRIPE_WEBHOOK_SECRET"'"\
+        scope: RUN_AND_BUILD_TIME' digitalocean/app.yaml
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+
       - name: Deploy to App Platform
         uses: digitalocean/app_action/deploy@v2
         with:

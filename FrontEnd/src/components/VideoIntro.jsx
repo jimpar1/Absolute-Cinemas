@@ -71,6 +71,7 @@ export default function VideoIntro({ onComplete, preloadedVideoEl }) {
     // Ignore AbortError: React Strict Mode fires the effect twice and the first
     // play() gets aborted by the cleanup — that is not a real failure.
     video.muted = false
+    video.volume = 0.75
     video.play()
       .then(() => setIsMuted(false))
       .catch(() => {
