@@ -12,6 +12,7 @@ Endpoints:
 import logging
 from urllib.parse import urlparse
 
+import stripe
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -296,6 +297,49 @@ class StripeWebhookView(APIView):
                 logger.info("Released %d seat locks for failed PI %s", deleted, intent['id'])
             except (ValueError, TypeError):
                 logger.debug("Skipping seat lock cleanup for invalid metadata")
+
+
+class ConfirmSubscriptionView(APIView):
+    """
+    Confirm a Stripe Checkout Session and activate the subscription.
+    Called by the success page so activation doesn't depend on webhooks.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @inject
+    def post(self, request,
+             subscription_service: SubscriptionService = Provide[Container.subscription_service]):
+        session_id = request.data.get('session_id')
+        if not session_id:
+            return Response({'error': 'session_id is required.'}, status=400)
+
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+        except stripe.error.StripeError as exc:
+            logger.error("Failed to retrieve Checkout Session %s: %s", session_id, exc)
+            return Response({'error': 'Could not verify session with Stripe.'}, status=502)
+
+        if session.payment_status != 'paid':
+            return Response({'error': 'Session has not been paid.'}, status=400)
+
+        metadata = session.get('metadata', {})
+        tier = metadata.get('tier')
+        session_user_id = metadata.get('user_id')
+
+        if not tier or str(request.user.id) != str(session_user_id):
+            return Response({'error': 'Session does not belong to this user.'}, status=403)
+
+        sub = subscription_service.subscribe(request.user, tier)
+        sub.stripe_checkout_session_id = session_id
+        sub.save(update_fields=['stripe_checkout_session_id'])
+
+        logger.info("Subscription confirmed to '%s' for user %s via session confirm", tier, request.user.id)
+        return Response({
+            'tier': sub.tier,
+            'expires_at': sub.expires_at,
+            'status': 'activated',
+        })
 
 
 class RefundView(APIView):

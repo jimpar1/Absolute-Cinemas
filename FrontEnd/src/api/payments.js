@@ -33,6 +33,26 @@ export async function createBookingIntent(data, accessToken) {
 }
 
 /**
+ * Confirm a Stripe Checkout Session and activate the subscription.
+ * Called from the success page after Stripe redirects back.
+ */
+export async function confirmSubscription(sessionId, accessToken) {
+    const res = await fetch(`${API_URL}/api/payments/confirm-subscription/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ session_id: sessionId }),
+    });
+    const result = await res.json();
+    if (!res.ok) {
+        throw new Error(result.error || result.detail || "Failed to confirm subscription");
+    }
+    return result;
+}
+
+/**
  * Create a Stripe Checkout Session for a subscription tier purchase.
  * Returns { checkout_url, session_id }.
  */
