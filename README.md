@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/ci.yml/badge.svg)](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/codeql.yml/badge.svg)](https://github.com/jimpar1/Absolute-Cinemas/actions/workflows/codeql.yml)
-[![Deployed App Link](https://absolutecinemas.gr)
+[Deployed App Link](https://absolutecinemas.gr)
 
 Πλατφόρμα διαχείρισης και κρατήσεων εισιτηρίων κινηματογράφου. React frontend, Django REST backend, PostgreSQL βάση δεδομένων.
 
