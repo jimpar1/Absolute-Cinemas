@@ -87,6 +87,12 @@ services:
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-0.5gb
 
+domains:
+  - domain: absolutecinemas.gr
+    type: PRIMARY
+  - domain: www.absolutecinemas.gr
+    type: ALIAS
+
 ingress:
   rules:
     - component:
