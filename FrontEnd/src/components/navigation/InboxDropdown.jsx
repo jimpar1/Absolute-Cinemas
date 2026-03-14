@@ -7,7 +7,7 @@
  * Closes when clicking outside of the dropdown area.
  */
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Inbox, X, Armchair, Bookmark, Film, Trash2, Ticket } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useReservation } from "@/context/ReservationContext"
@@ -26,8 +26,7 @@ export default function InboxDropdown() {
     const { isAuthenticated, accessToken } = useAuth()
 
     /* Fetch confirmed future bookings on mount, when dropdown opens, and every 30s */
-    const fetchRef = useRef(null)
-    fetchRef.current = useCallback(() => {
+    const fetchBookings = useCallback(() => {
         const loadGuestBookings = () => {
             try {
                 const local = JSON.parse(localStorage.getItem('guestBookings') || '[]')
@@ -64,26 +63,19 @@ export default function InboxDropdown() {
         }
     }, [isAuthenticated, accessToken])
 
-    // Fetch on mount and poll every 30 seconds
+    // Fetch on mount, on auth change, and poll every 30 seconds
     useEffect(() => {
-        const interval = setInterval(() => fetchRef.current?.(), 30000)
-        // Initial fetch after a tick to avoid synchronous setState in effect
-        const id = setTimeout(() => fetchRef.current?.(), 0)
-        return () => { clearInterval(interval); clearTimeout(id) }
-    }, [])
-
-    // Refresh when auth changes
-    useEffect(() => {
-        const id = setTimeout(() => fetchRef.current?.(), 0)
-        return () => clearTimeout(id)
-    }, [isAuthenticated, accessToken])
+        const id = setTimeout(fetchBookings, 0)
+        const interval = setInterval(fetchBookings, 30000)
+        return () => { clearTimeout(id); clearInterval(interval) }
+    }, [fetchBookings])
 
     // Also refresh when dropdown opens
     useEffect(() => {
         if (!inboxOpen) return
-        const id = setTimeout(() => fetchRef.current?.(), 0)
+        const id = setTimeout(fetchBookings, 0)
         return () => clearTimeout(id)
-    }, [inboxOpen])
+    }, [inboxOpen, fetchBookings])
 
     /* Close when clicking outside */
     useEffect(() => {
