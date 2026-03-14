@@ -25,10 +25,8 @@ export default function InboxDropdown() {
     const { reservations, savedMovies, removeReservation, removeSavedMovie, getTimeRemaining, totalItems } = useReservation()
     const { isAuthenticated, accessToken } = useAuth()
 
-    /* Fetch confirmed future bookings whenever the dropdown opens */
-    useEffect(() => {
-        if (!inboxOpen) return
-
+    /* Fetch confirmed future bookings on mount, when dropdown opens, and every 30s */
+    const fetchBookings = () => {
         const loadGuestBookings = () => {
             try {
                 const local = JSON.parse(localStorage.getItem('guestBookings') || '[]')
@@ -57,14 +55,25 @@ export default function InboxDropdown() {
                         const t = b.screening_details?.start_time
                         return t && new Date(t) > now && b.status !== "cancelled"
                     })
-                    // Combine both so they don't lose local bookings upon login, though usually local is for guests
                     setUpcomingBookings([...guestB, ...apiB])
                 })
                 .catch(() => setUpcomingBookings(guestB))
         } else {
-            setTimeout(() => setUpcomingBookings(guestB), 0)
+            setUpcomingBookings(guestB)
         }
-    }, [inboxOpen, isAuthenticated, accessToken])
+    }
+
+    // Fetch on mount and poll every 30 seconds
+    useEffect(() => {
+        fetchBookings()
+        const interval = setInterval(fetchBookings, 30000)
+        return () => clearInterval(interval)
+    }, [isAuthenticated, accessToken])
+
+    // Also refresh when dropdown opens
+    useEffect(() => {
+        if (inboxOpen) fetchBookings()
+    }, [inboxOpen])
 
     /* Close when clicking outside */
     useEffect(() => {

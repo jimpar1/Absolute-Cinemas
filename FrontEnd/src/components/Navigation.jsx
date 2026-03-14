@@ -7,7 +7,7 @@
  * Delegates the inbox panel to InboxDropdown and auth dialogs to LoginDialog / RegisterDialog.
  */
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { Menu, LogOut, User, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -59,6 +59,13 @@ export default function Navigation() {
     const [registerOpen, setRegisterOpen] = useState(false)
     const [showIntro, setShowIntro] = useState(false)
     const { user, logout } = useAuth()
+
+    // Listen for login dialog requests from other components (e.g. CinemaPass)
+    useEffect(() => {
+        const handler = () => setLoginOpen(true)
+        window.addEventListener('open-login-dialog', handler)
+        return () => window.removeEventListener('open-login-dialog', handler)
+    }, [])
 
     const handleReplayIntro = () => {
         setShowIntro(true)
