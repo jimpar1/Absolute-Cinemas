@@ -7,6 +7,7 @@
     overflow: hidden;
     background: #0a0a0a;
     border-radius: 0;
+    contain: layout style paint;
 }
 
 /* Current JSX uses hallSlot/photoItem/photoImg naming. */
@@ -16,6 +17,8 @@
     display: flex;
     gap: 3px;
     padding: 0 2rem;
+    will-change: transform;
+    backface-visibility: hidden;
 }
 
 .photoItem {
@@ -31,6 +34,7 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    will-change: transform;
 }
 
 .emptySlot {

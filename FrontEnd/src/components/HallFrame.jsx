@@ -166,8 +166,8 @@ export default function HallFrame({ hallGroups = [] }) {
                 }
             },
         })
-            .to(currentEl, { xPercent: -sign * 100, duration: 0.55, ease: 'power3.out' }, 0)
-            .to(stagingEl, { xPercent: 0,           duration: 0.55, ease: 'power3.out' }, 0)
+            .to(currentEl, { xPercent: -sign * 100, duration: 0.55, ease: 'power3.out', force3D: true }, 0)
+            .to(stagingEl, { xPercent: 0,           duration: 0.55, ease: 'power3.out', force3D: true }, 0)
     }
 
     function handleNav(dir) {
