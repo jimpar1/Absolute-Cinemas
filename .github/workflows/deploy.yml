@@ -51,6 +51,16 @@ jobs:
           print("Injected Stripe secrets into app spec")
           PYEOF
 
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Update app spec
+        run: |
+          APP_ID=$(doctl apps list --format ID,Spec.Name --no-header | grep absolute-cinemas | awk '{print $1}')
+          doctl apps update $APP_ID --spec digitalocean/app.yaml
+
       - name: Deploy to App Platform
         uses: digitalocean/app_action/deploy@v2
         with:

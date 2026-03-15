@@ -25,10 +25,10 @@ services:
         value: "*"
         scope: RUN_AND_BUILD_TIME
       - key: CORS_ALLOWED_ORIGINS
-        value: https://absolute-cinemas-olazi.ondigitalocean.app
+        value: https://absolute-cinemas-olazi.ondigitalocean.app,https://absolutecinemas.gr,https://www.absolutecinemas.gr
         scope: RUN_AND_BUILD_TIME
       - key: CSRF_TRUSTED_ORIGINS
-        value: https://absolute-cinemas-olazi.ondigitalocean.app
+        value: https://absolute-cinemas-olazi.ondigitalocean.app,https://absolutecinemas.gr,https://www.absolutecinemas.gr
         scope: RUN_AND_BUILD_TIME
       - key: DB_HOST
         value: ${cinema-db.HOSTNAME}
@@ -70,7 +70,7 @@ services:
         value: require
         scope: RUN_TIME
       - key: FRONTEND_ALLOWED_ORIGINS
-        value: "https://absolute-cinemas-olazi.ondigitalocean.app"
+        value: "https://absolute-cinemas-olazi.ondigitalocean.app,https://absolutecinemas.gr,https://www.absolutecinemas.gr"
         scope: RUN_AND_BUILD_TIME
     health_check:
       http_path: /api/movies/
