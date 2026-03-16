@@ -335,7 +335,8 @@ class ConfirmBookingView(APIView):
         try:
             intent = stripe.PaymentIntent.retrieve(payment_intent_id)
         except stripe.error.StripeError as exc:
-            logger.error("Failed to retrieve PaymentIntent %s: %s", payment_intent_id, exc)
+            safe_pi_id = payment_intent_id.replace('\n', '').replace('\r', '')
+            logger.error("Failed to retrieve PaymentIntent %s: %s", safe_pi_id, exc)
             return Response({'error': 'Could not verify payment with Stripe.'}, status=502)
 
         if intent.status != 'succeeded':
