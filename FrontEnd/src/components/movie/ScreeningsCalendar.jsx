@@ -45,7 +45,7 @@ export default function ScreeningsCalendar({ movie, screenings }) {
         <div>
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">Screenings</h2>
-                {upcomingScreenings.length > 0 && movie.status !== 'upcoming' && (
+                {upcomingScreenings.length > 0 && (
                     <div className="flex gap-2">
                         <Button
                             variant={calendarView === 'weekly' ? 'default' : 'outline'}
@@ -69,24 +69,24 @@ export default function ScreeningsCalendar({ movie, screenings }) {
                 )}
             </div>
 
-            {/* Upcoming notice */}
-            {movie.status === 'upcoming' ? (
-                <Card>
-                    <CardContent className="py-8 text-center">
-                        <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
-                        <p className="text-muted-foreground mb-4">This movie is upcoming. Get notified when tickets are available.</p>
-                        <Button variant="outline">Notify Me</Button>
-                    </CardContent>
-                </Card>
-
-                /* No screenings */
-            ) : upcomingScreenings.length === 0 ? (
-                <Card>
-                    <CardContent className="py-8 text-center text-muted-foreground">
-                        <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No screenings available at this time.</p>
-                    </CardContent>
-                </Card>
+            {/* Upcoming notice / No screenings / Calendar */}
+            {upcomingScreenings.length === 0 ? (
+                movie.status === 'upcoming' ? (
+                    <Card>
+                        <CardContent className="py-8 text-center">
+                            <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
+                            <p className="text-muted-foreground mb-4">This movie is upcoming. Get notified when tickets are available.</p>
+                            <Button variant="outline">Notify Me</Button>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <Card>
+                        <CardContent className="py-8 text-center text-muted-foreground">
+                            <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p>No screenings available at this time.</p>
+                        </CardContent>
+                    </Card>
+                )
 
                 /* Weekly view */
             ) : calendarView === 'weekly' ? (

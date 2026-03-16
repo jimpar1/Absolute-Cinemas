@@ -35,8 +35,9 @@ jobs:
                   lines.append(f'        scope: RUN_AND_BUILD_TIME')
 
           if not lines:
-              print("No Stripe secrets to inject")
-              raise SystemExit(0)
+              print("ERROR: No Stripe secrets found. Add STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, "
+                    "and STRIPE_WEBHOOK_SECRET to GitHub repository secrets.")
+              raise SystemExit(1)
 
           with open('digitalocean/app.yaml', 'r') as f:
               content = f.read()

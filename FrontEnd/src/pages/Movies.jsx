@@ -304,17 +304,17 @@ export default function Movies() {
                 {movies.length > 0 && (
                     <div className={styles.posterCollage} aria-hidden="true">
                         <div className={`${styles.posterRow} ${styles.posterRowLeft}`}>
-                            {[...movies, ...movies].map((m, i) => (
+                            {[...movies, ...movies, ...movies, ...movies].map((m, i) => (
                                 <img key={i} src={m.poster_url} alt="" className={styles.posterImg} loading="lazy" />
                             ))}
                         </div>
                         <div className={`${styles.posterRow} ${styles.posterRowRight}`}>
-                            {[...movies, ...movies].map((m, i) => (
+                            {[...movies, ...movies, ...movies, ...movies].map((m, i) => (
                                 <img key={i} src={m.poster_url} alt="" className={styles.posterImg} loading="lazy" />
                             ))}
                         </div>
                         <div className={`${styles.posterRow} ${styles.posterRowLeftSlow}`}>
-                            {[...movies, ...movies].map((m, i) => (
+                            {[...movies, ...movies, ...movies, ...movies].map((m, i) => (
                                 <img key={i} src={m.poster_url} alt="" className={styles.posterImg} loading="lazy" />
                             ))}
                         </div>
