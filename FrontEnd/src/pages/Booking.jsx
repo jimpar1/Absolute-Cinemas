@@ -33,7 +33,7 @@ export default function Booking() {
     const navigate = useNavigate()
     const { toast } = useToast()
     const { addReservation, clearMovieReservations, reservations } = useReservation()
-    const { user, isAuthenticated, accessToken, subscription } = useAuth()
+    const { user, isAuthenticated, accessToken, subscription, refreshSubscription } = useAuth()
 
     const [screening, setScreening] = useState(null)
     const [screeningLoading, setScreeningLoading] = useState(true)
@@ -216,9 +216,9 @@ export default function Booking() {
     }
 
     /* ─── Submit final booking ─── */
-    const handleSubmit = async () => {
+    const handleSubmit = async ({ freeBookingConfirmed = (totalPrice === 0) } = {}) => {
         try {
-            if (totalPrice === 0) {
+            if (freeBookingConfirmed) {
                 // Free booking — create directly (no Stripe involved)
                 const bookingData = {
                     screening: id,
@@ -228,13 +228,13 @@ export default function Booking() {
                     seats_booked: selectedSeats.length,
                     seat_numbers: selectedSeats.sort().join(','),
                     session_id: sessionId,
-                    total_price: totalPrice,
+                    total_price: 0,
                     status: 'confirmed'
                 }
                 await createBooking(bookingData, accessToken)
             }
-            // For paid bookings the backend webhook already created the booking
-            // after Stripe confirmed the payment in PaymentForm.
+            // For paid bookings, ConfirmBookingView (webhook fallback) already created
+            // the booking before onSubmit was called from PaymentForm.
 
             // Save to local storage for guests
             if (!isAuthenticated) {
@@ -251,6 +251,14 @@ export default function Booking() {
                 const existing = JSON.parse(localStorage.getItem('guestBookings') || '[]')
                 localStorage.setItem('guestBookings', JSON.stringify([...existing, localBooking]))
             }
+
+            // Refresh subscription in AuthContext so Profile page shows updated usage (Fix B)
+            if (isAuthenticated && refreshSubscription) {
+                await refreshSubscription()
+            }
+
+            // Clear session ID so seats don't re-appear on next visit to this screening (Fix D)
+            sessionStorage.removeItem(`booking_session_${id}`)
 
             setBookingSummary({ seats: [...selectedSeats].sort(), total: effectivePrice, email: formData.email })
             clearMovieReservations(screening.id, screening.date, screening.time)

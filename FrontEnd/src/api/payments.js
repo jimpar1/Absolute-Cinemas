@@ -53,6 +53,27 @@ export async function confirmSubscription(sessionId, accessToken) {
 }
 
 /**
+ * Confirm a booking after Stripe payment, as a webhook fallback.
+ * Idempotent — safe to call even if the webhook already created the booking.
+ */
+export async function confirmBooking(paymentIntentId, accessToken) {
+    const headers = { "Content-Type": "application/json" };
+    if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`;
+    }
+    const res = await fetch(`${API_URL}/api/payments/confirm-booking/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ payment_intent_id: paymentIntentId }),
+    });
+    const result = await res.json();
+    if (!res.ok) {
+        throw new Error(result.error || result.detail || "Failed to confirm booking");
+    }
+    return result;
+}
+
+/**
  * Create a Stripe Checkout Session for a subscription tier purchase.
  * Returns { checkout_url, session_id }.
  */

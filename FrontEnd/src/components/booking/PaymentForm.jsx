@@ -9,7 +9,7 @@ import { useState } from "react"
 import { useStripe, useElements, CardElement } from "@stripe/react-stripe-js"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { createBookingIntent } from "@/api/payments"
+import { createBookingIntent, confirmBooking } from "@/api/payments"
 import { useAuth } from "@/context/AuthContext"
 import { useStripeStatus } from "@/components/StripeProvider"
 
@@ -110,6 +110,7 @@ function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubm
     const [error, setError] = useState(null)
     const [paymentSuccess, setPaymentSuccess] = useState(false)
     const [serverPrice, setServerPrice] = useState(null)
+    const [paymentIntentId, setPaymentIntentId] = useState(null)
 
     const displayPrice = serverPrice !== null ? serverPrice : totalPrice
 
@@ -138,10 +139,13 @@ function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubm
             if (result.amount !== undefined) {
                 setServerPrice(result.amount / 100)
             }
+            if (result.payment_intent_id) {
+                setPaymentIntentId(result.payment_intent_id)
+            }
 
             if (result.free_booking) {
                 setPaymentSuccess(true)
-                setTimeout(() => onSubmit(), 1000)
+                setTimeout(() => onSubmit({ freeBookingConfirmed: true }), 1000)
                 return
             }
 
@@ -150,7 +154,6 @@ function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubm
                 throw new Error("Could not find payment element")
             }
 
-            // Use the data from the CardElement instead of hardcoded pm_card_visa
             const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
                 result.client_secret,
                 { payment_method: { card: cardElement } }
@@ -164,7 +167,13 @@ function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubm
 
             if (paymentIntent.status === 'succeeded') {
                 setPaymentSuccess(true)
-                setTimeout(() => onSubmit(), 1500)
+                // Call confirm-booking as webhook fallback (idempotent)
+                try {
+                    await confirmBooking(result.payment_intent_id, accessToken)
+                } catch (err) {
+                    console.error('confirm-booking fallback failed:', err)
+                }
+                setTimeout(() => onSubmit({ freeBookingConfirmed: false }), 1500)
             }
         } catch (err) {
             setError(err.message || "Payment failed. Please try again.")
@@ -237,7 +246,7 @@ function FallbackForm({ formData, totalPrice, pricingBreakdown, onBack, onSubmit
             const result = await createBookingIntent(intentData, accessToken)
             if (result.free_booking) {
                 setPaymentSuccess(true)
-                setTimeout(() => onSubmit(), 1000)
+                setTimeout(() => onSubmit({ freeBookingConfirmed: true }), 1000)
             } else {
                 setError("Card payments require Stripe to be configured on the server.")
                 setProcessing(false)
