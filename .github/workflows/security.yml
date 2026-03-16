@@ -92,17 +92,22 @@ jobs:
     steps:
       - name: Create vulnerability issue
         uses: actions/github-script@v7
+        env:
+          BACKEND_VULNERABLE: ${{ needs.backend-audit.outputs.vulnerable }}
+          FRONTEND_VULNERABLE: ${{ needs.frontend-audit.outputs.vulnerable }}
+          BACKEND_REPORT: ${{ needs.backend-audit.outputs.report }}
+          FRONTEND_REPORT: ${{ needs.frontend-audit.outputs.report }}
         with:
           script: |
-            const backendVulnerable = '${{ needs.backend-audit.outputs.vulnerable }}' === 'true';
-            const frontendVulnerable = '${{ needs.frontend-audit.outputs.vulnerable }}' === 'true';
+            const backendVulnerable = process.env.BACKEND_VULNERABLE === 'true';
+            const frontendVulnerable = process.env.FRONTEND_VULNERABLE === 'true';
 
             const parts = [];
             if (backendVulnerable) {
-              parts.push('### Backend (pip-audit)\n\n```\n${{ needs.backend-audit.outputs.report }}\n```');
+              parts.push('### Backend (pip-audit)\n\n```\n' + process.env.BACKEND_REPORT + '\n```');
             }
             if (frontendVulnerable) {
-              parts.push('### Frontend (npm audit)\n\n```\n${{ needs.frontend-audit.outputs.report }}\n```');
+              parts.push('### Frontend (npm audit)\n\n```\n' + process.env.FRONTEND_REPORT + '\n```');
             }
 
             const body = [
