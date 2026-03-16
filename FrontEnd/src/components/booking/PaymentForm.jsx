@@ -110,7 +110,6 @@ function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubm
     const [error, setError] = useState(null)
     const [paymentSuccess, setPaymentSuccess] = useState(false)
     const [serverPrice, setServerPrice] = useState(null)
-    const [paymentIntentId, setPaymentIntentId] = useState(null)
 
     const displayPrice = serverPrice !== null ? serverPrice : totalPrice
 
@@ -139,10 +138,6 @@ function StripeCardForm({ formData, totalPrice, pricingBreakdown, onBack, onSubm
             if (result.amount !== undefined) {
                 setServerPrice(result.amount / 100)
             }
-            if (result.payment_intent_id) {
-                setPaymentIntentId(result.payment_intent_id)
-            }
-
             if (result.free_booking) {
                 setPaymentSuccess(true)
                 setTimeout(() => onSubmit({ freeBookingConfirmed: true }), 1000)
