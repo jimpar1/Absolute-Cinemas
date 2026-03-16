@@ -126,6 +126,7 @@ class CreateBookingIntentView(APIView):
         }
         if getattr(user, 'is_authenticated', False):
             metadata['user_id'] = str(user.id)
+            metadata['free_seats'] = str(pricing['free_seats'])
 
         result = payment_service.create_booking_intent(
             amount_euros=total_price,
@@ -168,6 +169,73 @@ class CreateSubscriptionCheckoutView(APIView):
         return Response(result)
 
 
+def _create_booking_from_intent(intent, subscription_service=None):
+    """
+    Create a Booking from a Stripe PaymentIntent object.
+    Idempotent — safe to call from both the webhook and the confirm-booking fallback.
+    Returns the Booking instance, or None if creation failed.
+    """
+    metadata = intent.get('metadata', {})
+    payment_intent_id = intent['id']
+
+    if Booking.objects.filter(stripe_payment_intent_id=payment_intent_id).exists():
+        logger.info("Booking already exists for PaymentIntent %s", payment_intent_id)
+        return Booking.objects.get(stripe_payment_intent_id=payment_intent_id)
+
+    try:
+        screening = Screening.objects.get(pk=int(metadata['screening_id']))
+    except (Screening.DoesNotExist, KeyError, ValueError):
+        logger.error("Screening not found for PaymentIntent %s", payment_intent_id)
+        return None
+
+    from django.contrib.auth.models import User
+    user = None
+    user_id = metadata.get('user_id')
+    if user_id:
+        try:
+            user = User.objects.get(pk=int(user_id))
+        except User.DoesNotExist:
+            logger.warning("User %s not found for payment intent metadata", user_id)
+
+    seats_booked = int(metadata.get('seats_booked', 1))
+    total_price = intent['amount'] / 100  # cents → euros
+
+    booking = Booking(
+        user=user,
+        screening=screening,
+        customer_name=metadata.get('customer_name', ''),
+        customer_email=metadata.get('customer_email', ''),
+        customer_phone=metadata.get('customer_phone', ''),
+        seats_booked=seats_booked,
+        seat_numbers=metadata.get('seat_numbers', ''),
+        total_price=total_price,
+        status='confirmed',
+        stripe_payment_intent_id=payment_intent_id,
+        payment_status='paid',
+    )
+    booking.save()
+
+    # Clear seat locks for this session
+    session_id = metadata.get('session_id')
+    if session_id and booking.seat_numbers:
+        seats = [s.strip() for s in booking.seat_numbers.split(',') if s.strip()]
+        SeatLock.objects.filter(
+            screening=screening,
+            seat_number__in=seats,
+            session_id=session_id,
+        ).delete()
+
+    # Consume free tickets if applicable (Fix A)
+    if subscription_service and user:
+        free_seats = int(metadata.get('free_seats', '0'))
+        if free_seats > 0:
+            sub = subscription_service.get_or_create(user)
+            subscription_service.consume_free_tickets(sub, free_seats)
+
+    logger.info("Booking #%d created for PI %s", booking.id, payment_intent_id)
+    return booking
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 class StripeWebhookView(APIView):
     """
@@ -196,7 +264,7 @@ class StripeWebhookView(APIView):
         data_object = event['data']['object']
 
         if event_type == 'payment_intent.succeeded':
-            self._handle_payment_succeeded(data_object)
+            self._handle_payment_succeeded(data_object, subscription_service)
         elif event_type == 'checkout.session.completed':
             self._handle_checkout_completed(data_object, subscription_service)
         elif event_type == 'payment_intent.payment_failed':
@@ -206,59 +274,9 @@ class StripeWebhookView(APIView):
 
         return Response({'status': 'ok'})
 
-    def _handle_payment_succeeded(self, intent):
+    def _handle_payment_succeeded(self, intent, subscription_service=None):
         """Create the booking from PaymentIntent metadata."""
-        metadata = intent.get('metadata', {})
-        payment_intent_id = intent['id']
-
-        if Booking.objects.filter(stripe_payment_intent_id=payment_intent_id).exists():
-            logger.info("Booking already exists for PaymentIntent %s", payment_intent_id)
-            return
-
-        try:
-            screening = Screening.objects.get(pk=int(metadata['screening_id']))
-        except (Screening.DoesNotExist, KeyError, ValueError):
-            logger.error("Screening not found for PaymentIntent %s", payment_intent_id)
-            return
-
-        from django.contrib.auth.models import User
-        user = None
-        user_id = metadata.get('user_id')
-        if user_id:
-            try:
-                user = User.objects.get(pk=int(user_id))
-            except User.DoesNotExist:
-                logger.warning("User %s not found for payment intent metadata", user_id)
-
-        seats_booked = int(metadata.get('seats_booked', 1))
-        total_price = intent['amount'] / 100  # cents → euros
-
-        booking = Booking(
-            user=user,
-            screening=screening,
-            customer_name=metadata.get('customer_name', ''),
-            customer_email=metadata.get('customer_email', ''),
-            customer_phone=metadata.get('customer_phone', ''),
-            seats_booked=seats_booked,
-            seat_numbers=metadata.get('seat_numbers', ''),
-            total_price=total_price,
-            status='confirmed',
-            stripe_payment_intent_id=payment_intent_id,
-            payment_status='paid',
-        )
-        booking.save()
-
-        # Clear seat locks for this session
-        session_id = metadata.get('session_id')
-        if session_id and booking.seat_numbers:
-            seats = [s.strip() for s in booking.seat_numbers.split(',') if s.strip()]
-            SeatLock.objects.filter(
-                screening=screening,
-                seat_number__in=seats,
-                session_id=session_id,
-            ).delete()
-
-        logger.info("Booking #%d created via webhook for PI %s", booking.id, payment_intent_id)
+        _create_booking_from_intent(intent, subscription_service)
 
     def _handle_checkout_completed(self, session, subscription_service):
         """Activate subscription tier after successful Checkout Session."""
@@ -297,6 +315,38 @@ class StripeWebhookView(APIView):
                 logger.info("Released %d seat locks for failed PI %s", deleted, intent['id'])
             except (ValueError, TypeError):
                 logger.debug("Skipping seat lock cleanup for invalid metadata")
+
+
+class ConfirmBookingView(APIView):
+    """
+    Webhook-fallback: verify a PaymentIntent with Stripe and create the booking
+    if it doesn't exist yet. Idempotent — safe to call even if the webhook already ran.
+    """
+    permission_classes = [AllowAny]
+
+    @inject
+    def post(self, request,
+             subscription_service: SubscriptionService = Provide[Container.subscription_service]):
+        payment_intent_id = request.data.get('payment_intent_id')
+        if not payment_intent_id:
+            return Response({'error': 'payment_intent_id is required.'}, status=400)
+
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+        try:
+            intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+        except stripe.error.StripeError as exc:
+            safe_pi_id = payment_intent_id.replace('\n', '').replace('\r', '')
+            logger.error("Failed to retrieve PaymentIntent %s: %s", safe_pi_id, exc)
+            return Response({'error': 'Could not verify payment with Stripe.'}, status=502)
+
+        if intent.status != 'succeeded':
+            return Response({'error': 'Payment not succeeded.'}, status=400)
+
+        booking = _create_booking_from_intent(intent, subscription_service)
+        if booking is None:
+            return Response({'error': 'Booking creation failed.'}, status=500)
+
+        return Response({'status': 'ok', 'booking_id': booking.id})
 
 
 class ConfirmSubscriptionView(APIView):

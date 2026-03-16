@@ -18,7 +18,7 @@ from .views.subscription_views import SubscriptionView
 from .views.payment_views import (
     StripeConfigView, CreateBookingIntentView,
     CreateSubscriptionCheckoutView, StripeWebhookView, RefundView,
-    ConfirmSubscriptionView,
+    ConfirmSubscriptionView, ConfirmBookingView,
 )
 
 # Router auto-generates list / detail / custom-action URLs
@@ -46,6 +46,7 @@ payment_patterns = [
     path('create-subscription-checkout/', CreateSubscriptionCheckoutView.as_view(), name='payments-subscription-checkout'),
     path('webhook/', StripeWebhookView.as_view(), name='payments-webhook'),
     path('confirm-subscription/', ConfirmSubscriptionView.as_view(), name='payments-confirm-subscription'),
+    path('confirm-booking/', ConfirmBookingView.as_view(), name='payments-confirm-booking'),
     path('refund/', RefundView.as_view(), name='payments-refund'),
 ]
 
